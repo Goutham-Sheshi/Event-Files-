@@ -36,6 +36,17 @@ export function findFolder(nodes: CatalogData, id: string): FolderNode | null {
   return null;
 }
 
+export function findPath(nodes: CatalogData, id: string, trail: FolderNode[] = []): FolderNode[] | null {
+  for (const n of nodes) {
+    if (n.type !== 'folder') continue;
+    const nextTrail = [...trail, n];
+    if (n.id === id) return nextTrail;
+    const found = findPath(n.children, id, nextTrail);
+    if (found) return found;
+  }
+  return null;
+}
+
 export function addToFolder(nodes: CatalogData, folderId: string, item: FileNode | FolderNode): CatalogData {
   return nodes.map((n): FolderNode | FileNode => {
     if (n.type !== 'folder') return n;

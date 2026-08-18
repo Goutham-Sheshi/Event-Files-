@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { catalogData as initialData, FolderNode, FileNode, CatalogData, EventItem } from './data';
 import {
-  getAllFolders, getAllFiles, findFolder, addToFolder,
+  getAllFolders, getAllFiles, findFolder, findPath, addToFolder,
   deleteFromTree, updateFile, updateFolderName,
   uid, guessFileType, FolderOption,
 } from './utils';
@@ -229,91 +229,103 @@ const ProductBadge = ({ product, dark }: { product: string; dark?: boolean }) =>
   );
 };
 
-// ─── Sidebar ─────────────────────────────────────────────────────────────────
+// ─── Top Bar ─────────────────────────────────────────────────────────────────
 
-type SidebarShared = {
-  selectedId: string;
-  expandedIds: Set<string>;
-  onSelect: (id: string) => void;
-  onToggle: (id: string) => void;
-};
-
-const SidebarNode = ({
-  node, level, index, selectedId, expandedIds, onSelect, onToggle,
-}: SidebarShared & { node: FolderNode; level: number; index?: number }) => {
-  const isSelected = selectedId === node.id;
-  const isExpanded = expandedIds.has(node.id);
-  const subFolders = node.children.filter((c): c is FolderNode => c.type === 'folder');
+const ProfileMenu = ({ onAdmin }: { onAdmin: () => void }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
   return (
-    <div>
-      <button
-        onClick={() => { onSelect(node.id); if (subFolders.length > 0) onToggle(node.id); }}
-        style={{ paddingLeft: `${11 + level * 14}px`, paddingRight: '8px', borderLeft: isSelected ? '2.5px solid #e04e2a' : '2.5px solid transparent' }}
-        className={`w-full flex items-center gap-1.5 py-[7px] text-[13px] text-left transition-all leading-none ${
-          isSelected ? 'bg-white text-[var(--ink)] font-semibold' : 'text-[var(--ink-70)] hover:bg-white/60 hover:text-[var(--ink)]'
-        }`}
-      >
-        {level === 1 && <span className={`font-mono text-[10px] w-4 flex-shrink-0 ${isSelected ? 'text-[#e04e2a]' : 'text-[var(--ink-45)]'}`}>{String(index).padStart(2, '0')}</span>}
-        {level > 1 && <span className="w-3 flex-shrink-0 opacity-60">{subFolders.length > 0 ? <Chevron open={isExpanded} /> : null}</span>}
-        <span className="flex-1 truncate">{node.name}</span>
-        {level === 1 && subFolders.length > 0 && <span className={`flex-shrink-0 ${isSelected ? 'text-[var(--ink-45)]' : 'text-[var(--ink-45)]'}`}><Chevron open={isExpanded} /></span>}
+    <div className="relative" ref={ref}>
+      <button onClick={() => setOpen(o => !o)}
+        className="w-8 h-8 rounded-full flex items-center justify-center text-white font-mono text-[11px] font-bold flex-shrink-0 transition-transform hover:scale-105"
+        style={{ background: 'linear-gradient(135deg, #e5673f, #c9451f)' }}>
+        GR
       </button>
-      {isExpanded && subFolders.map((child, i) => (
-        <SidebarNode key={child.id} node={child} level={level + 1} index={i + 1}
-          selectedId={selectedId} expandedIds={expandedIds} onSelect={onSelect} onToggle={onToggle} />
-      ))}
+      {open && (
+        <div className="absolute right-0 top-[calc(100%+8px)] w-56 bg-white rounded-md shadow-2xl ring-1 ring-black/5 overflow-hidden z-50">
+          <div className="px-4 py-3 border-b border-[var(--line-soft)]">
+            <div className="text-[13px] font-semibold text-[var(--ink)]">Goutham</div>
+            <div className="font-mono text-[10px] text-[var(--ink-45)] mt-0.5">Design Team · Sheshi</div>
+          </div>
+          <button onClick={() => { onAdmin(); setOpen(false); }}
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[var(--ink-70)] hover:bg-[var(--paper)] hover:text-[var(--ink)] transition-colors text-left">
+            <ShieldIco /> Admin Console
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
-const Sidebar = ({
-  catalog, selectedId, expandedIds, onSelect, onToggle, appView, onToggleAdmin, onGoHome, upcomingCount,
-}: SidebarShared & { catalog: CatalogData; appView: 'browse' | 'admin' | 'eventFiles'; onToggleAdmin: () => void; onGoHome: () => void; upcomingCount: number }) => {
+const TopBar = ({
+  catalog, appView, activeProductId, onGoHome, onSelectProduct, onToggleAdmin, upcomingCount,
+}: {
+  catalog: CatalogData; appView: 'browse' | 'admin' | 'eventFiles'; activeProductId: string | null;
+  onGoHome: () => void; onSelectProduct: (id: string) => void; onToggleAdmin: () => void; upcomingCount: number;
+}) => {
   const root = catalog[0] as FolderNode | undefined;
-  const events = root?.type === 'folder' ? root.children.filter((c): c is FolderNode => c.type === 'folder') : [];
+  const products = root?.type === 'folder' ? root.children.filter((c): c is FolderNode => c.type === 'folder') : [];
+  const isHomeActive = appView !== 'admin' && !activeProductId;
+
   return (
-    <aside className="w-[224px] flex-shrink-0 flex flex-col bg-[var(--canvas)] border-r border-[var(--line)] overflow-hidden">
-      <div className="px-4 pt-5 pb-4 border-b border-[var(--line)]">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#e04e2a' }} />
-          <div className="font-mono text-[10px] tracking-[0.16em] text-[var(--ink-45)] uppercase">Sheshi · Archive</div>
+    <header className="h-14 flex-shrink-0 flex items-center gap-1 px-5 border-b border-[var(--line)] bg-white">
+      <button onClick={onGoHome} className="flex items-center gap-2 pr-4 mr-2 border-r border-[var(--line-soft)] flex-shrink-0">
+        <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #e5673f, #c9451f)' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" x2="16" y1="21" y2="21" /><line x1="12" x2="12" y1="17" y2="21" />
+          </svg>
         </div>
-        <div className="font-display text-[19px] font-semibold text-[var(--ink)] leading-tight mt-1.5">Media Catalog</div>
-      </div>
-      <div className="px-3 pt-3 pb-1">
-        <button onClick={() => { onGoHome(); root && onSelect(root.id); }}
-          style={{ borderLeft: (appView === 'browse' || appView === 'eventFiles') && root && selectedId === root.id ? '2.5px solid #e04e2a' : '2.5px solid transparent' }}
-          className={`w-full flex items-center gap-2 pl-[8.5px] pr-2.5 py-[7px] text-[13px] text-left transition-all ${
-            (appView === 'browse' || appView === 'eventFiles') && root && selectedId === root.id ? 'bg-white text-[var(--ink)] font-semibold' : 'text-[var(--ink-70)] hover:bg-white/60'
+        <span className="font-display text-[15px] font-semibold text-[var(--ink)] tracking-tight hidden sm:inline">Media Catalog</span>
+      </button>
+
+      <nav className="flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto">
+        <button onClick={onGoHome}
+          className={`flex items-center gap-1.5 px-3 py-[7px] text-[13px] font-medium rounded-md transition-colors flex-shrink-0 relative ${
+            isHomeActive ? 'text-[var(--ink)]' : 'text-[var(--ink-45)] hover:text-[var(--ink)]'
           }`}>
-          <HomeIco />
-          <span className="flex-1">Home</span>
-          {upcomingCount > 0 && <span className="bg-[#e04e2a] text-white font-mono text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">{upcomingCount}</span>}
+          <HomeIco /> Home
+          {upcomingCount > 0 && <span className="bg-[#e04e2a] text-white font-mono text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{upcomingCount}</span>}
+          {isHomeActive && <span className="absolute left-3 right-3 -bottom-[1px] h-[2px] bg-[#e04e2a] rounded-full" />}
         </button>
-      </div>
-      <div className="px-3 pt-3 pb-2 flex-1 overflow-y-auto">
-        <div className="font-mono text-[10px] font-medium tracking-[0.14em] text-[var(--ink-45)] uppercase px-2.5 mb-2">§ Drawers</div>
-        <div className="flex flex-col gap-0.5">
-          {events.map((evt, i) => (
-            <SidebarNode key={evt.id} node={evt} level={1} index={i + 1}
-              selectedId={appView === 'browse' ? selectedId : ''}
-              expandedIds={expandedIds}
-              onSelect={id => { if (appView === 'admin') onToggleAdmin(); onSelect(id); }}
-              onToggle={onToggle} />
-          ))}
-        </div>
-      </div>
-      <div className="px-3 py-3 border-t border-[var(--line)]">
-        <button onClick={onToggleAdmin}
-          className={`w-full flex items-center gap-2 px-2.5 py-[7px] rounded-md text-[13px] transition-colors ${
-            appView === 'admin' ? 'bg-[var(--ink)] text-white font-medium' : 'text-[var(--ink-70)] hover:bg-white/60'
-          }`}>
-          <ShieldIco /> Admin
-        </button>
-      </div>
-    </aside>
+        <span className="w-px h-4 bg-[var(--line-soft)] mx-1 flex-shrink-0" />
+        {products.map(p => {
+          const active = activeProductId === p.id;
+          return (
+            <button key={p.id} onClick={() => onSelectProduct(p.id)}
+              className={`px-3 py-[7px] text-[13px] font-medium rounded-md transition-colors flex-shrink-0 relative whitespace-nowrap ${
+                active ? 'text-[var(--ink)]' : 'text-[var(--ink-45)] hover:text-[var(--ink)]'
+              }`}>
+              {p.name}
+              {active && <span className="absolute left-3 right-3 -bottom-[1px] h-[2px] bg-[#e04e2a] rounded-full" />}
+            </button>
+          );
+        })}
+      </nav>
+
+      <ProfileMenu onAdmin={onToggleAdmin} />
+    </header>
   );
 };
+
+const Breadcrumb = ({ trail, onSelect, onHome }: { trail: FolderNode[]; onSelect: (id: string) => void; onHome: () => void }) => (
+  <div className="flex items-center gap-1.5 font-mono text-[11px] text-[var(--ink-45)] flex-wrap">
+    <button onClick={onHome} className="hover:text-[var(--ink)] transition-colors">Home</button>
+    {trail.map((f, i) => (
+      <span key={f.id} className="flex items-center gap-1.5">
+        <span className="opacity-50">/</span>
+        <button onClick={() => onSelect(f.id)}
+          className={i === trail.length - 1 ? 'text-[var(--ink)] font-semibold' : 'hover:text-[var(--ink)] transition-colors'}>
+          {f.name}
+        </button>
+      </span>
+    ))}
+  </div>
+);
 
 // ─── Home View ────────────────────────────────────────────────────────────────
 
@@ -1508,25 +1520,14 @@ export default function App() {
   const root = catalog[0] as FolderNode | undefined;
   // Always start on home (root id), not a product subfolder
   const [selectedId, setSelectedId] = useState(root?.id ?? '');
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
-    const s = new Set<string>();
-    if (root) s.add(root.id);
-    return s;
-  });
 
   useEffect(() => {
     if (!loading) {
       const r = catalog[0] as FolderNode | undefined;
-      if (r) {
-        setSelectedId(r.id); // home page
-        setExpandedIds(prev => { const s = new Set(prev); s.add(r.id); return s; });
-      }
+      if (r) setSelectedId(r.id); // home page
     }
   }, [loading]);
 
-  const handleToggle = (id: string) => setExpandedIds(prev => {
-    const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next;
-  });
   const handleAddFile = (file: FileNode, folderId: string) => {
     setCatalog(prev => addToFolder(prev, folderId, file));
     setAddModalFolderId(null);
@@ -1535,6 +1536,8 @@ export default function App() {
   const selectedFolder = isHome ? null : findFolder(catalog, selectedId);
   const allFolders = getAllFolders(catalog);
   const upcomingCount = events.filter(e => isUpcoming(e.date)).length;
+  const pathTrail = (appView === 'browse' && !isHome) ? (findPath(catalog, selectedId) ?? []).slice(1) : [];
+  const activeProductId = pathTrail[0]?.id ?? null;
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-[var(--canvas)]" style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif" }}>
@@ -1545,49 +1548,60 @@ export default function App() {
     </div>
   );
 
+  const goHome = () => { setAppView('browse'); setEventFilesEvent(null); root && setSelectedId(root.id); };
+
   return (
-    <div className="flex h-screen bg-white overflow-hidden" style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif" }}>
-      <Sidebar
-        catalog={catalog} selectedId={selectedId} expandedIds={expandedIds}
-        onSelect={setSelectedId} onToggle={handleToggle}
+    <div className="flex flex-col h-screen bg-white overflow-hidden" style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif" }}>
+      <TopBar
+        catalog={catalog}
         appView={appView}
+        activeProductId={appView === 'browse' ? activeProductId : null}
+        onGoHome={goHome}
+        onSelectProduct={id => { setAppView('browse'); setEventFilesEvent(null); setSelectedId(id); }}
         onToggleAdmin={() => setAppView(v => (v === 'admin' ? 'browse' : 'admin'))}
-        onGoHome={() => { setAppView('browse'); setEventFilesEvent(null); }}
         upcomingCount={upcomingCount}
       />
 
-      {appView === 'admin' ? (
-        <AdminView
-          catalog={catalog} onUpdate={setCatalog}
-          events={events} onUpdateEvents={setEvents}
-          onAddFile={folderId => setAddModalFolderId(folderId || selectedId)}
-          onEditFile={setEditingFile}
-          initialTab={adminInitialTab}
-        />
-      ) : appView === 'eventFiles' && eventFilesEvent ? (
-        <EventFilesView
-          event={eventFilesEvent}
-          onBack={() => { setAppView('browse'); setEventFilesEvent(null); }}
-          onUpdateEvent={updated => {
-            setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
-            setEventFilesEvent(updated);
-          }}
-        />
-      ) : isHome ? (
-        <HomeView
-          catalog={catalog} events={events}
-          onSelect={id => { setSelectedId(id); setExpandedIds(prev => { const s = new Set(prev); s.add(id); return s; }); }}
-          onAddFile={() => setAddModalFolderId(selectedId)}
-          onAdminEvents={() => { setAdminInitialTab('events'); setAppView('admin'); }}
-          onViewEventFiles={e => { setEventFilesEvent(e); setAppView('eventFiles'); }}
-        />
-      ) : (
-        <BrowsePanel
-          folder={selectedFolder}
-          onSelect={id => { setSelectedId(id); handleToggle(id); }}
-          onAddFile={() => setAddModalFolderId(selectedId)}
-        />
-      )}
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        {appView === 'browse' && !isHome && pathTrail.length > 0 && (
+          <div className="px-8 pt-3.5 flex-shrink-0">
+            <Breadcrumb trail={pathTrail} onSelect={setSelectedId} onHome={goHome} />
+          </div>
+        )}
+
+        {appView === 'admin' ? (
+          <AdminView
+            catalog={catalog} onUpdate={setCatalog}
+            events={events} onUpdateEvents={setEvents}
+            onAddFile={folderId => setAddModalFolderId(folderId || selectedId)}
+            onEditFile={setEditingFile}
+            initialTab={adminInitialTab}
+          />
+        ) : appView === 'eventFiles' && eventFilesEvent ? (
+          <EventFilesView
+            event={eventFilesEvent}
+            onBack={() => { setAppView('browse'); setEventFilesEvent(null); }}
+            onUpdateEvent={updated => {
+              setEvents(prev => prev.map(e => e.id === updated.id ? updated : e));
+              setEventFilesEvent(updated);
+            }}
+          />
+        ) : isHome ? (
+          <HomeView
+            catalog={catalog} events={events}
+            onSelect={id => setSelectedId(id)}
+            onAddFile={() => setAddModalFolderId(selectedId)}
+            onAdminEvents={() => { setAdminInitialTab('events'); setAppView('admin'); }}
+            onViewEventFiles={e => { setEventFilesEvent(e); setAppView('eventFiles'); }}
+          />
+        ) : (
+          <BrowsePanel
+            folder={selectedFolder}
+            onSelect={id => setSelectedId(id)}
+            onAddFile={() => setAddModalFolderId(selectedId)}
+          />
+        )}
+      </div>
 
       {addModalFolderId !== null && (
         <AddFileModal
