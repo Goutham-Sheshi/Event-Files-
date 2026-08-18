@@ -83,7 +83,7 @@ const Chevron = ({ open }: { open: boolean }) => (
     {open ? <path d="m6 9 6 6 6-6" /> : <path d="m9 18 6-6-6-6" />}
   </svg>
 );
-const FolderIco = ({ size = 20, color = '#a89d95' }: { size?: number; color?: string }) => (
+const FolderIco = ({ size = 20, color = 'var(--ink-45)' }: { size?: number; color?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
   </svg>
@@ -93,7 +93,7 @@ const FileTypeIcon = ({ type, sz = 28 }: { type: FileNode['fileType']; sz?: numb
   if (type === 'image') return <svg {...props} stroke="#6baed6"><rect width="18" height="18" x="3" y="3" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></svg>;
   if (type === 'video') return <svg {...props} stroke="#9b8ecc"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /><polygon points="10 11 15 14 10 17 10 11" fill="#9b8ecc" stroke="none" /></svg>;
   if (type === 'pdf') return <svg {...props} stroke="#e07a6a"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /></svg>;
-  return <svg {...props} stroke="#a89d95"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>;
+  return <svg {...props} stroke="var(--ink-45)"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>;
 };
 const DownloadIco = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>;
 const PlusIco = ({ sz = 13 }: { sz?: number }) => <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="5" y2="19" /><line x1="5" x2="19" y1="12" y2="12" /></svg>;
@@ -101,7 +101,7 @@ const XIco = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" s
 const EditIco = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>;
 const TrashIco = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg>;
 const LinkIco = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>;
-const UploadCloudIco = () => <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#a89d95" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16" /><line x1="12" x2="12" y1="12" y2="21" /><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" /></svg>;
+const UploadCloudIco = () => <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--ink-45)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16" /><line x1="12" x2="12" y1="12" y2="21" /><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" /></svg>;
 const ShieldIco = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>;
 const HomeIco = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>;
 const CalIco = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>;
@@ -135,7 +135,7 @@ const SourceBadge = ({ source }: { source: LinkSource }) => {
   if (source === 'direct') return null;
   const cfg = source === 'figma' ? { icon: <FigmaMark />, label: 'Figma' } : { icon: <OneDriveMark />, label: 'OneDrive' };
   return (
-    <span className="inline-flex items-center gap-1 bg-white/95 backdrop-blur-sm text-[#1c1a18] text-[10px] font-semibold px-1.5 py-0.5 rounded-md shadow-sm">
+    <span className="inline-flex items-center gap-1 bg-white/95 backdrop-blur-sm text-[var(--ink)] text-[10px] font-semibold px-1.5 py-0.5 rounded-md shadow-sm">
       {cfg.icon}{cfg.label}
     </span>
   );
@@ -147,19 +147,22 @@ function openLabel(source: LinkSource): string {
   return 'Download';
 }
 
-const FIELD = "w-full border border-[#e0dbd5] rounded-lg px-3 py-2 text-[13px] text-[#1c1a18] bg-white placeholder-[#c5bdb6] focus:outline-none focus:ring-2 focus:ring-[#e04e2a]/25 focus:border-[#e04e2a] transition-colors";
+const FIELD = "w-full border border-[var(--line)] rounded-lg px-3 py-2 text-[13px] text-[var(--ink)] bg-white placeholder-[var(--ink-45)] focus:outline-none focus:ring-2 focus:ring-[#e04e2a]/25 focus:border-[#e04e2a] transition-colors";
 function Label({ children }: { children: React.ReactNode }) {
-  return <label className="block text-[11px] font-semibold text-[#5a524c] uppercase tracking-wider mb-1.5">{children}</label>;
+  return <label className="block text-[11px] font-semibold text-[var(--ink-70)] uppercase tracking-wider mb-1.5">{children}</label>;
 }
 function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
-      <div className={`relative bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 w-full ${wide ? 'max-w-[560px]' : 'max-w-[440px]'} overflow-hidden`}>
-        <div className="h-[3px] bg-gradient-to-r from-[#e04e2a] to-[#f0a488]" />
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8e4de]">
-          <h2 className="text-[16px] font-semibold text-[#1c1a18] tracking-tight">{title}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#f0ece7] text-[#a89d95] hover:text-[#1c1a18] transition-colors"><XIco /></button>
+      <div className={`relative bg-white rounded-md shadow-2xl ring-1 ring-black/5 w-full ${wide ? 'max-w-[560px]' : 'max-w-[440px]'} overflow-hidden`}>
+        <div className="h-[3px] bg-[var(--ink)]" />
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--line-soft)]">
+          <div>
+            <div className="font-mono text-[9px] font-semibold tracking-[0.14em] text-[var(--ink-45)] uppercase mb-0.5">Entry</div>
+            <h2 className="font-display text-[18px] font-semibold text-[var(--ink)] tracking-tight">{title}</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-[var(--canvas)] text-[var(--ink-45)] hover:text-[var(--ink)] transition-colors"><XIco /></button>
         </div>
         {children}
       </div>
@@ -171,12 +174,12 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
 
 const CountdownUnit = ({ value, label, dark }: { value: number; label: string; dark?: boolean }) => (
   <div className="flex flex-col items-center gap-1">
-    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-[22px] font-bold tabular-nums shadow-md ${
-      dark ? 'bg-white/15 text-white backdrop-blur-sm shadow-black/10' : 'text-white shadow-black/20'
-    }`} style={dark ? undefined : { background: 'linear-gradient(160deg, #2a2724, #1c1a18)' }}>
+    <div className={`stamp-digit w-12 h-12 rounded-md flex items-center justify-center text-[21px] font-semibold ${
+      dark ? 'bg-white/15 text-white backdrop-blur-sm' : 'text-white'
+    }`} style={dark ? undefined : { background: 'linear-gradient(160deg, #2a2724, var(--ink))' }}>
       {String(value).padStart(2, '0')}
     </div>
-    <div className={`text-[9px] font-bold tracking-[0.12em] ${dark ? 'text-white/60' : 'text-[#a89d95]'}`}>{label}</div>
+    <div className={`font-mono text-[9px] font-semibold tracking-[0.14em] ${dark ? 'text-white/60' : 'text-[var(--ink-45)]'}`}>{label}</div>
   </div>
 );
 
@@ -187,9 +190,9 @@ const CountdownTimer = ({ date, dark = false }: { date: string; dark?: boolean }
     return () => clearInterval(id);
   }, [date]);
   if (!t) return (
-    <span className={`text-[13px] font-semibold ${dark ? 'text-white/70' : 'text-[#a89d95]'}`}>Event has passed</span>
+    <span className={`text-[13px] font-semibold ${dark ? 'text-white/70' : 'text-[var(--ink-45)]'}`}>Event has passed</span>
   );
-  const sep = <span className={`text-[20px] font-light pb-4 ${dark ? 'text-white/30' : 'text-[#ddd8d2]'}`}>:</span>;
+  const sep = <span className={`text-[20px] font-light pb-4 ${dark ? 'text-white/30' : 'text-[var(--line)]'}`}>:</span>;
   return (
     <div className="flex items-end gap-1.5">
       <CountdownUnit value={t.days} label="DAYS" dark={dark} />
@@ -209,11 +212,11 @@ const MiniCountdown = ({ date }: { date: string }) => {
     const id = setInterval(() => setT(computeTimeLeft(date)), 1000);
     return () => clearInterval(id);
   }, [date]);
-  if (!t) return <span className="text-[11px] text-[#a89d95]">Passed</span>;
+  if (!t) return <span className="text-[11px] text-[var(--ink-45)]">Passed</span>;
   if (t.days === 0 && t.hours === 0) return <span className="text-[12px] font-bold text-[#e04e2a] animate-pulse">Today!</span>;
   if (t.days === 0) return <span className="text-[12px] font-semibold text-[#e04e2a]">{t.hours}h {t.minutes}m</span>;
   if (t.days === 1) return <span className="text-[12px] font-semibold text-amber-600">Tomorrow</span>;
-  return <span className="text-[12px] font-semibold text-[#1c1a18]">{t.days} days</span>;
+  return <span className="text-[12px] font-semibold text-[var(--ink)]">{t.days} days</span>;
 };
 
 const ProductBadge = ({ product, dark }: { product: string; dark?: boolean }) => {
@@ -245,15 +248,15 @@ const SidebarNode = ({
     <div>
       <button
         onClick={() => { onSelect(node.id); if (subFolders.length > 0) onToggle(node.id); }}
-        style={{ paddingLeft: `${8 + level * 14}px`, paddingRight: '8px' }}
-        className={`w-full flex items-center gap-1.5 py-[7px] rounded-lg text-[13px] text-left transition-all leading-none ${
-          isSelected ? 'bg-[#e04e2a] text-white font-medium shadow-sm shadow-[#e04e2a]/30' : 'text-[#5a524c] hover:bg-[#e5e1db] hover:text-[#1c1a18]'
+        style={{ paddingLeft: `${11 + level * 14}px`, paddingRight: '8px', borderLeft: isSelected ? '2.5px solid #e04e2a' : '2.5px solid transparent' }}
+        className={`w-full flex items-center gap-1.5 py-[7px] text-[13px] text-left transition-all leading-none ${
+          isSelected ? 'bg-white text-[var(--ink)] font-semibold' : 'text-[var(--ink-70)] hover:bg-white/60 hover:text-[var(--ink)]'
         }`}
       >
-        {level === 1 && <span className={`text-[11px] font-mono w-4 flex-shrink-0 ${isSelected ? 'text-white/60' : 'text-[#b5aa9e]'}`}>{index}</span>}
+        {level === 1 && <span className={`font-mono text-[10px] w-4 flex-shrink-0 ${isSelected ? 'text-[#e04e2a]' : 'text-[var(--ink-45)]'}`}>{String(index).padStart(2, '0')}</span>}
         {level > 1 && <span className="w-3 flex-shrink-0 opacity-60">{subFolders.length > 0 ? <Chevron open={isExpanded} /> : null}</span>}
         <span className="flex-1 truncate">{node.name}</span>
-        {level === 1 && subFolders.length > 0 && <span className={`flex-shrink-0 ${isSelected ? 'text-white/60' : 'text-[#b5aa9e]'}`}><Chevron open={isExpanded} /></span>}
+        {level === 1 && subFolders.length > 0 && <span className={`flex-shrink-0 ${isSelected ? 'text-[var(--ink-45)]' : 'text-[var(--ink-45)]'}`}><Chevron open={isExpanded} /></span>}
       </button>
       {isExpanded && subFolders.map((child, i) => (
         <SidebarNode key={child.id} node={child} level={level + 1} index={i + 1}
@@ -269,30 +272,27 @@ const Sidebar = ({
   const root = catalog[0] as FolderNode | undefined;
   const events = root?.type === 'folder' ? root.children.filter((c): c is FolderNode => c.type === 'folder') : [];
   return (
-    <aside className="w-[220px] flex-shrink-0 flex flex-col bg-[#f0ece7] border-r border-[#ddd8d2] overflow-hidden">
-      <div className="px-4 py-4 border-b border-[#ddd8d2] flex items-center gap-2.5">
-        <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 shadow-sm shadow-[#e04e2a]/30" style={{ background: 'linear-gradient(135deg, #e5673f, #c9451f)' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="3" width="20" height="14" rx="2" /><line x1="8" x2="16" y1="21" y2="21" /><line x1="12" x2="12" y1="17" y2="21" />
-          </svg>
+    <aside className="w-[224px] flex-shrink-0 flex flex-col bg-[var(--canvas)] border-r border-[var(--line)] overflow-hidden">
+      <div className="px-4 pt-5 pb-4 border-b border-[var(--line)]">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#e04e2a' }} />
+          <div className="font-mono text-[10px] tracking-[0.16em] text-[var(--ink-45)] uppercase">Sheshi · Archive</div>
         </div>
-        <div>
-          <div className="text-[13px] font-semibold text-[#1c1a18] leading-tight tracking-tight">Media Catalog</div>
-          <div className="text-[11px] text-[#a89d95] leading-tight">Branding 2.0</div>
-        </div>
+        <div className="font-display text-[19px] font-semibold text-[var(--ink)] leading-tight mt-1.5">Media Catalog</div>
       </div>
       <div className="px-3 pt-3 pb-1">
         <button onClick={() => { onGoHome(); root && onSelect(root.id); }}
-          className={`w-full flex items-center gap-2 px-2.5 py-[7px] rounded-lg text-[13px] text-left transition-colors ${
-            (appView === 'browse' || appView === 'eventFiles') && root && selectedId === root.id ? 'bg-[#e04e2a] text-white font-medium' : 'text-[#5a524c] hover:bg-[#e5e1db]'
+          style={{ borderLeft: (appView === 'browse' || appView === 'eventFiles') && root && selectedId === root.id ? '2.5px solid #e04e2a' : '2.5px solid transparent' }}
+          className={`w-full flex items-center gap-2 pl-[8.5px] pr-2.5 py-[7px] text-[13px] text-left transition-all ${
+            (appView === 'browse' || appView === 'eventFiles') && root && selectedId === root.id ? 'bg-white text-[var(--ink)] font-semibold' : 'text-[var(--ink-70)] hover:bg-white/60'
           }`}>
           <HomeIco />
           <span className="flex-1">Home</span>
-          {upcomingCount > 0 && <span className="bg-[#e04e2a] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">{upcomingCount}</span>}
+          {upcomingCount > 0 && <span className="bg-[#e04e2a] text-white font-mono text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">{upcomingCount}</span>}
         </button>
       </div>
       <div className="px-3 pt-3 pb-2 flex-1 overflow-y-auto">
-        <div className="text-[10px] font-semibold tracking-[0.1em] text-[#a89d95] uppercase px-2 mb-2">Pages</div>
+        <div className="font-mono text-[10px] font-medium tracking-[0.14em] text-[var(--ink-45)] uppercase px-2.5 mb-2">§ Drawers</div>
         <div className="flex flex-col gap-0.5">
           {events.map((evt, i) => (
             <SidebarNode key={evt.id} node={evt} level={1} index={i + 1}
@@ -303,10 +303,10 @@ const Sidebar = ({
           ))}
         </div>
       </div>
-      <div className="px-3 py-3 border-t border-[#ddd8d2]">
+      <div className="px-3 py-3 border-t border-[var(--line)]">
         <button onClick={onToggleAdmin}
-          className={`w-full flex items-center gap-2 px-2.5 py-[7px] rounded-lg text-[13px] transition-colors ${
-            appView === 'admin' ? 'bg-[#1c1a18] text-white font-medium' : 'text-[#5a524c] hover:bg-[#e5e1db]'
+          className={`w-full flex items-center gap-2 px-2.5 py-[7px] rounded-md text-[13px] transition-colors ${
+            appView === 'admin' ? 'bg-[var(--ink)] text-white font-medium' : 'text-[var(--ink-70)] hover:bg-white/60'
           }`}>
           <ShieldIco /> Admin
         </button>
@@ -335,6 +335,9 @@ const FeaturedEventHero = ({ event, onEdit, onViewFiles }: { event: EventItem; o
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2.5">
             <ProductBadge product={event.product} dark />
+            <span className="accession-tag" style={{ background: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.25)', color: 'rgba(255,255,255,0.85)' }}>
+              EVT-{event.id.slice(-4).toUpperCase()}
+            </span>
             {todayEvent && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#e04e2a] text-white animate-pulse">TODAY</span>
             )}
@@ -347,13 +350,13 @@ const FeaturedEventHero = ({ event, onEdit, onViewFiles }: { event: EventItem; o
         </div>
 
         <div>
-          <h2 className="text-[28px] font-bold text-white leading-tight tracking-tight mb-1">{event.name}</h2>
-          <p className="text-white/60 text-[13px] mb-4">{formatDate(event.date)}</p>
+          <h2 className="font-display text-[30px] font-semibold text-white leading-tight tracking-tight mb-1">{event.name}</h2>
+          <p className="font-mono text-white/55 text-[11px] tracking-wide mb-4 uppercase">{formatDate(event.date)}</p>
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <CountdownTimer date={event.date} dark />
             {onViewFiles && (
               <button onClick={onViewFiles}
-                className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white text-[12px] font-semibold rounded-xl transition-colors border border-white/20 hover:border-white/40 whitespace-nowrap">
+                className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white text-[12px] font-semibold rounded-md transition-colors border border-white/20 hover:border-white/40 whitespace-nowrap">
                 View Related Files
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
@@ -371,7 +374,7 @@ const UpcomingEventCard = ({ event, onEdit, onViewFiles }: { event: EventItem; o
   const cfg = productCfg(event.product);
   const hasImg = !!event.bannerUrl;
   return (
-    <div className="bg-white border border-[#e8e4de] rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group flex flex-col">
+    <div className="bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group flex flex-col">
       {/* Image */}
       <div className="h-[80px] relative overflow-hidden flex-shrink-0"
         style={{ background: hasImg ? undefined : `linear-gradient(135deg, ${cfg.from}cc, ${cfg.to})` }}>
@@ -388,9 +391,9 @@ const UpcomingEventCard = ({ event, onEdit, onViewFiles }: { event: EventItem; o
       </div>
 
       <div className="px-3 py-2.5 flex flex-col gap-1.5 flex-1">
-        <div className="text-[12px] font-semibold text-[#1c1a18] leading-snug line-clamp-2">{event.name}</div>
-        <div className="text-[10px] text-[#a89d95]">{formatShortDate(event.date)}</div>
-        <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-[#f0ece7]">
+        <div className="text-[12px] font-semibold text-[var(--ink)] leading-snug line-clamp-2">{event.name}</div>
+        <div className="text-[10px] text-[var(--ink-45)]">{formatShortDate(event.date)}</div>
+        <div className="flex items-center justify-between mt-auto pt-1.5 border-t border-[var(--canvas)]">
           <MiniCountdown date={event.date} />
           {onViewFiles && (
             <button onClick={onViewFiles} className="flex items-center gap-1 text-[10px] font-semibold hover:underline" style={{ color: cfg.color }}>
@@ -409,19 +412,19 @@ const UpcomingEventCard = ({ event, onEdit, onViewFiles }: { event: EventItem; o
 const PastEventRow = ({ event, onViewFiles }: { event: EventItem; onViewFiles?: () => void }) => {
   const cfg = productCfg(event.product);
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#f7f4f1] transition-colors group">
+    <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--canvas-deep)] transition-colors group">
       <div className="w-9 h-9 rounded-lg flex-shrink-0 overflow-hidden" style={{ background: `linear-gradient(135deg, ${cfg.from}, ${cfg.to})` }}>
         {event.bannerUrl && <img src={event.bannerUrl} alt="" className="w-full h-full object-cover opacity-60" />}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-medium text-[#5a524c] truncate">{event.name}</div>
-        <div className="text-[11px] text-[#c5bdb6]">{formatShortDate(event.date)}</div>
+        <div className="text-[13px] font-medium text-[var(--ink-70)] truncate">{event.name}</div>
+        <div className="text-[11px] text-[var(--ink-45)]">{formatShortDate(event.date)}</div>
       </div>
       <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0" style={{ background: cfg.light, color: cfg.color }}>
         {event.product}
       </span>
       {onViewFiles && (
-        <button onClick={onViewFiles} className="flex-shrink-0 flex items-center gap-1 text-[11px] font-medium text-[#a89d95] hover:text-[#1c1a18] opacity-0 group-hover:opacity-100 transition-opacity">
+        <button onClick={onViewFiles} className="flex-shrink-0 flex items-center gap-1 text-[11px] font-medium text-[var(--ink-45)] hover:text-[var(--ink)] opacity-0 group-hover:opacity-100 transition-opacity">
           Files
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
@@ -492,7 +495,7 @@ const EventFilesView = ({
         <div className="absolute bottom-0 left-0 right-0 px-6 pb-4 flex items-end justify-between gap-4">
           <div className="min-w-0">
             <ProductBadge product={event.product} dark />
-            <h1 className="text-[20px] font-bold text-white leading-tight mt-1.5 truncate">{event.name}</h1>
+            <h1 className="font-display text-[21px] font-semibold text-white leading-tight mt-1.5 truncate">{event.name}</h1>
             <p className="text-white/55 text-[12px] mt-0.5">{formatDate(event.date)}</p>
           </div>
           <div className="flex-shrink-0 pb-0.5">
@@ -502,13 +505,13 @@ const EventFilesView = ({
       </div>
 
       {/* Toolbar */}
-      <div className="px-8 py-4 border-b border-[#e8e4de] flex items-center justify-between gap-3 flex-shrink-0">
-        <div className="text-[13px] font-semibold text-[#1c1a18]">
+      <div className="px-8 py-4 border-b border-[var(--line-soft)] flex items-center justify-between gap-3 flex-shrink-0">
+        <div className="text-[13px] font-semibold text-[var(--ink)]">
           {files.length === 0 ? 'No files yet' : `${files.length} file${files.length !== 1 ? 's' : ''}`}
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => { setShowLinkForm(v => !v); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-[#e0dbd5] text-[#5a524c] text-[12px] font-medium rounded-lg hover:bg-[#f7f4f1] transition-colors">
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-[var(--line)] text-[var(--ink-70)] text-[12px] font-medium rounded-lg hover:bg-[var(--canvas-deep)] transition-colors">
             <LinkIco /> Paste Link
           </button>
           <button onClick={() => fileInputRef.current?.click()}
@@ -520,20 +523,20 @@ const EventFilesView = ({
 
       {/* Link form */}
       {showLinkForm && (
-        <div className="px-8 py-3 bg-[#faf8f6] border-b border-[#e8e4de] flex items-end gap-3 flex-shrink-0">
+        <div className="px-8 py-3 bg-[var(--paper)] border-b border-[var(--line-soft)] flex items-end gap-3 flex-shrink-0">
           <div className="flex-1">
-            <div className="text-[11px] font-semibold text-[#5a524c] mb-1">File Name</div>
+            <div className="text-[11px] font-semibold text-[var(--ink-70)] mb-1">File Name</div>
             <input type="text" value={linkName} onChange={e => setLinkName(e.target.value)} placeholder="Presentation.pdf" className={FIELD} />
           </div>
           <div className="flex-[2]">
-            <div className="text-[11px] font-semibold text-[#5a524c] mb-1">URL</div>
+            <div className="text-[11px] font-semibold text-[var(--ink-70)] mb-1">URL</div>
             <input type="text" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="https://…" className={FIELD} />
           </div>
           <button onClick={handleLinkAdd} disabled={!linkName.trim() || !linkUrl.trim()}
-            className="px-4 py-2 bg-[#1c1a18] text-white text-[12px] font-medium rounded-lg hover:bg-black transition-colors disabled:opacity-40 flex-shrink-0">
+            className="px-4 py-2 bg-[var(--ink)] text-white text-[12px] font-medium rounded-lg hover:bg-black transition-colors disabled:opacity-40 flex-shrink-0">
             Add
           </button>
-          <button onClick={() => setShowLinkForm(false)} className="p-2 text-[#a89d95] hover:text-[#1c1a18] flex-shrink-0"><XIco /></button>
+          <button onClick={() => setShowLinkForm(false)} className="p-2 text-[var(--ink-45)] hover:text-[var(--ink)] flex-shrink-0"><XIco /></button>
         </div>
       )}
 
@@ -546,24 +549,24 @@ const EventFilesView = ({
         {uploadError && <p className="text-[12px] text-red-500 mb-4">{uploadError}</p>}
 
         {files.length === 0 && !uploading ? (
-          <div className={`flex flex-col items-center justify-center h-full py-16 text-center rounded-2xl border-2 border-dashed transition-colors ${dragOver ? 'border-[#e04e2a]/50 bg-[#fff5f2]' : 'border-[#e8e4de] bg-[#faf8f6]'}`}>
+          <div className={`flex flex-col items-center justify-center h-full py-16 text-center rounded-2xl border-2 border-dashed transition-colors ${dragOver ? 'border-[#e04e2a]/50 bg-[#fff5f2]' : 'border-[var(--line-soft)] bg-[var(--paper)]'}`}>
             <UploadCloudIco />
-            <div className="text-[14px] font-medium text-[#1c1a18] mt-3">Drop files here</div>
-            <div className="text-[12px] text-[#a89d95] mt-1">or use the buttons above to upload or paste a link</div>
+            <div className="text-[14px] font-medium text-[var(--ink)] mt-3">Drop files here</div>
+            <div className="text-[12px] text-[var(--ink-45)] mt-1">or use the buttons above to upload or paste a link</div>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {uploading && (
-              <div className="bg-[#f7f4f1] border border-[#e8e4de] rounded-xl h-[156px] flex flex-col items-center justify-center gap-2">
-                <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a89d95" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-                <span className="text-[11px] text-[#a89d95]">Uploading…</span>
+              <div className="bg-[var(--canvas-deep)] border border-[var(--line-soft)] rounded-xl h-[156px] flex flex-col items-center justify-center gap-2">
+                <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--ink-45)" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                <span className="text-[11px] text-[var(--ink-45)]">Uploading…</span>
               </div>
             )}
             {files.map(f => {
               const src = detectSource(f.url);
               return (
-              <div key={f.id} className="group bg-white border border-[#e8e4de] rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 relative">
-                <div className="h-[110px] bg-[#f7f4f1] flex items-center justify-center relative overflow-hidden">
+              <div key={f.id} className="group bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 relative">
+                <div className="h-[110px] bg-[var(--canvas-deep)] flex items-center justify-center relative overflow-hidden">
                   {f.thumbnailUrl
                     ? <img src={f.thumbnailUrl} alt={f.name} className="w-full h-full object-cover" loading="lazy" />
                     : <FileTypeIcon type={f.fileType} sz={28} />
@@ -575,14 +578,14 @@ const EventFilesView = ({
                       <TrashIco /> Remove
                     </button>
                     <a href={f.url} target="_blank" rel="noreferrer"
-                      className="flex items-center gap-1 bg-white text-[#1c1a18] text-[10px] font-medium px-1.5 py-1 rounded-md shadow-sm">
+                      className="flex items-center gap-1 bg-white text-[var(--ink)] text-[10px] font-medium px-1.5 py-1 rounded-md shadow-sm">
                       <DownloadIco /> {src === 'direct' ? 'Open' : openLabel(src)}
                     </a>
                   </div>
                 </div>
                 <div className="px-2.5 py-2">
-                  <div className="text-[11px] font-medium text-[#1c1a18] truncate">{f.name}</div>
-                  {f.size && <div className="text-[10px] text-[#a89d95] mt-0.5">{f.size}</div>}
+                  <div className="text-[11px] font-medium text-[var(--ink)] truncate">{f.name}</div>
+                  {f.size && <div className="text-[10px] text-[var(--ink-45)] mt-0.5">{f.size}</div>}
                 </div>
               </div>
               );
@@ -614,16 +617,16 @@ const HomeView = ({
   return (
     <div className="flex-1 overflow-y-auto bg-white">
       {/* Header */}
-      <div className="px-8 py-5 border-b border-[#e8e4de] flex items-center justify-between">
+      <div className="px-8 py-5 border-b border-[var(--line-soft)] flex items-center justify-between">
         <div>
-          <div className="text-[11px] text-[#a89d95] uppercase tracking-wider font-medium mb-0.5">
+          <div className="text-[11px] text-[var(--ink-45)] uppercase tracking-wider font-medium mb-0.5">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </div>
-          <h1 className="text-[22px] font-bold text-[#1c1a18] tracking-tight leading-none">Home</h1>
+          <h1 className="font-display text-[24px] font-semibold text-[var(--ink)] tracking-tight leading-none">Home</h1>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={onAdminEvents}
-            className="flex items-center gap-1.5 px-3 py-2 border border-[#e0dbd5] text-[#5a524c] text-[13px] font-medium rounded-lg hover:bg-[#f7f4f1] transition-colors">
+            className="flex items-center gap-1.5 px-3 py-2 border border-[var(--line)] text-[var(--ink-70)] text-[13px] font-medium rounded-lg hover:bg-[var(--canvas-deep)] transition-colors">
             <CalIco /> Manage Events
           </button>
           <button onClick={onAddFile}
@@ -638,18 +641,18 @@ const HomeView = ({
         {/* ── Events section ── */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[16px] font-bold text-[#1c1a18]">Events</h2>
+            <h2 className="text-[16px] font-bold text-[var(--ink)]">Events</h2>
             <button onClick={onAdminEvents} className="text-[12px] text-[#e04e2a] font-medium hover:underline flex items-center gap-1">
               <PlusIco sz={10} /> Add event
             </button>
           </div>
 
           {events.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center bg-[#faf8f6] rounded-2xl border border-[#e8e4de] border-dashed">
+            <div className="flex flex-col items-center justify-center py-12 text-center bg-[var(--paper)] rounded-2xl border border-[var(--line-soft)] border-dashed">
               <CalIco />
-              <div className="text-[14px] font-medium text-[#1c1a18] mt-3">No events yet</div>
-              <div className="text-[12px] text-[#a89d95] mt-1">Add upcoming events to track them here with live countdowns.</div>
-              <button onClick={onAdminEvents} className="mt-4 flex items-center gap-1.5 px-4 py-2 bg-[#1c1a18] text-white text-[13px] font-medium rounded-lg hover:bg-black transition-colors">
+              <div className="text-[14px] font-medium text-[var(--ink)] mt-3">No events yet</div>
+              <div className="text-[12px] text-[var(--ink-45)] mt-1">Add upcoming events to track them here with live countdowns.</div>
+              <button onClick={onAdminEvents} className="mt-4 flex items-center gap-1.5 px-4 py-2 bg-[var(--ink)] text-white text-[13px] font-medium rounded-lg hover:bg-black transition-colors">
                 <PlusIco sz={11} /> Create first event
               </button>
             </div>
@@ -665,7 +668,7 @@ const HomeView = ({
               {/* Other upcoming */}
               {otherUpcoming.length > 0 && (
                 <div className="mb-5">
-                  <div className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider mb-3">Also coming up</div>
+                  <div className="text-[11px] font-semibold text-[var(--ink-45)] uppercase tracking-wider mb-3">Also coming up</div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                     {otherUpcoming.map(e => (
                       <UpcomingEventCard key={e.id} event={e} onViewFiles={() => onViewEventFiles(e)} />
@@ -676,18 +679,18 @@ const HomeView = ({
 
               {/* No upcoming */}
               {upcoming.length === 0 && (
-                <div className="flex items-center gap-3 px-4 py-3.5 bg-[#faf8f6] rounded-xl border border-[#e8e4de] mb-4">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a89d95" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <div className="flex items-center gap-3 px-4 py-3.5 bg-[var(--paper)] rounded-xl border border-[var(--line-soft)] mb-4">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink-45)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" />
                   </svg>
-                  <span className="text-[13px] text-[#a89d95]">No upcoming events. <button onClick={onAdminEvents} className="text-[#e04e2a] font-medium hover:underline">Add one</button></span>
+                  <span className="text-[13px] text-[var(--ink-45)]">No upcoming events. <button onClick={onAdminEvents} className="text-[#e04e2a] font-medium hover:underline">Add one</button></span>
                 </div>
               )}
 
               {/* Past events */}
               {past.length > 0 && (
                 <div>
-                  <div className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider mb-2">Past events</div>
+                  <div className="text-[11px] font-semibold text-[var(--ink-45)] uppercase tracking-wider mb-2">Past events</div>
                   <div className="flex flex-col">
                     {past.map(e => (
                       <PastEventRow key={e.id} event={e} onViewFiles={() => onViewEventFiles(e)} />
@@ -701,7 +704,7 @@ const HomeView = ({
 
         {/* ── Stats ── */}
         <div>
-          <div className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider mb-3">Catalog</div>
+          <div className="text-[11px] font-semibold text-[var(--ink-45)] uppercase tracking-wider mb-3">Catalog</div>
           <div className="grid grid-cols-4 gap-3 mb-5">
             {[
               { label: 'Products', value: products.length },
@@ -709,9 +712,9 @@ const HomeView = ({
               { label: 'Folders', value: getAllFolders(catalog).length },
               { label: 'Events', value: events.length },
             ].map(s => (
-              <div key={s.label} className="bg-[#f7f4f1] rounded-xl px-4 py-3">
-                <div className="text-[22px] font-bold text-[#1c1a18] leading-none">{s.value}</div>
-                <div className="text-[11px] text-[#a89d95] mt-1">{s.label}</div>
+              <div key={s.label} className="bg-[var(--canvas-deep)] rounded-xl px-4 py-3">
+                <div className="text-[22px] font-bold text-[var(--ink)] leading-none">{s.value}</div>
+                <div className="text-[11px] text-[var(--ink-45)] mt-1">{s.label}</div>
               </div>
             ))}
           </div>
@@ -723,13 +726,13 @@ const HomeView = ({
               const fileCount = getAllFiles(p.children).length;
               return (
                 <button key={p.id} onClick={() => onSelect(p.id)}
-                  className="text-left rounded-xl px-4 py-3.5 border border-[#e8e4de] hover:border-transparent transition-all group"
+                  className="text-left rounded-xl px-4 py-3.5 border border-[var(--line-soft)] hover:border-transparent transition-all group"
                   style={{ background: `linear-gradient(135deg, ${cfg.from}12, ${cfg.to}22)` }}>
                   <div className="w-7 h-7 rounded-lg mb-2.5 flex items-center justify-center" style={{ background: cfg.light }}>
                     <FolderIco size={14} color={cfg.color} />
                   </div>
-                  <div className="text-[13px] font-semibold text-[#1c1a18]">{p.name}</div>
-                  <div className="text-[11px] text-[#a89d95] mt-0.5">{fileCount} files</div>
+                  <div className="text-[13px] font-semibold text-[var(--ink)]">{p.name}</div>
+                  <div className="text-[11px] text-[var(--ink-45)] mt-0.5">{fileCount} files</div>
                 </button>
               );
             })}
@@ -739,22 +742,22 @@ const HomeView = ({
         {/* Recent files */}
         {allFiles.length > 0 && (
           <div>
-            <div className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider mb-3">Recent Files</div>
+            <div className="text-[11px] font-semibold text-[var(--ink-45)] uppercase tracking-wider mb-3">Recent Files</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {[...allFiles].reverse().slice(0, 10).map(f => { const src = detectSource(f.url); return (
-                <div key={f.id} className="group bg-white border border-[#e8e4de] rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-                  <div className="h-[100px] bg-[#f7f4f1] flex items-center justify-center relative overflow-hidden">
+                <div key={f.id} className="group bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                  <div className="h-[100px] bg-[var(--canvas-deep)] flex items-center justify-center relative overflow-hidden">
                     {f.thumbnailUrl ? <img src={f.thumbnailUrl} alt={f.name} className="w-full h-full object-cover" loading="lazy" /> : <FileTypeIcon type={f.fileType} sz={24} />}
                     {src !== 'direct' && <div className="absolute top-1.5 left-1.5"><SourceBadge source={src} /></div>}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-end justify-end p-2 opacity-0 group-hover:opacity-100">
-                      <a href={f.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 bg-white text-[#1c1a18] text-[10px] font-medium px-2 py-1 rounded-md shadow-sm">
+                      <a href={f.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 bg-white text-[var(--ink)] text-[10px] font-medium px-2 py-1 rounded-md shadow-sm">
                         <DownloadIco />
                       </a>
                     </div>
                   </div>
                   <div className="px-2.5 py-2">
-                    <div className="text-[11px] font-medium text-[#1c1a18] truncate">{f.name}</div>
-                    <div className="text-[10px] text-[#a89d95] truncate mt-0.5">{f.folderPath}</div>
+                    <div className="text-[11px] font-medium text-[var(--ink)] truncate">{f.name}</div>
+                    <div className="text-[10px] text-[var(--ink-45)] truncate mt-0.5">{f.folderPath}</div>
                   </div>
                 </div>
               );})}
@@ -769,17 +772,17 @@ const HomeView = ({
 // ─── Browse Panel ─────────────────────────────────────────────────────────────
 
 const BrowsePanel = ({ folder, onSelect, onAddFile }: { folder: FolderNode | null; onSelect: (id: string) => void; onAddFile: () => void }) => {
-  if (!folder) return <div className="flex-1 flex items-center justify-center text-[#a89d95] text-sm bg-white">Select a folder.</div>;
+  if (!folder) return <div className="flex-1 flex items-center justify-center text-[var(--ink-45)] text-sm bg-white">Select a folder.</div>;
   const subFolders = folder.children.filter((c): c is FolderNode => c.type === 'folder');
   const files = folder.children.filter((c): c is FileNode => c.type === 'file');
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
-      <div className="px-8 py-5 border-b border-[#e8e4de] flex items-center justify-between gap-4 flex-shrink-0">
+      <div className="px-8 py-5 border-b border-[var(--line-soft)] flex items-center justify-between gap-4 flex-shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-[#f0ece7] flex items-center justify-center flex-shrink-0"><FolderIco size={20} color="#7a6e68" /></div>
+          <div className="w-10 h-10 rounded-xl bg-[var(--canvas)] flex items-center justify-center flex-shrink-0"><FolderIco size={20} color="#7a6e68" /></div>
           <div className="min-w-0">
-            <div className="text-[11px] text-[#a89d95] uppercase tracking-wider font-medium leading-none mb-1">{folder.children.length} items</div>
-            <h1 className="text-[22px] font-bold text-[#1c1a18] tracking-tight leading-none truncate">{folder.name}</h1>
+            <div className="text-[11px] text-[var(--ink-45)] uppercase tracking-wider font-medium leading-none mb-1">{folder.children.length} items</div>
+            <h1 className="font-display text-[24px] font-semibold text-[var(--ink)] tracking-tight leading-none truncate">{folder.name}</h1>
           </div>
         </div>
         <button onClick={onAddFile} className="flex items-center gap-1.5 px-3.5 py-2 bg-[#e04e2a] text-white text-[13px] font-medium rounded-lg hover:bg-[#c9451f] shadow-sm shadow-[#e04e2a]/20 hover:shadow-md transition-all flex-shrink-0">
@@ -790,21 +793,21 @@ const BrowsePanel = ({ folder, onSelect, onAddFile }: { folder: FolderNode | nul
         {folder.children.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-16 text-center">
             <FolderIco size={52} color="#d5cec9" />
-            <div className="text-[14px] text-[#a89d95] mt-4">Empty folder</div>
+            <div className="text-[14px] text-[var(--ink-45)] mt-4">Empty folder</div>
             <button onClick={onAddFile} className="mt-3 text-[13px] text-[#e04e2a] hover:underline font-medium">Add a file</button>
           </div>
         ) : (
           <div className="flex flex-col gap-7">
             {subFolders.length > 0 && (
               <div>
-                {files.length > 0 && <div className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider mb-3">Folders</div>}
+                {files.length > 0 && <div className="text-[11px] font-semibold text-[var(--ink-45)] uppercase tracking-wider mb-3">Folders</div>}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                   {subFolders.map(f => (
-                    <button key={f.id} onClick={() => onSelect(f.id)} className="bg-white border border-[#e8e4de] rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 text-left">
-                      <div className="h-[140px] bg-[#f7f4f1] flex items-center justify-center"><FolderIco size={44} color="#c5bdb6" /></div>
+                    <button key={f.id} onClick={() => onSelect(f.id)} className="bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 text-left">
+                      <div className="h-[140px] bg-[var(--canvas-deep)] flex items-center justify-center"><FolderIco size={44} color="var(--ink-45)" /></div>
                       <div className="px-3 py-2.5">
-                        <div className="text-[12px] font-medium text-[#1c1a18] truncate">{f.name}</div>
-                        <div className="text-[11px] text-[#a89d95] mt-0.5">{f.children.length === 0 ? 'Empty' : `${f.children.length} items`}</div>
+                        <div className="text-[12px] font-medium text-[var(--ink)] truncate">{f.name}</div>
+                        <div className="text-[11px] text-[var(--ink-45)] mt-0.5">{f.children.length === 0 ? 'Empty' : `${f.children.length} items`}</div>
                       </div>
                     </button>
                   ))}
@@ -813,20 +816,23 @@ const BrowsePanel = ({ folder, onSelect, onAddFile }: { folder: FolderNode | nul
             )}
             {files.length > 0 && (
               <div>
-                {subFolders.length > 0 && <div className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider mb-3">Files</div>}
+                {subFolders.length > 0 && <div className="text-[11px] font-semibold text-[var(--ink-45)] uppercase tracking-wider mb-3">Files</div>}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {files.map(f => { const src = detectSource(f.url); return (
-                    <div key={f.id} className="group bg-white border border-[#e8e4de] rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-                      <div className="h-[140px] bg-[#f7f4f1] flex items-center justify-center relative overflow-hidden">
+                  {files.map((f, fi) => { const src = detectSource(f.url); return (
+                    <div key={f.id} className="group bg-white border border-[var(--line-soft)] rounded-md overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                      <div className="h-[140px] bg-[var(--canvas-deep)] flex items-center justify-center relative overflow-hidden">
                         {f.thumbnailUrl ? <img src={f.thumbnailUrl} alt={f.name} className="w-full h-full object-cover" loading="lazy" /> : <FileTypeIcon type={f.fileType} />}
-                        {src !== 'direct' && <div className="absolute top-2 left-2"><SourceBadge source={src} /></div>}
+                        <div className="absolute top-2 left-2 flex items-center gap-1">
+                          <span className="accession-tag">{f.fileType.toUpperCase().slice(0, 3)}·{String(fi + 1).padStart(2, '0')}</span>
+                          {src !== 'direct' && <SourceBadge source={src} />}
+                        </div>
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-end justify-end p-2.5 opacity-0 group-hover:opacity-100">
-                          <a href={f.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 bg-white text-[#1c1a18] text-[11px] font-medium px-2.5 py-1.5 rounded-md shadow-sm"><DownloadIco /> {openLabel(src)}</a>
+                          <a href={f.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 bg-white text-[var(--ink)] text-[11px] font-medium px-2.5 py-1.5 rounded-md shadow-sm"><DownloadIco /> {openLabel(src)}</a>
                         </div>
                       </div>
                       <div className="px-3 py-2.5">
-                        <div className="text-[12px] font-medium text-[#1c1a18] truncate">{f.name}</div>
-                        {f.size && <div className="text-[11px] text-[#a89d95] mt-0.5">{f.size}</div>}
+                        <div className="text-[12px] font-medium text-[var(--ink)] truncate">{f.name}</div>
+                        {f.size && <div className="font-mono text-[10px] text-[var(--ink-45)] mt-0.5">{f.size}</div>}
                       </div>
                     </div>
                   );})}
@@ -865,23 +871,23 @@ const AdminTreeNode = ({ node, level, catalog, onUpdate, selectedId, onSelect }:
     <div>
       <div
         onClick={() => { onSelect(node.id); if (subFolders.length) setOpen(o => !o); }}
-        className={`group flex items-center gap-1.5 py-1.5 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-[#fff0ec]' : 'hover:bg-[#f7f4f1]'}`}
+        className={`group flex items-center gap-1.5 py-1.5 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-[#fff0ec]' : 'hover:bg-[var(--canvas-deep)]'}`}
         style={{ paddingLeft: `${8 + level * 14}px`, paddingRight: '6px' }}
       >
-        <span className="w-3 flex-shrink-0 text-[#b5aa9e]">{subFolders.length > 0 ? <Chevron open={open} /> : null}</span>
-        <FolderIco size={14} color={isSelected ? '#e04e2a' : '#a89d95'} />
+        <span className="w-3 flex-shrink-0 text-[var(--ink-45)]">{subFolders.length > 0 ? <Chevron open={open} /> : null}</span>
+        <FolderIco size={14} color={isSelected ? '#e04e2a' : 'var(--ink-45)'} />
         {renaming ? (
           <input ref={renameRef} value={draftName} onChange={e => setDraftName(e.target.value)} onBlur={commitRename}
             onKeyDown={e => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setRenaming(false); }}
             className="flex-1 text-[13px] border border-[#e04e2a] rounded px-1.5 py-0.5 outline-none"
             onClick={e => e.stopPropagation()} />
         ) : (
-          <span className={`flex-1 truncate text-[13px] ${isSelected ? 'text-[#e04e2a] font-medium' : 'text-[#1c1a18]'}`}>{node.name}</span>
+          <span className={`flex-1 truncate text-[13px] ${isSelected ? 'text-[#e04e2a] font-medium' : 'text-[var(--ink)]'}`}>{node.name}</span>
         )}
-        <span className="text-[10px] text-[#c5bdb6] group-hover:hidden">{node.children.length}</span>
+        <span className="text-[10px] text-[var(--ink-45)] group-hover:hidden">{node.children.length}</span>
         <span className="hidden group-hover:flex items-center gap-0.5">
-          <button onClick={e => { e.stopPropagation(); setRenaming(true); setDraftName(node.name); }} className="p-1 rounded hover:bg-[#e8e4de] text-[#a89d95] hover:text-[#1c1a18]"><EditIco /></button>
-          <button onClick={e => { e.stopPropagation(); handleDelete(); }} className="p-1 rounded hover:bg-red-50 text-[#a89d95] hover:text-red-500"><TrashIco /></button>
+          <button onClick={e => { e.stopPropagation(); setRenaming(true); setDraftName(node.name); }} className="p-1 rounded hover:bg-[var(--line-soft)] text-[var(--ink-45)] hover:text-[var(--ink)]"><EditIco /></button>
+          <button onClick={e => { e.stopPropagation(); handleDelete(); }} className="p-1 rounded hover:bg-red-50 text-[var(--ink-45)] hover:text-red-500"><TrashIco /></button>
         </span>
       </div>
       {open && subFolders.map(child => (
@@ -930,17 +936,17 @@ const CatalogAdmin = ({ catalog, onUpdate, onAddFile, onEditFile }: AdminShared 
   return (
     <div className="flex-1 flex overflow-hidden">
       {/* Tree */}
-      <div className="w-[220px] flex-shrink-0 border-r border-[#e8e4de] flex flex-col bg-[#faf8f6]">
-        <div className="px-4 py-3 border-b border-[#e8e4de] flex items-center justify-between">
-          <span className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider">Pages</span>
-          <button onClick={() => setShowNewEvent(v => !v)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[#e8e4de] text-[#a89d95] hover:text-[#1c1a18] transition-colors"><PlusIco sz={12} /></button>
+      <div className="w-[220px] flex-shrink-0 border-r border-[var(--line-soft)] flex flex-col bg-[var(--paper)]">
+        <div className="px-4 py-3 border-b border-[var(--line-soft)] flex items-center justify-between">
+          <span className="text-[11px] font-semibold text-[var(--ink-45)] uppercase tracking-wider">Pages</span>
+          <button onClick={() => setShowNewEvent(v => !v)} className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[var(--line-soft)] text-[var(--ink-45)] hover:text-[var(--ink)] transition-colors"><PlusIco sz={12} /></button>
         </div>
         <div className="flex-1 overflow-y-auto p-2">
           {showNewEvent && (
             <div className="flex items-center gap-1.5 px-2 py-1.5 mb-1 bg-white rounded-lg border border-[#e04e2a]/30">
               <input ref={newEventRef} value={newEventName} onChange={e => setNewEventName(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') createPage(); if (e.key === 'Escape') setShowNewEvent(false); }}
-                placeholder="Page name…" className="flex-1 text-[13px] outline-none bg-transparent text-[#1c1a18] placeholder-[#c5bdb6]" />
+                placeholder="Page name…" className="flex-1 text-[13px] outline-none bg-transparent text-[var(--ink)] placeholder-[var(--ink-45)]" />
               <button onClick={createPage} className="text-[11px] text-[#e04e2a] font-medium hover:underline">Add</button>
             </div>
           )}
@@ -953,59 +959,59 @@ const CatalogAdmin = ({ catalog, onUpdate, onAddFile, onEditFile }: AdminShared 
       {/* Content */}
       {selectedFolder ? (
         <div className="flex-1 overflow-hidden flex flex-col">
-          <div className="px-6 py-4 border-b border-[#e8e4de] flex items-center justify-between flex-shrink-0">
+          <div className="px-6 py-4 border-b border-[var(--line-soft)] flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-2">
               <FolderIco size={16} color="#7a6e68" />
-              <span className="text-[15px] font-semibold text-[#1c1a18]">{selectedFolder.name}</span>
-              <span className="text-[12px] text-[#a89d95]">— {selectedFolder.children.length} items</span>
+              <span className="text-[15px] font-semibold text-[var(--ink)]">{selectedFolder.name}</span>
+              <span className="text-[12px] text-[var(--ink-45)]">— {selectedFolder.children.length} items</span>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setShowNewFolder(v => !v)} className="flex items-center gap-1.5 px-3 py-1.5 border border-[#e0dbd5] text-[#5a524c] text-[12px] font-medium rounded-lg hover:bg-[#f7f4f1] transition-colors"><PlusIco sz={11} /> Subfolder</button>
+              <button onClick={() => setShowNewFolder(v => !v)} className="flex items-center gap-1.5 px-3 py-1.5 border border-[var(--line)] text-[var(--ink-70)] text-[12px] font-medium rounded-lg hover:bg-[var(--canvas-deep)] transition-colors"><PlusIco sz={11} /> Subfolder</button>
               <button onClick={onAddFile} className="flex items-center gap-1.5 px-3 py-1.5 bg-[#e04e2a] text-white text-[12px] font-medium rounded-lg hover:bg-[#c9451f] shadow-sm shadow-[#e04e2a]/20 hover:shadow-md transition-all"><PlusIco sz={11} /> Add File</button>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-4">
             {showNewFolder && (
-              <div className="flex items-center gap-2 mb-4 p-3 bg-[#f7f4f1] rounded-xl border border-[#e8e4de]">
-                <FolderIco size={16} color="#a89d95" />
+              <div className="flex items-center gap-2 mb-4 p-3 bg-[var(--canvas-deep)] rounded-xl border border-[var(--line-soft)]">
+                <FolderIco size={16} color="var(--ink-45)" />
                 <input ref={addFolderRef} value={newFolderName} onChange={e => setNewFolderName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') commitNewFolder(); if (e.key === 'Escape') setShowNewFolder(false); }}
-                  placeholder="Folder name…" className="flex-1 text-[13px] bg-transparent outline-none text-[#1c1a18] placeholder-[#c5bdb6]" />
+                  placeholder="Folder name…" className="flex-1 text-[13px] bg-transparent outline-none text-[var(--ink)] placeholder-[var(--ink-45)]" />
                 <button onClick={commitNewFolder} className="px-2.5 py-1 bg-[#e04e2a] text-white text-[12px] rounded-lg">Create</button>
-                <button onClick={() => setShowNewFolder(false)} className="text-[#a89d95]"><XIco /></button>
+                <button onClick={() => setShowNewFolder(false)} className="text-[var(--ink-45)]"><XIco /></button>
               </div>
             )}
             {selectedFolder.children.length === 0 && !showNewFolder && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <FolderIco size={40} color="#d5cec9" /><div className="text-[13px] text-[#a89d95] mt-3">Empty folder</div>
+                <FolderIco size={40} color="#d5cec9" /><div className="text-[13px] text-[var(--ink-45)] mt-3">Empty folder</div>
               </div>
             )}
             {selectedFolder.children.filter(c => c.type === 'folder').length > 0 && (
               <div className="mb-5">
-                <div className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider mb-2">Subfolders</div>
+                <div className="text-[11px] font-semibold text-[var(--ink-45)] uppercase tracking-wider mb-2">Subfolders</div>
                 {(selectedFolder.children.filter(c => c.type === 'folder') as FolderNode[]).map(f => (
-                  <div key={f.id} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#f7f4f1] border border-transparent hover:border-[#e8e4de] transition-colors">
-                    <FolderIco size={16} color="#a89d95" />
-                    <span className="flex-1 text-[13px] font-medium text-[#1c1a18]">{f.name}</span>
-                    <span className="text-[11px] text-[#c5bdb6]">{f.children.length} items</span>
-                    <button onClick={() => { if (!confirm(`Delete "${f.name}"?`)) return; onUpdate(deleteFromTree(catalog, f.id)); }} className="hidden group-hover:block p-1.5 rounded-lg hover:bg-red-50 text-[#c5bdb6] hover:text-red-500"><TrashIco /></button>
+                  <div key={f.id} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--canvas-deep)] border border-transparent hover:border-[var(--line-soft)] transition-colors">
+                    <FolderIco size={16} color="var(--ink-45)" />
+                    <span className="flex-1 text-[13px] font-medium text-[var(--ink)]">{f.name}</span>
+                    <span className="text-[11px] text-[var(--ink-45)]">{f.children.length} items</span>
+                    <button onClick={() => { if (!confirm(`Delete "${f.name}"?`)) return; onUpdate(deleteFromTree(catalog, f.id)); }} className="hidden group-hover:block p-1.5 rounded-lg hover:bg-red-50 text-[var(--ink-45)] hover:text-red-500"><TrashIco /></button>
                   </div>
                 ))}
               </div>
             )}
             {selectedFolder.children.filter(c => c.type === 'file').length > 0 && (
               <div>
-                <div className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider mb-2">Files</div>
+                <div className="text-[11px] font-semibold text-[var(--ink-45)] uppercase tracking-wider mb-2">Files</div>
                 {(selectedFolder.children.filter(c => c.type === 'file') as FileNode[]).map(f => (
-                  <div key={f.id} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#f7f4f1] border border-transparent hover:border-[#e8e4de] transition-colors">
+                  <div key={f.id} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--canvas-deep)] border border-transparent hover:border-[var(--line-soft)] transition-colors">
                     <FileTypeIcon type={f.fileType} sz={16} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-medium text-[#1c1a18] truncate">{f.name}</div>
-                      <div className="text-[11px] text-[#c5bdb6] font-mono truncate">{f.url}</div>
+                      <div className="text-[13px] font-medium text-[var(--ink)] truncate">{f.name}</div>
+                      <div className="text-[11px] text-[var(--ink-45)] font-mono truncate">{f.url}</div>
                     </div>
                     <div className="hidden group-hover:flex items-center gap-1">
-                      <button onClick={() => onEditFile(f)} className="p-1.5 rounded-lg hover:bg-[#e8e4de] text-[#c5bdb6] hover:text-[#1c1a18]"><EditIco /></button>
-                      <button onClick={() => { if (!confirm('Delete this file?')) return; onUpdate(deleteFromTree(catalog, f.id)); }} className="p-1.5 rounded-lg hover:bg-red-50 text-[#c5bdb6] hover:text-red-500"><TrashIco /></button>
+                      <button onClick={() => onEditFile(f)} className="p-1.5 rounded-lg hover:bg-[var(--line-soft)] text-[var(--ink-45)] hover:text-[var(--ink)]"><EditIco /></button>
+                      <button onClick={() => { if (!confirm('Delete this file?')) return; onUpdate(deleteFromTree(catalog, f.id)); }} className="p-1.5 rounded-lg hover:bg-red-50 text-[var(--ink-45)] hover:text-red-500"><TrashIco /></button>
                     </div>
                   </div>
                 ))}
@@ -1014,7 +1020,7 @@ const CatalogAdmin = ({ catalog, onUpdate, onAddFile, onEditFile }: AdminShared 
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center text-center"><div><FolderIco size={40} color="#d5cec9" /><div className="text-[13px] text-[#a89d95] mt-3">Select a page</div></div></div>
+        <div className="flex-1 flex items-center justify-center text-center"><div><FolderIco size={40} color="#d5cec9" /><div className="text-[13px] text-[var(--ink-45)] mt-3">Select a page</div></div></div>
       )}
     </div>
   );
@@ -1035,10 +1041,10 @@ const EventsAdmin = ({
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col">
-      <div className="px-6 py-4 border-b border-[#e8e4de] flex items-center justify-between flex-shrink-0">
+      <div className="px-6 py-4 border-b border-[var(--line-soft)] flex items-center justify-between flex-shrink-0">
         <div>
-          <h2 className="text-[15px] font-semibold text-[#1c1a18]">Events</h2>
-          <p className="text-[12px] text-[#a89d95]">{upcoming.length} upcoming · {past.length} past</p>
+          <h2 className="text-[15px] font-semibold text-[var(--ink)]">Events</h2>
+          <p className="text-[12px] text-[var(--ink-45)]">{upcoming.length} upcoming · {past.length} past</p>
         </div>
         <button onClick={() => onEdit(null)} className="flex items-center gap-1.5 px-3.5 py-2 bg-[#e04e2a] text-white text-[13px] font-medium rounded-lg hover:bg-[#c9451f] shadow-sm shadow-[#e04e2a]/20 hover:shadow-md transition-all">
           <PlusIco sz={11} /> Add Event
@@ -1049,31 +1055,31 @@ const EventsAdmin = ({
         {events.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <CalIco />
-            <div className="text-[14px] font-medium text-[#1c1a18] mt-3">No events yet</div>
-            <button onClick={() => onEdit(null)} className="mt-4 px-4 py-2 bg-[#1c1a18] text-white text-[13px] font-medium rounded-lg">Create first event</button>
+            <div className="text-[14px] font-medium text-[var(--ink)] mt-3">No events yet</div>
+            <button onClick={() => onEdit(null)} className="mt-4 px-4 py-2 bg-[var(--ink)] text-white text-[13px] font-medium rounded-lg">Create first event</button>
           </div>
         ) : (
           <div className="flex flex-col gap-6">
             {upcoming.length > 0 && (
               <div>
-                <div className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider mb-2">Upcoming ({upcoming.length})</div>
+                <div className="text-[11px] font-semibold text-[var(--ink-45)] uppercase tracking-wider mb-2">Upcoming ({upcoming.length})</div>
                 <div className="flex flex-col gap-1">
                   {upcoming.map(e => {
                     const cfg = productCfg(e.product);
                     return (
-                      <div key={e.id} className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[#f7f4f1] border border-transparent hover:border-[#e8e4de] transition-colors">
+                      <div key={e.id} className="group flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-[var(--canvas-deep)] border border-transparent hover:border-[var(--line-soft)] transition-colors">
                         <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0" style={{ background: `linear-gradient(135deg, ${cfg.from}, ${cfg.to})` }}>
                           {e.bannerUrl && <img src={e.bannerUrl} alt="" className="w-full h-full object-cover opacity-70" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[13px] font-semibold text-[#1c1a18] truncate">{e.name}</div>
-                          <div className="text-[11px] text-[#a89d95]">{formatShortDate(e.date)}</div>
+                          <div className="text-[13px] font-semibold text-[var(--ink)] truncate">{e.name}</div>
+                          <div className="text-[11px] text-[var(--ink-45)]">{formatShortDate(e.date)}</div>
                         </div>
                         <ProductBadge product={e.product} />
                         <MiniCountdown date={e.date} />
                         <div className="hidden group-hover:flex items-center gap-1 ml-2">
-                          <button onClick={() => onEdit(e)} className="p-1.5 rounded-lg hover:bg-[#e8e4de] text-[#c5bdb6] hover:text-[#1c1a18]"><EditIco /></button>
-                          <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-[#c5bdb6] hover:text-red-500"><TrashIco /></button>
+                          <button onClick={() => onEdit(e)} className="p-1.5 rounded-lg hover:bg-[var(--line-soft)] text-[var(--ink-45)] hover:text-[var(--ink)]"><EditIco /></button>
+                          <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-[var(--ink-45)] hover:text-red-500"><TrashIco /></button>
                         </div>
                       </div>
                     );
@@ -1084,23 +1090,23 @@ const EventsAdmin = ({
 
             {past.length > 0 && (
               <div>
-                <div className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider mb-2">Past ({past.length})</div>
+                <div className="text-[11px] font-semibold text-[var(--ink-45)] uppercase tracking-wider mb-2">Past ({past.length})</div>
                 <div className="flex flex-col gap-1">
                   {past.map(e => {
                     const cfg = productCfg(e.product);
                     return (
-                      <div key={e.id} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#f7f4f1] transition-colors opacity-60 hover:opacity-100">
+                      <div key={e.id} className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--canvas-deep)] transition-colors opacity-60 hover:opacity-100">
                         <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0" style={{ background: `linear-gradient(135deg, ${cfg.from}, ${cfg.to})` }}>
                           {e.bannerUrl && <img src={e.bannerUrl} alt="" className="w-full h-full object-cover" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[13px] font-medium text-[#5a524c] truncate">{e.name}</div>
-                          <div className="text-[11px] text-[#c5bdb6]">{formatShortDate(e.date)}</div>
+                          <div className="text-[13px] font-medium text-[var(--ink-70)] truncate">{e.name}</div>
+                          <div className="text-[11px] text-[var(--ink-45)]">{formatShortDate(e.date)}</div>
                         </div>
                         <ProductBadge product={e.product} />
                         <div className="hidden group-hover:flex items-center gap-1">
-                          <button onClick={() => onEdit(e)} className="p-1.5 rounded-lg hover:bg-[#e8e4de] text-[#c5bdb6] hover:text-[#1c1a18]"><EditIco /></button>
-                          <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-[#c5bdb6] hover:text-red-500"><TrashIco /></button>
+                          <button onClick={() => onEdit(e)} className="p-1.5 rounded-lg hover:bg-[var(--line-soft)] text-[var(--ink-45)] hover:text-[var(--ink)]"><EditIco /></button>
+                          <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-[var(--ink-45)] hover:text-red-500"><TrashIco /></button>
                         </div>
                       </div>
                     );
@@ -1141,11 +1147,11 @@ const AdminView = ({
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
       {/* Tab bar */}
-      <div className="flex border-b border-[#e8e4de] px-6 bg-[#faf8f6] flex-shrink-0">
+      <div className="flex border-b border-[var(--line-soft)] px-6 bg-[var(--paper)] flex-shrink-0">
         {(['catalog', 'events'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-3 text-[13px] font-medium border-b-2 transition-colors capitalize ${
-              tab === t ? 'border-[#e04e2a] text-[#e04e2a]' : 'border-transparent text-[#a89d95] hover:text-[#5a524c]'
+              tab === t ? 'border-[#e04e2a] text-[#e04e2a]' : 'border-transparent text-[var(--ink-45)] hover:text-[var(--ink-70)]'
             }`}>
             {t === 'events' ? `Events${events.length > 0 ? ` (${events.length})` : ''}` : 'Catalog'}
           </button>
@@ -1201,7 +1207,7 @@ const BannerField = ({ value, onChange }: { value: string; onChange: (v: string)
   return (
     <div className="flex flex-col gap-2">
       {value ? (
-        <div className="h-[150px] rounded-xl overflow-hidden relative border border-[#e8e4de] group">
+        <div className="h-[150px] rounded-xl overflow-hidden relative border border-[var(--line-soft)] group">
           <img src={value} alt="Banner" className="w-full h-full object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
           <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 flex items-end justify-between">
@@ -1225,7 +1231,7 @@ const BannerField = ({ value, onChange }: { value: string; onChange: (v: string)
       ) : (
         <button
           onClick={() => fileRef.current?.click()}
-          className="w-full flex flex-col items-center justify-center gap-2 py-7 border-2 border-dashed border-[#e0dbd5] rounded-xl hover:border-[#e04e2a]/40 hover:bg-[#faf8f6] transition-colors text-[#a89d95] hover:text-[#5a524c]"
+          className="w-full flex flex-col items-center justify-center gap-2 py-7 border-2 border-dashed border-[var(--line)] rounded-xl hover:border-[#e04e2a]/40 hover:bg-[var(--paper)] transition-colors text-[var(--ink-45)] hover:text-[var(--ink-70)]"
         >
           {uploading ? (
             <>
@@ -1308,18 +1314,18 @@ const EventModal = ({
         </div>
 
         <div>
-          <Label>Banner <span className="text-[#a89d95] font-normal normal-case tracking-normal">(optional — upload a screenshot or event image)</span></Label>
+          <Label>Banner <span className="text-[var(--ink-45)] font-normal normal-case tracking-normal">(optional — upload a screenshot or event image)</span></Label>
           <BannerField value={bannerUrl} onChange={setBannerUrl} />
         </div>
 
         <div>
-          <Label>Description <span className="text-[#a89d95] font-normal normal-case tracking-normal">(optional)</span></Label>
+          <Label>Description <span className="text-[var(--ink-45)] font-normal normal-case tracking-normal">(optional)</span></Label>
           <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder="Short description…" className={`${FIELD} resize-none`} />
         </div>
 
         {previewDate && isUpcoming(previewDate) && (
-          <div className="bg-[#f7f4f1] rounded-xl p-4 flex flex-col gap-2">
-            <div className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider">Countdown preview</div>
+          <div className="bg-[var(--canvas-deep)] rounded-xl p-4 flex flex-col gap-2">
+            <div className="text-[11px] font-semibold text-[var(--ink-45)] uppercase tracking-wider">Countdown preview</div>
             <CountdownTimer date={previewDate} />
           </div>
         )}
@@ -1358,7 +1364,7 @@ const EditFileModal = ({ file, catalog, onUpdate, onClose }: { file: FileNode; c
           </select>
         </div>
         <div><Label>File URL</Label><textarea value={url} onChange={e => setUrl(e.target.value)} rows={3} className={`${FIELD} resize-none font-mono text-[12px]`} /></div>
-        <div><Label>Thumbnail URL <span className="text-[#a89d95] font-normal normal-case tracking-normal">(optional)</span></Label>
+        <div><Label>Thumbnail URL <span className="text-[var(--ink-45)] font-normal normal-case tracking-normal">(optional)</span></Label>
           <input type="text" value={thumbUrl} onChange={e => setThumbUrl(e.target.value)} placeholder="https://..." className={FIELD} />
         </div>
         {error && <p className="text-[12px] text-red-500">{error}</p>}
@@ -1397,9 +1403,9 @@ const AddFileModal = ({ allFolders, defaultFolderId, onAdd, onClose, defaultTab 
 
   return (
     <Modal title="Add File" onClose={onClose}>
-      <div className="flex border-b border-[#e8e4de]">
+      <div className="flex border-b border-[var(--line-soft)]">
         {(['link', 'upload'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)} className={`flex items-center gap-1.5 px-5 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${tab === t ? 'border-[#e04e2a] text-[#e04e2a]' : 'border-transparent text-[#a89d95] hover:text-[#5a524c]'}`}>
+          <button key={t} onClick={() => setTab(t)} className={`flex items-center gap-1.5 px-5 py-2.5 text-[13px] font-medium border-b-2 transition-colors ${tab === t ? 'border-[#e04e2a] text-[#e04e2a]' : 'border-transparent text-[var(--ink-45)] hover:text-[var(--ink-70)]'}`}>
             {t === 'link' ? <LinkIco /> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16" /><line x1="12" x2="12" y1="12" y2="21" /><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" /></svg>}
             {t === 'link' ? 'Paste Link' : 'Upload File'}
           </button>
@@ -1411,8 +1417,8 @@ const AddFileModal = ({ allFolders, defaultFolderId, onAdd, onClose, defaultTab 
             <div><Label>Target Folder</Label><select value={folderId} onChange={e => setFolderId(e.target.value)} className={FIELD}>{allFolders.map(f => <option key={f.id} value={f.id}>{f.path}</option>)}</select></div>
             <div><Label>File Name</Label><input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. logo-final.png" className={FIELD} /></div>
             <div><Label>File Type</Label><select value={fileType} onChange={e => setFileType(e.target.value as FileNode['fileType'])} className={FIELD}><option value="image">Image</option><option value="video">Video</option><option value="pdf">PDF</option><option value="other">Other</option></select></div>
-            <div><Label>File URL <span className="text-[#a89d95] font-normal normal-case tracking-normal">(OneDrive or direct link)</span></Label><textarea value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..." rows={2} className={`${FIELD} resize-none font-mono text-[12px]`} /></div>
-            <div><Label>Thumbnail URL <span className="text-[#a89d95] font-normal normal-case tracking-normal">(optional)</span></Label><input type="text" value={thumbUrl} onChange={e => setThumbUrl(e.target.value)} placeholder="https://..." className={FIELD} /></div>
+            <div><Label>File URL <span className="text-[var(--ink-45)] font-normal normal-case tracking-normal">(OneDrive or direct link)</span></Label><textarea value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..." rows={2} className={`${FIELD} resize-none font-mono text-[12px]`} /></div>
+            <div><Label>Thumbnail URL <span className="text-[var(--ink-45)] font-normal normal-case tracking-normal">(optional)</span></Label><input type="text" value={thumbUrl} onChange={e => setThumbUrl(e.target.value)} placeholder="https://..." className={FIELD} /></div>
             {linkError && <p className="text-[12px] text-red-500">{linkError}</p>}
             <button onClick={handleLinkAdd} className="w-full bg-[#e04e2a] text-white text-[13px] font-medium py-2.5 rounded-lg hover:bg-[#c9451f] shadow-sm shadow-[#e04e2a]/20 hover:shadow-md transition-all mt-1">Add File</button>
           </div>
@@ -1422,12 +1428,12 @@ const AddFileModal = ({ allFolders, defaultFolderId, onAdd, onClose, defaultTab 
             <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
               onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) { setPickedFile(f); setUploadError(''); setUploadDone(false); } }}
               onClick={() => fileInputRef.current?.click()}
-              className={`flex flex-col items-center justify-center gap-2.5 py-8 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${dragOver ? 'border-[#e04e2a] bg-[#fff5f3]' : 'border-[#e0dbd5] bg-[#faf8f6] hover:border-[#c5bdb6]'}`}>
+              className={`flex flex-col items-center justify-center gap-2.5 py-8 rounded-xl border-2 border-dashed cursor-pointer transition-colors ${dragOver ? 'border-[#e04e2a] bg-[#fff5f3]' : 'border-[var(--line)] bg-[var(--paper)] hover:border-[var(--ink-45)]'}`}>
               <UploadCloudIco />
               {pickedFile ? (
-                <div className="text-center"><div className="text-[13px] font-medium text-[#1c1a18]">{pickedFile.name}</div><div className="text-[11px] text-[#a89d95]">{(pickedFile.size / 1024).toFixed(0)} KB · click to change</div></div>
+                <div className="text-center"><div className="text-[13px] font-medium text-[var(--ink)]">{pickedFile.name}</div><div className="text-[11px] text-[var(--ink-45)]">{(pickedFile.size / 1024).toFixed(0)} KB · click to change</div></div>
               ) : (
-                <div className="text-center"><div className="text-[13px] font-medium text-[#1c1a18]">Drop a file or click to browse</div><div className="text-[11px] text-[#a89d95]">Images, videos, PDFs and more</div></div>
+                <div className="text-center"><div className="text-[13px] font-medium text-[var(--ink)]">Drop a file or click to browse</div><div className="text-[11px] text-[var(--ink-45)]">Images, videos, PDFs and more</div></div>
               )}
               <input ref={fileInputRef} type="file" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { setPickedFile(f); setUploadError(''); setUploadDone(false); } }} />
             </div>
@@ -1531,8 +1537,8 @@ export default function App() {
   const upcomingCount = events.filter(e => isUpcoming(e.date)).length;
 
   if (loading) return (
-    <div className="flex h-screen items-center justify-center bg-[#f0ece7]" style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif" }}>
-      <div className="flex items-center gap-3 text-[#a89d95]">
+    <div className="flex h-screen items-center justify-center bg-[var(--canvas)]" style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif" }}>
+      <div className="flex items-center gap-3 text-[var(--ink-45)]">
         <svg className="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
         <span className="text-[14px]">Loading…</span>
       </div>
