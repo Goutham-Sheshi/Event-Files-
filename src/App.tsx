@@ -106,6 +106,47 @@ const ShieldIco = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 const HomeIco = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>;
 const CalIco = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></svg>;
 
+// ─── External link source detection (Figma / OneDrive) ────────────────────────
+type LinkSource = 'figma' | 'onedrive' | 'direct';
+
+function detectSource(url: string): LinkSource {
+  const u = url.toLowerCase();
+  if (u.includes('figma.com')) return 'figma';
+  if (u.includes('onedrive.live.com') || u.includes('1drv.ms') || u.includes('sharepoint.com')) return 'onedrive';
+  return 'direct';
+}
+
+const FigmaMark = ({ sz = 12 }: { sz?: number }) => (
+  <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none">
+    <path d="M8 24a4 4 0 0 0 4-4v-4H8a4 4 0 0 0 0 8Z" fill="#0acf83" />
+    <path d="M4 12a4 4 0 0 1 4-4h4v8H8a4 4 0 0 1-4-4Z" fill="#a259ff" />
+    <path d="M4 4a4 4 0 0 1 4-4h4v8H8a4 4 0 0 1-4-4Z" fill="#f24e1e" />
+    <path d="M12 0h4a4 4 0 0 1 0 8h-4V0Z" fill="#ff7262" />
+    <path d="M20 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" fill="#1abcfe" />
+  </svg>
+);
+const OneDriveMark = ({ sz = 12 }: { sz?: number }) => (
+  <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none">
+    <path d="M10.5 18h9.2a3.3 3.3 0 0 0 .7-6.53 5 5 0 0 0-9.24-2.4A4.3 4.3 0 0 0 4.9 12.6 3.6 3.6 0 0 0 5.4 19h5.1v-1Z" fill="#0364b8" />
+  </svg>
+);
+
+const SourceBadge = ({ source }: { source: LinkSource }) => {
+  if (source === 'direct') return null;
+  const cfg = source === 'figma' ? { icon: <FigmaMark />, label: 'Figma' } : { icon: <OneDriveMark />, label: 'OneDrive' };
+  return (
+    <span className="inline-flex items-center gap-1 bg-white/95 backdrop-blur-sm text-[#1c1a18] text-[10px] font-semibold px-1.5 py-0.5 rounded-md shadow-sm">
+      {cfg.icon}{cfg.label}
+    </span>
+  );
+};
+
+function openLabel(source: LinkSource): string {
+  if (source === 'figma') return 'Open in Figma';
+  if (source === 'onedrive') return 'Open in OneDrive';
+  return 'Download';
+}
+
 const FIELD = "w-full border border-[#e0dbd5] rounded-lg px-3 py-2 text-[13px] text-[#1c1a18] bg-white placeholder-[#c5bdb6] focus:outline-none focus:ring-2 focus:ring-[#e04e2a]/25 focus:border-[#e04e2a] transition-colors";
 function Label({ children }: { children: React.ReactNode }) {
   return <label className="block text-[11px] font-semibold text-[#5a524c] uppercase tracking-wider mb-1.5">{children}</label>;
@@ -518,13 +559,16 @@ const EventFilesView = ({
                 <span className="text-[11px] text-[#a89d95]">Uploading…</span>
               </div>
             )}
-            {files.map(f => (
+            {files.map(f => {
+              const src = detectSource(f.url);
+              return (
               <div key={f.id} className="group bg-white border border-[#e8e4de] rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 relative">
                 <div className="h-[110px] bg-[#f7f4f1] flex items-center justify-center relative overflow-hidden">
                   {f.thumbnailUrl
                     ? <img src={f.thumbnailUrl} alt={f.name} className="w-full h-full object-cover" loading="lazy" />
                     : <FileTypeIcon type={f.fileType} sz={28} />
                   }
+                  {src !== 'direct' && <div className="absolute top-1.5 left-1.5"><SourceBadge source={src} /></div>}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-end justify-between p-2 opacity-0 group-hover:opacity-100">
                     <button onClick={() => removeFile(f.id)}
                       className="flex items-center gap-1 bg-red-500/80 text-white text-[10px] font-medium px-1.5 py-1 rounded-md">
@@ -532,7 +576,7 @@ const EventFilesView = ({
                     </button>
                     <a href={f.url} target="_blank" rel="noreferrer"
                       className="flex items-center gap-1 bg-white text-[#1c1a18] text-[10px] font-medium px-1.5 py-1 rounded-md shadow-sm">
-                      <DownloadIco /> Open
+                      <DownloadIco /> {src === 'direct' ? 'Open' : openLabel(src)}
                     </a>
                   </div>
                 </div>
@@ -541,7 +585,8 @@ const EventFilesView = ({
                   {f.size && <div className="text-[10px] text-[#a89d95] mt-0.5">{f.size}</div>}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -696,10 +741,11 @@ const HomeView = ({
           <div>
             <div className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider mb-3">Recent Files</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {[...allFiles].reverse().slice(0, 10).map(f => (
+              {[...allFiles].reverse().slice(0, 10).map(f => { const src = detectSource(f.url); return (
                 <div key={f.id} className="group bg-white border border-[#e8e4de] rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
                   <div className="h-[100px] bg-[#f7f4f1] flex items-center justify-center relative overflow-hidden">
                     {f.thumbnailUrl ? <img src={f.thumbnailUrl} alt={f.name} className="w-full h-full object-cover" loading="lazy" /> : <FileTypeIcon type={f.fileType} sz={24} />}
+                    {src !== 'direct' && <div className="absolute top-1.5 left-1.5"><SourceBadge source={src} /></div>}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-end justify-end p-2 opacity-0 group-hover:opacity-100">
                       <a href={f.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 bg-white text-[#1c1a18] text-[10px] font-medium px-2 py-1 rounded-md shadow-sm">
                         <DownloadIco />
@@ -711,7 +757,7 @@ const HomeView = ({
                     <div className="text-[10px] text-[#a89d95] truncate mt-0.5">{f.folderPath}</div>
                   </div>
                 </div>
-              ))}
+              );})}
             </div>
           </div>
         )}
@@ -769,12 +815,13 @@ const BrowsePanel = ({ folder, onSelect, onAddFile }: { folder: FolderNode | nul
               <div>
                 {subFolders.length > 0 && <div className="text-[11px] font-semibold text-[#a89d95] uppercase tracking-wider mb-3">Files</div>}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                  {files.map(f => (
+                  {files.map(f => { const src = detectSource(f.url); return (
                     <div key={f.id} className="group bg-white border border-[#e8e4de] rounded-xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
                       <div className="h-[140px] bg-[#f7f4f1] flex items-center justify-center relative overflow-hidden">
                         {f.thumbnailUrl ? <img src={f.thumbnailUrl} alt={f.name} className="w-full h-full object-cover" loading="lazy" /> : <FileTypeIcon type={f.fileType} />}
+                        {src !== 'direct' && <div className="absolute top-2 left-2"><SourceBadge source={src} /></div>}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-end justify-end p-2.5 opacity-0 group-hover:opacity-100">
-                          <a href={f.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 bg-white text-[#1c1a18] text-[11px] font-medium px-2.5 py-1.5 rounded-md shadow-sm"><DownloadIco /> Download</a>
+                          <a href={f.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 bg-white text-[#1c1a18] text-[11px] font-medium px-2.5 py-1.5 rounded-md shadow-sm"><DownloadIco /> {openLabel(src)}</a>
                         </div>
                       </div>
                       <div className="px-3 py-2.5">
@@ -782,7 +829,7 @@ const BrowsePanel = ({ folder, onSelect, onAddFile }: { folder: FolderNode | nul
                         {f.size && <div className="text-[11px] text-[#a89d95] mt-0.5">{f.size}</div>}
                       </div>
                     </div>
-                  ))}
+                  );})}
                 </div>
               </div>
             )}
