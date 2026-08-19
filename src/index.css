@@ -2,6 +2,9 @@
 @import 'tailwindcss';
 
 :root {
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+  --primary-soft: #EFF6FF;
   --ink: #1a1d21;
   --ink-70: #4b5259;
   --ink-45: #7c848c;
@@ -41,6 +44,30 @@ aside > div:first-child > div > span {
 aside > div:first-child > div > span::after {
   content: 'Sheshi Vault';
   font-size: 16px;
+}
+
+/* Sheshi primary color */
+aside .text-white {
+  background-color: var(--primary) !important;
+}
+
+button.bg-\[var\(--ink\)\],
+a.bg-\[var\(--ink\)\] {
+  background-color: var(--primary) !important;
+}
+
+button.bg-\[var\(--ink\)\]:hover,
+a.bg-\[var\(--ink\)\]:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+.text-\[\#e2703a\],
+.hover\:text-\[\#e2703a\]:hover {
+  color: var(--primary) !important;
+}
+
+.bg-\[\#e2703a\] {
+  background-color: var(--primary) !important;
 }
 
 * {
