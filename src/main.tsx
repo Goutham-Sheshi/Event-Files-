@@ -9,12 +9,20 @@ const applyVaultBranding = () => {
 
     element.textContent = 'Sheshi Vault'
 
-    const logoContainer = element.previousElementSibling as HTMLElement | null
-    if (logoContainer && !logoContainer.querySelector('img')) {
-      logoContainer.innerHTML = ''
-      logoContainer.style.background = 'transparent'
-      logoContainer.style.borderRadius = '0'
-      logoContainer.innerHTML = '<img src="/favicon.svg" alt="Sheshi" style="width:32px;height:32px;object-fit:contain;display:block" />'
+    const icon = element.previousElementSibling as HTMLElement | null
+    if (icon) {
+      icon.innerHTML = 'S'
+      icon.style.background = '#242a31'
+      icon.style.color = '#ffffff'
+      icon.style.borderRadius = '12px'
+      icon.style.display = 'flex'
+      icon.style.alignItems = 'center'
+      icon.style.justifyContent = 'center'
+      icon.style.fontSize = '26px'
+      icon.style.fontWeight = '700'
+      icon.style.width = '58px'
+      icon.style.height = '58px'
+      icon.style.flex = '0 0 58px'
     }
   })
 }
