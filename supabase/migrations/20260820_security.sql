@@ -11,12 +11,12 @@ create policy "Users can read their own role"
 on public.user_roles for select to authenticated
 using (auth.uid() = user_id);
 
--- Bootstrap the existing authenticated owner as the first admin.
-insert into public.user_roles (user_id, role)
-values ('626b644d-97cc-47e9-b5b297958dc', 'admin')
-on conflict (user_id) do update set role = excluded.role;
+-- After running this migration, assign the existing owner as admin from the
+-- Supabase SQL editor using that user's exact UUID from Authentication > Users:
+-- insert into public.user_roles (user_id, role)
+-- values ('PASTE-EXACT-USER-UUID-HERE', 'admin')
+-- on conflict (user_id) do update set role = excluded.role;
 
--- Helper used by RLS policies and server-side authorization.
 create or replace function public.is_admin()
 returns boolean
 language sql
