@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import AuthGate from './AuthGate'
 import { startAdminBridge } from './adminBridge'
+import { startAdminLabelBridge } from './adminLabelBridge'
+import { startEventViewsBridge } from './eventViewsBridge'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -14,3 +16,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 )
 
 startAdminBridge()
+startAdminLabelBridge()
+startEventViewsBridge()
