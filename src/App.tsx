@@ -120,7 +120,7 @@ const ResourceCard = ({ resource }: { resource: Resource }) => {
         <div className="mt-auto pt-1 flex items-center justify-between">
           <span className="text-[10px] text-[var(--ink-45)]">{resource.viewCount} views</span>
           <a href={resource.sourceUrl} target="_blank" rel="noreferrer"
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--ink)] hover:text-[#e2703a] transition-colors">
+            className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--ink)] hover:text-[var(--primary)] transition-colors">
             {ctaLabel} {resource.type === 'figma' || resource.type === 'video' ? <ExtIco /> : <DownloadIco />}
           </a>
         </div>
@@ -156,7 +156,7 @@ const EventCard = ({ event, featured }: { event: EventItem; featured?: boolean }
         <div className="relative z-10 flex flex-col justify-between h-full p-6" style={{ minHeight: 220 }}>
           <div className="flex items-center gap-2">
             {product && <ProductBadge product={product} sz="sm" />}
-            <span className="inline-flex items-center bg-[#e2703a] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full font-mono">
+            <span className="inline-flex items-center bg-[var(--primary)] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full font-mono">
               {remaining > 0 ? `${remaining} DAYS LEFT` : 'TODAY'}
             </span>
           </div>
@@ -358,7 +358,7 @@ const FigmaSyncPanel = ({
             {hasToken ? 'Update token' : 'Set token'}
           </button>
           <button onClick={handleSync} disabled={!hasToken || syncing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--ink)] text-white text-[12px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-black transition-colors">
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--primary-hover)] transition-colors">
             {syncing ? 'Syncing…' : 'Sync Now'}
           </button>
         </div>
@@ -405,7 +405,7 @@ const SectionPage = ({
         )}
         <div className="flex items-center gap-2 mb-5 flex-wrap">
           <button onClick={() => setProductFilter(null)}
-            className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${!productFilter ? 'bg-[var(--ink)] text-white' : 'bg-[var(--canvas-deep)] text-[var(--ink-70)] hover:bg-[var(--line-soft)]'}`}>
+            className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${!productFilter ? 'bg-[var(--primary)] text-white' : 'bg-[var(--canvas-deep)] text-[var(--ink-70)] hover:bg-[var(--line-soft)]'}`}>
             All Products
           </button>
           {products.map(p => (
@@ -529,12 +529,12 @@ const Sidebar = ({
   const NavBtn = ({ active, icon, label, onClick, badge }: { active: boolean; icon: React.ReactNode; label: string; onClick: () => void; badge?: number }) => (
     <button onClick={onClick} title={collapsed ? label : undefined}
       className={`w-full flex items-center gap-2.5 rounded-lg text-[13px] font-medium transition-colors ${collapsed ? 'justify-center px-0 py-2.5' : 'px-2.5 py-2'} ${
-        active ? 'bg-[var(--ink)] text-white' : 'text-[var(--ink-70)] hover:bg-[var(--canvas-deep)]'
+        active ? 'bg-[var(--primary)] text-white' : 'text-[var(--ink-70)] hover:bg-[var(--canvas-deep)]'
       }`}>
       <span className="flex-shrink-0">{icon}</span>
       {!collapsed && <span className="flex-1 text-left truncate">{label}</span>}
       {!collapsed && badge !== undefined && badge > 0 && (
-        <span className="bg-[#e2703a] text-white font-mono text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">{badge}</span>
+        <span className="bg-[var(--primary)] text-white font-mono text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0">{badge}</span>
       )}
     </button>
   );
@@ -544,10 +544,10 @@ const Sidebar = ({
       <div className={`h-14 flex items-center border-b border-[var(--line-soft)] flex-shrink-0 ${collapsed ? 'justify-center px-0' : 'justify-between px-4'}`}>
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #2a2f36, var(--ink))' }}>
-              <span className="text-white font-display font-bold text-[13px]">B</span>
+            <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 p-1" style={{ background: 'var(--primary-soft)' }}>
+              <img src="/sheshi-logo.svg" alt="Sheshi" className="w-full h-full object-contain" />
             </div>
-            <span className="font-display text-[15px] font-bold text-[var(--ink)] tracking-tight">BrandHub</span>
+            <span className="font-display text-[15px] font-bold text-[var(--ink)] tracking-tight">Sheshi Vault</span>
           </div>
         )}
         <button onClick={onToggleCollapse} className="text-[var(--ink-45)] hover:text-[var(--ink)] p-1 rounded-md hover:bg-[var(--canvas-deep)]"><PanelIco /></button>
