@@ -28,14 +28,8 @@ let seq = 0;
 const id = (prefix: string) => `${prefix}-${(++seq).toString(36)}`;
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 
-function productResources(p: Product, imgLogo: string, figmaNames: [string, string], theme: string): Resource[] {
+function productResources(p: Product, imgLogo: string, theme: string): Resource[] {
   return [
-    { id: id('r'), title: `${p.name} ${figmaNames[0]}`, type: 'figma', productId: p.id,
-      thumbnail: IMG.uiHero, sourceUrl: 'https://figma.com', tags: ['ui', 'final'],
-      viewCount: 340 + seq * 3, downloadCount: 12, featured: true, createdAt: daysAgo(2) },
-    { id: id('r'), title: `${p.name} ${figmaNames[1]}`, type: 'figma', productId: p.id,
-      thumbnail: IMG.uiDash, sourceUrl: 'https://figma.com', tags: ['ui', 'final'],
-      viewCount: 210 + seq * 2, downloadCount: 8, createdAt: daysAgo(9) },
     { id: id('r'), title: `${p.name} Primary Logo`, type: 'logo', productId: p.id,
       thumbnail: imgLogo, sourceUrl: imgLogo, fileFormat: 'SVG', tags: ['logo', 'brand'],
       viewCount: 512 + seq * 4, downloadCount: 64, featured: true, createdAt: daysAgo(30) },
@@ -55,10 +49,10 @@ function productResources(p: Product, imgLogo: string, figmaNames: [string, stri
 }
 
 export const resources: Resource[] = [
-  ...productResources(products[0], IMG.logoQuanta, ['Dashboard Redesign — Hero [Final]', 'Onboarding Flow — Final Screens'], 'Quanta Platform Walkthrough'),
-  ...productResources(products[1], IMG.logoCatalyx, ['Landing Page — Final', 'Mobile App Dashboard [Final]'], 'Catalyx Product Demo'),
-  ...productResources(products[2], IMG.logoFR, ['Brand Refresh — Final Concepts', 'Report Builder — Final UI'], 'FR Highlights Reel'),
-  ...productResources(products[3], IMG.logoConsultease, ['Web Platform — Final UI', 'Client Portal — Final Screens'], 'Consultease Intro Video'),
+  ...productResources(products[0], IMG.logoQuanta, 'Quanta Platform Walkthrough'),
+  ...productResources(products[1], IMG.logoCatalyx, 'Catalyx Product Demo'),
+  ...productResources(products[2], IMG.logoFR, 'FR Highlights Reel'),
+  ...productResources(products[3], IMG.logoConsultease, 'Consultease Intro Video'),
 ];
 
 export const events: EventItem[] = [

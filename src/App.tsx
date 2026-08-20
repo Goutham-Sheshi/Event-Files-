@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { products, resources as seedResources, events as seedEvents } from './data';
+import { getFigmaResources, getFigmaTokenStatus, setFigmaToken, syncFigma } from './api';
 import type { Product, Resource, ResourceType, EventItem } from './types';
 import { formatDate, isUpcoming, daysRemaining, searchResources, searchEvents } from './utils';
 
@@ -184,12 +185,12 @@ const EventCard = ({ event, featured }: { event: EventItem; featured?: boolean }
 
 // ─── Home dashboard ──────────────────────────────────────────────────────────
 
-const HomeView = ({ onSelectProduct }: { onSelectProduct: (slug: string) => void }) => {
+const HomeView = ({ resources, onSelectProduct }: { resources: Resource[]; onSelectProduct: (slug: string) => void }) => {
   const upcoming = [...seedEvents].filter(e => isUpcoming(e.date)).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const featured = upcoming[0];
   const rest = upcoming.slice(1);
-  const latest = [...seedResources].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
-  const popular = [...seedResources].sort((a, b) => b.viewCount - a.viewCount).slice(0, 5);
+  const latest = [...resources].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+  const popular = [...resources].sort((a, b) => b.viewCount - a.viewCount).slice(0, 5);
   const quick = [
     { label: 'Latest Brand Guidelines', sub: 'Brochures', section: 'brochure' as const },
     { label: 'Product Logos', sub: 'Brand Assets', section: 'logo' as const },
@@ -240,7 +241,7 @@ const HomeView = ({ onSelectProduct }: { onSelectProduct: (slug: string) => void
           <h2 className="font-display text-[15px] font-bold text-[var(--ink)] mb-3">Products</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {products.map(p => {
-              const count = seedResources.filter(r => r.productId === p.id).length;
+              const count = resources.filter(r => r.productId === p.id).length;
               return (
                 <button key={p.id} onClick={() => onSelectProduct(p.slug)}
                   className="text-left rounded-xl px-4 py-3.5 border border-[var(--line-soft)] hover:border-transparent transition-all"
@@ -274,8 +275,8 @@ const HomeView = ({ onSelectProduct }: { onSelectProduct: (slug: string) => void
 
 // ─── Product page ────────────────────────────────────────────────────────────
 
-const ProductPage = ({ product }: { product: Product }) => {
-  const items = seedResources.filter(r => r.productId === product.id);
+const ProductPage = ({ product, resources }: { product: Product; resources: Resource[] }) => {
+  const items = resources.filter(r => r.productId === product.id);
   const groups: { type: ResourceType; label: string }[] = [
     { type: 'figma', label: 'Figma Designs' }, { type: 'logo', label: 'Logos' },
     { type: 'brochure', label: 'Brochures' }, { type: 'video', label: 'Videos' },
@@ -309,11 +310,88 @@ const ProductPage = ({ product }: { product: Product }) => {
   );
 };
 
+// ─── Figma sync panel (token entry + manual sync trigger) ───────────────────
+
+const FigmaSyncPanel = ({
+  hasToken, lastSyncedAt, onTokenSaved, onSynced,
+}: {
+  hasToken: boolean; lastSyncedAt: string | null;
+  onTokenSaved: () => void; onSynced: (resources: Resource[]) => void;
+}) => {
+  const [tokenInput, setTokenInput] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showInput, setShowInput] = useState(!hasToken);
+
+  const handleSaveToken = async () => {
+    if (!tokenInput.trim()) return;
+    setSaving(true); setError(null);
+    try {
+      await setFigmaToken(tokenInput.trim());
+      setTokenInput('');
+      setShowInput(false);
+      onTokenSaved();
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    setSaving(false);
+  };
+
+  const handleSync = async () => {
+    setSyncing(true); setError(null);
+    try {
+      const result = await syncFigma();
+      onSynced(result.resources as Resource[]);
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+    setSyncing(false);
+  };
+
+  return (
+    <div className="bg-white border border-[var(--line-soft)] rounded-xl p-4 mb-5 flex flex-col gap-3">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${hasToken ? 'bg-green-500' : 'bg-[var(--ink-45)]'}`} />
+          <span className="text-[12.5px] text-[var(--ink-70)]">{hasToken ? 'Figma token configured' : 'No Figma token set'}</span>
+          {lastSyncedAt && <span className="text-[11px] text-[var(--ink-45)]">· Last synced {new Date(lastSyncedAt).toLocaleString()}</span>}
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowInput(s => !s)} className="text-[12px] font-medium text-[var(--ink-70)] hover:text-[var(--ink)]">
+            {hasToken ? 'Update token' : 'Set token'}
+          </button>
+          <button onClick={handleSync} disabled={!hasToken || syncing}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--ink)] text-white text-[12px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-black transition-colors">
+            {syncing ? 'Syncing…' : 'Sync Now'}
+          </button>
+        </div>
+      </div>
+      {showInput && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <input type="password" value={tokenInput} onChange={e => setTokenInput(e.target.value)}
+            placeholder="figd_… personal access token"
+            className="flex-1 min-w-[200px] px-3 py-2 rounded-lg border border-[var(--line-soft)] text-[13px] outline-none focus:border-[var(--ink-45)]" />
+          <button onClick={handleSaveToken} disabled={saving || !tokenInput.trim()}
+            className="px-3 py-2 rounded-lg bg-[var(--canvas-deep)] text-[var(--ink)] text-[12px] font-semibold disabled:opacity-40">
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      )}
+      {error && <div className="text-[12px] text-red-600">{error}</div>}
+      <div className="text-[11px] text-[var(--ink-45)] leading-relaxed">
+        Token is stored server-side and never sent back to the browser. Regenerate a Figma personal access token any time (e.g. every 30 days) and paste it here to keep syncing.
+      </div>
+    </div>
+  );
+};
+
 // ─── Section page (Figma Files / Brand Assets / Brochures / Videos / All) ───
 
-const SectionPage = ({ section }: { section: ResourceType | 'all' }) => {
+const SectionPage = ({
+  section, resources, figmaMeta,
+}: {
+  section: ResourceType | 'all'; resources: Resource[];
+  figmaMeta?: { hasToken: boolean; lastSyncedAt: string | null; onTokenSaved: () => void; onSynced: (resources: Resource[]) => void };
+}) => {
   const [productFilter, setProductFilter] = useState<string | null>(null);
-  const base = section === 'all' ? seedResources : seedResources.filter(r => r.type === section);
+  const base = section === 'all' ? resources : resources.filter(r => r.type === section);
   const items = productFilter ? base.filter(r => r.productId === productFilter) : base;
   return (
     <div className="flex-1 overflow-y-auto">
@@ -321,6 +399,10 @@ const SectionPage = ({ section }: { section: ResourceType | 'all' }) => {
         <div className="flex items-center justify-between mb-5">
           <h1 className="font-display text-[22px] font-bold text-[var(--ink)] tracking-tight">{SECTION_LABEL[section]}</h1>
         </div>
+        {section === 'figma' && figmaMeta && (
+          <FigmaSyncPanel hasToken={figmaMeta.hasToken} lastSyncedAt={figmaMeta.lastSyncedAt}
+            onTokenSaved={figmaMeta.onTokenSaved} onSynced={figmaMeta.onSynced} />
+        )}
         <div className="flex items-center gap-2 mb-5 flex-wrap">
           <button onClick={() => setProductFilter(null)}
             className={`px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors ${!productFilter ? 'bg-[var(--ink)] text-white' : 'bg-[var(--canvas-deep)] text-[var(--ink-70)] hover:bg-[var(--line-soft)]'}`}>
@@ -383,9 +465,9 @@ const AdminPlaceholder = () => (
 
 // ─── Search overlay ──────────────────────────────────────────────────────────
 
-const SearchOverlay = ({ onClose }: { onClose: () => void }) => {
+const SearchOverlay = ({ resources, onClose }: { resources: Resource[]; onClose: () => void }) => {
   const [q, setQ] = useState('');
-  const resultResources = useMemo(() => searchResources(seedResources, q), [q]);
+  const resultResources = useMemo(() => searchResources(resources, q), [q, resources]);
   const resultEvents = useMemo(() => searchEvents(seedEvents, q), [q]);
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-start justify-center pt-24 px-4" onClick={onClose}>
@@ -519,6 +601,19 @@ export default function App() {
   const [productsOpen, setProductsOpen] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
 
+  const [figmaResources, setFigmaResources] = useState<Resource[]>([]);
+  const [figmaHasToken, setFigmaHasToken] = useState(false);
+  const [figmaLastSyncedAt, setFigmaLastSyncedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    getFigmaTokenStatus().then(setFigmaHasToken);
+    getFigmaResources().then(({ resources, lastSyncedAt }) => {
+      setFigmaResources(resources as Resource[]);
+      setFigmaLastSyncedAt(lastSyncedAt);
+    });
+  }, []);
+
+  const allResources = useMemo(() => [...seedResources, ...figmaResources], [figmaResources]);
   const currentProduct = view.kind === 'product' ? products.find(p => p.slug === view.slug) : undefined;
 
   return (
@@ -542,11 +637,20 @@ export default function App() {
         </header>
 
         {view.kind === 'home' ? (
-          <HomeView onSelectProduct={slug => setView({ kind: 'product', slug })} />
+          <HomeView resources={allResources} onSelectProduct={slug => setView({ kind: 'product', slug })} />
         ) : view.kind === 'product' && currentProduct ? (
-          <ProductPage product={currentProduct} />
+          <ProductPage product={currentProduct} resources={allResources} />
         ) : view.kind === 'section' ? (
-          <SectionPage section={view.section} />
+          <SectionPage
+            section={view.section}
+            resources={allResources}
+            figmaMeta={view.section === 'figma' ? {
+              hasToken: figmaHasToken,
+              lastSyncedAt: figmaLastSyncedAt,
+              onTokenSaved: () => setFigmaHasToken(true),
+              onSynced: resources => { setFigmaResources(resources); setFigmaLastSyncedAt(new Date().toISOString()); },
+            } : undefined}
+          />
         ) : view.kind === 'events' ? (
           <EventsPage />
         ) : (
@@ -554,7 +658,7 @@ export default function App() {
         )}
       </div>
 
-      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
+      {searchOpen && <SearchOverlay resources={allResources} onClose={() => setSearchOpen(false)} />}
     </div>
   );
 }

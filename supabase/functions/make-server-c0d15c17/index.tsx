@@ -18,25 +18,9 @@ app.get("/make-server-c0d15c17/health", (c) => c.json({ status: "ok" }));
 
 const BUCKET = "media-catalog-files";
 const admin = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+const DEFAULT_FIGMA_FILE_KEY = "tbDPLtFhYYORMKo4IAKmck";
 
-// Setup: create bucket + RLS policies so anon users can upload/read directly from browser
-app.post("/make-server-c0d15c17/setup", async (c) => {
-  const sb = admin();
-  const { error } = await sb.storage.createBucket(BUCKET, { public: true, fileSizeLimit: 200 * 1024 * 1024 });
-  if (error && !error.message.includes("already exists")) return c.json({ error: error.message }, 500);
-
-  // Grant anon read + write on storage bucket via raw SQL through postgrest rpc
-  const policies = [
-    `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='mc_anon_select' AND schemaname='storage' AND tablename='objects') THEN CREATE POLICY "mc_anon_select" ON storage.objects FOR SELECT TO anon USING (bucket_id = '${BUCKET}'); END IF; END $$;`,
-    `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='mc_anon_insert' AND schemaname='storage' AND tablename='objects') THEN CREATE POLICY "mc_anon_insert" ON storage.objects FOR INSERT TO anon WITH CHECK (bucket_id = '${BUCKET}'); END IF; END $$;`,
-  ];
-  for (const sql of policies) {
-    await sb.rpc('exec_sql', { sql }).catch(() => {});
-  }
-
-  return c.json({ ok: true });
-});
-
+// ── Catalog / Events (legacy generic KV, kept for compatibility) ──────────────
 app.get("/make-server-c0d15c17/catalog", async (c) => {
   const catalog = await kv.get("catalog_v1");
   return c.json({ catalog: catalog ?? null });
@@ -46,7 +30,6 @@ app.post("/make-server-c0d15c17/catalog", async (c) => {
   await kv.set("catalog_v1", catalog);
   return c.json({ ok: true });
 });
-
 app.get("/make-server-c0d15c17/events", async (c) => {
   const events = await kv.get("events_v1");
   return c.json({ events: events ?? null });
@@ -57,7 +40,99 @@ app.post("/make-server-c0d15c17/events", async (c) => {
   return c.json({ ok: true });
 });
 
-// Fallback upload via edge function (service role key) — used if anon policy not yet active
+// ── Figma integration ──────────────────────────────────────────────────────
+// The Figma personal access token is stored server-side only (kv_store), via
+// the service-role Supabase client. It is never returned to the client.
+
+app.post("/make-server-c0d15c17/figma/token", async (c) => {
+  const { token } = await c.req.json();
+  if (!token || typeof token !== "string") return c.json({ error: "Missing token" }, 400);
+  await kv.set("figma_token", token);
+  return c.json({ ok: true });
+});
+
+app.get("/make-server-c0d15c17/figma/token/status", async (c) => {
+  const token = await kv.get("figma_token");
+  return c.json({ hasToken: !!token });
+});
+
+app.get("/make-server-c0d15c17/figma/resources", async (c) => {
+  const resources = await kv.get("figma_resources_v1");
+  const lastSyncedAt = await kv.get("figma_last_synced_at");
+  return c.json({ resources: resources ?? [], lastSyncedAt: lastSyncedAt ?? null });
+});
+
+app.post("/make-server-c0d15c17/figma/sync", async (c) => {
+  const token = await kv.get("figma_token");
+  if (!token) return c.json({ error: "No Figma token configured. Add one first." }, 400);
+
+  const body = await c.req.json().catch(() => ({}));
+  const fileKey = body.fileKey || DEFAULT_FIGMA_FILE_KEY;
+  const tagPattern = body.tag || "[Final]";
+
+  try {
+    // depth=2 → document > pages > top-level frames (enough to find [Final] artboards)
+    const fileRes = await fetch(`https://api.figma.com/v1/files/${fileKey}?depth=2`, {
+      headers: { "X-Figma-Token": token },
+    });
+    if (!fileRes.ok) {
+      const errBody = await fileRes.json().catch(() => ({}));
+      return c.json({ error: `Figma API error (${fileRes.status}): ${errBody.err || errBody.message || "request failed"}` }, 502);
+    }
+    const file = await fileRes.json();
+
+    type Match = { nodeId: string; frameName: string; pageName: string };
+    const matches: Match[] = [];
+    for (const page of file.document?.children ?? []) {
+      for (const node of page.children ?? []) {
+        if (node.name?.includes(tagPattern)) {
+          matches.push({ nodeId: node.id, frameName: node.name, pageName: page.name });
+        }
+      }
+    }
+
+    let thumbnails: Record<string, string> = {};
+    if (matches.length > 0) {
+      const ids = matches.map(m => m.nodeId).join(",");
+      const imgRes = await fetch(`https://api.figma.com/v1/images/${fileKey}?ids=${encodeURIComponent(ids)}&format=png&scale=2`, {
+        headers: { "X-Figma-Token": token },
+      });
+      if (imgRes.ok) {
+        const imgData = await imgRes.json();
+        thumbnails = imgData.images || {};
+      }
+    }
+
+    const PRODUCT_NAMES = ["quanta", "catalyx", "consultease", "fr"];
+    const resources = matches.map(m => {
+      const haystack = `${m.pageName} ${m.frameName}`.toLowerCase();
+      const productSlug = PRODUCT_NAMES.find(p => haystack.includes(p));
+      return {
+        id: `figma-${m.nodeId.replace(/[:;]/g, "-")}`,
+        title: m.frameName.replace(tagPattern, "").trim(),
+        type: "figma",
+        productId: productSlug ? `p-${productSlug}` : "",
+        pageName: m.pageName,
+        thumbnail: thumbnails[m.nodeId] || undefined,
+        sourceUrl: `https://www.figma.com/design/${fileKey}?node-id=${m.nodeId.replace(":", "-")}`,
+        tags: ["figma", "final"],
+        viewCount: 0,
+        downloadCount: 0,
+        createdAt: new Date().toISOString(),
+      };
+    });
+
+    await kv.set("figma_resources_v1", resources);
+    const syncedAt = new Date().toISOString();
+    await kv.set("figma_last_synced_at", syncedAt);
+
+    return c.json({ resources, syncedAt, pagesScanned: file.document?.children?.length ?? 0 });
+  } catch (e) {
+    return c.json({ error: String(e) }, 500);
+  }
+});
+
+// ── Upload (fallback via edge function, service role key) ─────────────────────
 app.post("/make-server-c0d15c17/upload", async (c) => {
   const formData = await c.req.formData();
   const file = formData.get("file") as File | null;
