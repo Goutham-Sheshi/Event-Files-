@@ -1,0 +1,1 @@
+Use the uploaded Sheshi logo PNG for the sidebar and favicon.

@@ -2,6 +2,9 @@
 @import 'tailwindcss';
 
 :root {
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+  --primary-soft: #EFF6FF;
   --ink: #1a1d21;
   --ink-70: #4b5259;
   --ink-45: #7c848c;
@@ -12,10 +15,7 @@
   --paper: #ffffff;
 }
 
-html, body, #root {
-  height: 100%;
-  overflow: hidden;
-}
+html, body, #root { height: 100%; overflow: hidden; }
 
 body {
   -webkit-font-smoothing: antialiased;
@@ -27,11 +27,43 @@ body {
 .font-display { font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; }
 .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
 
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.14) transparent;
+/* Sheshi Vault sidebar branding */
+aside > div:first-child > div > div:first-child > span { font-size: 0; }
+aside > div:first-child > div > div:first-child > span::after { content: 'S'; font-size: 13px; }
+aside > div:first-child > div > span { font-size: 0; }
+aside > div:first-child > div > span::after { content: 'Sheshi Vault'; font-size: 16px; }
+aside > div:first-child > div > div:first-child { background: var(--primary) !important; }
+
+/* Primary Sheshi blue: active navigation, CTAs, badges and accent actions */
+aside nav button[class*="bg-[var(--ink)]"],
+button.bg-\[var\(--ink\)\],
+a.bg-\[var\(--ink\)\] {
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
 }
 
+aside nav button[class*="bg-[var(--ink)]"]:hover,
+button.bg-\[var\(--ink\)\]:hover,
+a.bg-\[var\(--ink\)\]:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+[class*="bg-[#e2703a]"],
+.bg-\[\#e2703a\] {
+  background-color: var(--primary) !important;
+}
+
+[class*="text-[#e2703a]"],
+.text-\[\#e2703a\],
+.hover\:text-\[\#e2703a\]:hover {
+  color: var(--primary) !important;
+}
+
+[class*="hover:text-[#e2703a]"]:hover { color: var(--primary-hover) !important; }
+
+/* Keep neutral text neutral; blue is reserved for primary and selected UI */
+
+* { scrollbar-width: thin; scrollbar-color: rgba(0, 0, 0, 0.14) transparent; }
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.14); border-radius: 3px; }
