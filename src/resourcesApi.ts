@@ -20,6 +20,18 @@ const STORAGE_BUCKET = 'event-assets'
 
 const safeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
 
+export function getErrorMessage(error: unknown, fallback = 'Something went wrong'): string {
+  if (error instanceof Error && error.message) return error.message
+  if (error && typeof error === 'object') {
+    const value = error as Record<string, unknown>
+    for (const key of ['message', 'error_description', 'error', 'details', 'hint']) {
+      if (typeof value[key] === 'string' && value[key]) return value[key] as string
+    }
+    try { return JSON.stringify(error) } catch { /* ignore */ }
+  }
+  return fallback
+}
+
 const mapRow = (row: any): ManagedResource => ({
   id: row.id,
   title: row.title,
@@ -41,7 +53,7 @@ const mapRow = (row: any): ManagedResource => ({
 
 export async function getManagedResources(): Promise<ManagedResource[]> {
   const { data, error } = await supabase.from('vault_resources').select('*').order('created_at', { ascending: false })
-  if (error) throw error
+  if (error) throw new Error(`Could not load files: ${getErrorMessage(error)}`)
   return (data || []).map(mapRow)
 }
 
@@ -53,7 +65,7 @@ export async function uploadResource(input: ResourceInput, file: File): Promise<
   const { error: uploadError } = await supabase.storage.from(STORAGE_BUCKET).upload(path, file, {
     cacheControl: '3600', upsert: false, contentType: file.type || undefined,
   })
-  if (uploadError) throw uploadError
+  if (uploadError) throw new Error(`Storage upload failed: ${getErrorMessage(uploadError)}`)
 
   const { data: publicData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path)
   const { data, error } = await supabase.from('vault_resources').insert({
@@ -71,17 +83,17 @@ export async function uploadResource(input: ResourceInput, file: File): Promise<
 
   if (error) {
     await supabase.storage.from(STORAGE_BUCKET).remove([path])
-    throw error
+    throw new Error(`Database record failed: ${getErrorMessage(error)}`)
   }
   return mapRow(data)
 }
 
 export async function deleteManagedResource(resource: ManagedResource): Promise<void> {
   const { error } = await supabase.from('vault_resources').delete().eq('id', resource.id)
-  if (error) throw error
+  if (error) throw new Error(`Could not delete file record: ${getErrorMessage(error)}`)
   if (resource.storagePath) {
     const { error: storageError } = await supabase.storage.from(STORAGE_BUCKET).remove([resource.storagePath])
-    if (storageError) throw storageError
+    if (storageError) throw new Error(`Could not delete stored file: ${getErrorMessage(storageError)}`)
   }
 }
 
