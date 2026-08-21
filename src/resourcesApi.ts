@@ -16,6 +16,8 @@ export type ResourceInput = {
   featured?: boolean
 }
 
+const STORAGE_BUCKET = 'event-assets'
+
 const safeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
 
 const mapRow = (row: any): ManagedResource => ({
@@ -48,12 +50,12 @@ export async function uploadResource(input: ResourceInput, file: File): Promise<
   const month = new Date().toISOString().slice(0, 7)
   const path = `${input.productId}/${input.type}/${month}/${crypto.randomUUID()}-${safeName(file.name)}`
 
-  const { error: uploadError } = await supabase.storage.from('vault-files').upload(path, file, {
+  const { error: uploadError } = await supabase.storage.from(STORAGE_BUCKET).upload(path, file, {
     cacheControl: '3600', upsert: false, contentType: file.type || undefined,
   })
   if (uploadError) throw uploadError
 
-  const { data: publicData } = supabase.storage.from('vault-files').getPublicUrl(path)
+  const { data: publicData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path)
   const { data, error } = await supabase.from('vault_resources').insert({
     title: input.title || file.name,
     description: input.description || null,
@@ -68,7 +70,7 @@ export async function uploadResource(input: ResourceInput, file: File): Promise<
   }).select().single()
 
   if (error) {
-    await supabase.storage.from('vault-files').remove([path])
+    await supabase.storage.from(STORAGE_BUCKET).remove([path])
     throw error
   }
   return mapRow(data)
@@ -78,7 +80,7 @@ export async function deleteManagedResource(resource: ManagedResource): Promise<
   const { error } = await supabase.from('vault_resources').delete().eq('id', resource.id)
   if (error) throw error
   if (resource.storagePath) {
-    const { error: storageError } = await supabase.storage.from('vault-files').remove([resource.storagePath])
+    const { error: storageError } = await supabase.storage.from(STORAGE_BUCKET).remove([resource.storagePath])
     if (storageError) throw storageError
   }
 }
