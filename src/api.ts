@@ -22,8 +22,12 @@ export type FigmaSyncResult = { resources: any[]; syncedAt: string; pagesScanned
 
 export async function syncFigma(fileKey?: string, tag?: string): Promise<FigmaSyncResult> {
   const res = await fetch(`${BASE}/figma/sync`, { method: 'POST', headers: await authHeaders(true), body: JSON.stringify({ fileKey, tag }) });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error ?? 'Sync failed');
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = data.error ?? 'Sync failed';
+    const detail = typeof data.detail === 'string' && data.detail ? `: ${data.detail}` : '';
+    throw new Error(`${message}${detail}`);
+  }
   return data;
 }
 
@@ -54,10 +58,9 @@ export async function getManagedResources(): Promise<any[]> {
   }));
 }
 
-// Figma Files is intentionally isolated from the managed resource catalogue.
-// Older vault_resources rows that were previously marked as `figma` are not
-// included here, because they can contain stale frame-level data and do not
-// belong on the Figma section browser.
+// Figma Files stays isolated from the managed resource catalogue. Accept the
+// current SECTION records as well as older records that stored the node type
+// with different casing, so a valid sync cannot disappear in the client.
 export async function getFigmaResources(): Promise<{ resources: any[]; lastSyncedAt: string | null }> {
   try {
     const res = await fetch(`${BASE}/figma/resources`, { headers: await authHeaders() });
@@ -65,7 +68,7 @@ export async function getFigmaResources(): Promise<{ resources: any[]; lastSynce
     const result = await res.json();
     const resources = Array.isArray(result.resources)
       ? result.resources
-          .filter((row: any) => row?.type === 'figma' && row?.nodeType === 'SECTION')
+          .filter((row: any) => row?.type === 'figma' && String(row?.nodeType ?? row?.node_type ?? '').toUpperCase() === 'SECTION')
           .map((row: any) => ({ ...row, productId: '' }))
       : [];
     return { resources, lastSyncedAt: result.lastSyncedAt ?? null };
