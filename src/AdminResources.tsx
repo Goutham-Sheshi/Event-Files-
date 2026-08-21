@@ -1,7 +1,7 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react'
 import { products } from './data'
 import type { ResourceType } from './types'
-import { deleteManagedResource, getManagedResources, uploadResource, type ManagedResource } from './resourcesApi'
+import { deleteManagedResource, getErrorMessage, getManagedResources, uploadResource, type ManagedResource } from './resourcesApi'
 
 const TYPES: { value: ResourceType; label: string }[] = [
   { value: 'figma', label: 'Figma File' },
@@ -26,7 +26,7 @@ export default function AdminResources() {
 
   const load = async () => {
     try { setItems(await getManagedResources()) }
-    catch (e) { setError(e instanceof Error ? e.message : 'Failed to load files') }
+    catch (e) { setError(getErrorMessage(e, 'Failed to load files')) }
   }
   useEffect(() => { load() }, [])
 
@@ -60,7 +60,7 @@ export default function AdminResources() {
       setFiles([]); setTitle(''); setTags(''); setDescription('')
       setNotice(`${files.length} file${files.length > 1 ? 's' : ''} added and organised under the selected product.`)
       await load()
-    } catch (err) { setError(err instanceof Error ? err.message : 'Upload failed') }
+    } catch (err) { setError(getErrorMessage(err, 'Upload failed')) }
     finally { setBusy(false) }
   }
 
@@ -68,7 +68,7 @@ export default function AdminResources() {
     if (!window.confirm(`Delete "${item.title}"?`)) return
     setBusy(true); setError('')
     try { await deleteManagedResource(item); await load() }
-    catch (err) { setError(err instanceof Error ? err.message : 'Delete failed') }
+    catch (err) { setError(getErrorMessage(err, 'Delete failed')) }
     finally { setBusy(false) }
   }
 
@@ -87,7 +87,7 @@ export default function AdminResources() {
           <label className="block rounded-xl border-2 border-dashed border-[var(--line)] hover:border-[var(--primary)] transition-colors p-5 text-center cursor-pointer bg-[var(--canvas)]"><input type="file" multiple onChange={pickFiles} className="hidden"/><div className="text-[13px] font-semibold">Choose files</div><div className="text-[11px] text-[var(--ink-45)] mt-1">You can select multiple files at once</div></label>
           {files.length > 0 && <div className="rounded-lg bg-[var(--canvas)] border border-[var(--line-soft)] divide-y divide-[var(--line-soft)]">{files.map(file=><div key={`${file.name}-${file.size}`} className="px-3 py-2 text-[11px] flex justify-between gap-3"><span className="truncate">{file.name}</span><span className="text-[var(--ink-45)] flex-shrink-0">{(file.size/1024/1024).toFixed(file.size > 10*1024*1024 ? 0 : 1)} MB</span></div>)}</div>}
         </div>
-        {error && <div className="mt-3 text-[12px] text-red-600">{error}</div>}
+        {error && <div className="mt-3 text-[12px] text-red-600 break-words">{error}</div>}
         {notice && <div className="mt-3 text-[12px] text-green-700">{notice}</div>}
         <button disabled={busy || !files.length} className="mt-5 w-full px-4 py-2.5 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold disabled:opacity-40">{busy ? 'Uploading…' : `Add ${files.length || ''} File${files.length === 1 ? '' : 's'}`}</button>
       </form>
