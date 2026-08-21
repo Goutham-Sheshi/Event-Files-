@@ -5,6 +5,7 @@ import AuthGate from './AuthGate'
 import { startAdminBridge } from './adminBridge'
 import { startAdminLabelBridge } from './adminLabelBridge'
 import { startEventViewsBridge } from './eventViewsBridge'
+import { startFileViewerBridge } from './fileViewerBridge'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -18,3 +19,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 startAdminBridge()
 startAdminLabelBridge()
 startEventViewsBridge()
+startFileViewerBridge()
