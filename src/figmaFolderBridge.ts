@@ -10,7 +10,8 @@ function injectStyles() {
   const style = document.createElement('style');
   style.id = STYLE_ID;
   style.textContent = `
-    #${TREE_ID}{margin:2px 0 4px 14px;padding-left:12px;border-left:1px solid var(--line-soft);display:flex;flex-direction:column;gap:2px;max-width:calc(100% - 14px)}
+    #${TREE_ID}{margin:2px 0 4px 14px;padding-left:12px;border-left:1px solid var(--line-soft);display:none;flex-direction:column;gap:2px;max-width:calc(100% - 14px)}
+    #${TREE_ID}[data-open="true"]{display:flex}
     #${TREE_ID} .fft-row{width:100%;min-width:0;display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;background:transparent;border:0;color:var(--ink-45);font-size:12px;text-align:left;cursor:pointer;overflow:hidden}
     #${TREE_ID} .fft-row:hover{background:var(--canvas-deep);color:var(--ink)}
     #${TREE_ID} .fft-folder{font-weight:500;color:var(--ink-70)}
@@ -22,7 +23,7 @@ function injectStyles() {
     #${TREE_ID} .fft-group[data-open="true"]>.fft-folder .fft-chevron{transform:rotate(90deg)}
     #${TREE_ID} .fft-children{display:flex;flex-direction:column;gap:1px;min-width:0}
     #${TREE_ID} .fft-empty{padding:6px 8px;color:var(--ink-45);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .fft-parent-chevron{margin-left:auto;width:20px;height:20px;flex:0 0 20px;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s;cursor:pointer}
+    .fft-parent-chevron{margin-left:auto;width:24px;height:24px;flex:0 0 24px;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s;cursor:pointer;border:0;background:transparent;color:inherit;font-size:20px;line-height:1}
     .fft-parent-chevron[data-open="true"]{transform:rotate(90deg)}
   `;
   document.head.appendChild(style);
@@ -49,23 +50,37 @@ function label(text: string) {
   return node;
 }
 
-function findFigmaNavButton(): HTMLButtonElement | undefined {
-  const buttons = Array.from(document.querySelectorAll('button')) as HTMLButtonElement[];
-  const matches = buttons.filter(button => {
-    const clone = button.cloneNode(true) as HTMLElement;
-    clone.querySelectorAll('.fft-parent-chevron').forEach(node => node.remove());
-    return clone.textContent?.trim() === 'Figma Files';
+function exactText(node: Element) {
+  const clone = node.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll('.fft-parent-chevron, #'+TREE_ID).forEach(child => child.remove());
+  return clone.textContent?.replace(/\s+/g, ' ').trim() || '';
+}
+
+function findFigmaNavButton(): HTMLElement | undefined {
+  // Look only inside navigation/sidebar containers and only for the exact Figma Files item.
+  const roots = Array.from(document.querySelectorAll('aside, nav, [role="navigation"], [class*="sidebar"], [class*="Sidebar"]'));
+  const candidates = roots.flatMap(root => Array.from(root.querySelectorAll<HTMLElement>('button, a, [role="button"]')));
+  const figma = candidates.find(node => exactText(node) === 'Figma Files');
+  if (figma) return figma;
+  // Safe fallback: exact text only. Never attach the hierarchy to Products.
+  return Array.from(document.querySelectorAll<HTMLElement>('button, a, [role="button"]')).find(node => exactText(node) === 'Figma Files');
+}
+
+function removeMisplacedTrees(navButton: HTMLElement) {
+  document.querySelectorAll<HTMLElement>('#'+TREE_ID).forEach(tree => {
+    if (tree.previousElementSibling !== navButton) tree.remove();
   });
-  // Prefer the sidebar/navigation instance, never a main-content control with the same text.
-  return matches.find(button => !!button.closest('aside, nav, [role="navigation"]')) || matches.find(button => button.offsetParent !== null);
 }
 
 function renderTree(resources: FigmaResource[]) {
   const navButton = findFigmaNavButton();
-  if (!navButton || document.getElementById(TREE_ID)) return false;
+  if (!navButton) return false;
+  removeMisplacedTrees(navButton);
+  if (document.getElementById(TREE_ID)) return true;
 
   const tree = el('div');
   tree.id = TREE_ID;
+  tree.dataset.open = 'false';
 
   const byFile = new Map<string, Map<string, FigmaResource[]>>();
   resources.forEach(resource => {
@@ -82,7 +97,7 @@ function renderTree(resources: FigmaResource[]) {
   Array.from(byFile.keys()).sort(naturalCompare).forEach(fileName => {
     const pages = byFile.get(fileName)!;
     const fileGroup = el('div', 'fft-group');
-    fileGroup.dataset.open = 'true';
+    fileGroup.dataset.open = 'false';
     const fileButton = el('button', 'fft-row fft-folder');
     const fileChevron = icon('chevron'); fileChevron.className = 'fft-chevron';
     fileButton.append(fileChevron, icon('folder'), label(fileName));
@@ -92,7 +107,7 @@ function renderTree(resources: FigmaResource[]) {
     Array.from(pages.keys()).sort(naturalCompare).forEach(pageName => {
       const frames = [...(pages.get(pageName) || [])].sort((a, b) => naturalCompare(a.title, b.title));
       const pageGroup = el('div', 'fft-group');
-      pageGroup.dataset.open = 'true';
+      pageGroup.dataset.open = 'false';
       const pageButton = el('button', 'fft-row fft-folder');
       const pageChevron = icon('chevron'); pageChevron.className = 'fft-chevron';
       pageButton.append(pageChevron, icon('folder'), label(pageName));
@@ -118,16 +133,23 @@ function renderTree(resources: FigmaResource[]) {
     tree.appendChild(fileGroup);
   });
 
-  // The tree belongs directly under the sidebar's Figma Files item.
   navButton.insertAdjacentElement('afterend', tree);
-  const parentChevron = el('span', 'fft-parent-chevron', '›');
-  parentChevron.dataset.open = 'true';
+
+  const parentChevron = el('button', 'fft-parent-chevron', '›') as HTMLButtonElement;
+  parentChevron.type = 'button';
+  parentChevron.dataset.open = 'false';
+  parentChevron.title = 'Expand Figma Files';
+  parentChevron.setAttribute('aria-label', 'Expand Figma Files');
+  parentChevron.setAttribute('aria-expanded', 'false');
   parentChevron.onclick = event => {
     event.preventDefault();
     event.stopPropagation();
-    const open = tree.style.display !== 'none';
-    tree.style.display = open ? 'none' : 'flex';
+    const open = tree.dataset.open === 'true';
+    tree.dataset.open = open ? 'false' : 'true';
     parentChevron.dataset.open = open ? 'false' : 'true';
+    parentChevron.title = open ? 'Expand Figma Files' : 'Collapse Figma Files';
+    parentChevron.setAttribute('aria-label', open ? 'Expand Figma Files' : 'Collapse Figma Files');
+    parentChevron.setAttribute('aria-expanded', open ? 'false' : 'true');
   };
   navButton.appendChild(parentChevron);
   return true;
