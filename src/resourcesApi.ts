@@ -17,8 +17,14 @@ export type ResourceInput = {
 }
 
 const STORAGE_BUCKET = 'event-assets'
+const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif)(?:[?#].*)?$/i
 
 const safeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
+
+function isImageFile(row: any): boolean {
+  const format = String(row.file_format || '').trim().toLowerCase()
+  return IMAGE_EXT.test(String(row.source_url || '')) || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif'].includes(format)
+}
 
 export function getErrorMessage(error: unknown, fallback = 'Something went wrong'): string {
   if (error instanceof Error && error.message) return error.message
@@ -32,24 +38,29 @@ export function getErrorMessage(error: unknown, fallback = 'Something went wrong
   return fallback
 }
 
-const mapRow = (row: any): ManagedResource => ({
-  id: row.id,
-  title: row.title,
-  description: row.description || undefined,
-  type: row.type as ResourceType,
-  productId: row.product_id,
-  thumbnail: row.thumbnail || undefined,
-  sourceUrl: row.source_url,
-  storagePath: row.storage_path || undefined,
-  fileFormat: row.file_format || undefined,
-  fileSize: row.file_size || undefined,
-  tags: row.tags || [],
-  viewCount: row.view_count || 0,
-  downloadCount: row.download_count || 0,
-  featured: row.featured || false,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-})
+const mapRow = (row: any): ManagedResource => {
+  const sourceUrl = row.source_url || ''
+  const thumbnail = row.thumbnail || (isImageFile(row) ? sourceUrl : undefined)
+
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description || undefined,
+    type: row.type as ResourceType,
+    productId: row.product_id,
+    thumbnail,
+    sourceUrl,
+    storagePath: row.storage_path || undefined,
+    fileFormat: row.file_format || undefined,
+    fileSize: row.file_size || undefined,
+    tags: row.tags || [],
+    viewCount: row.view_count || 0,
+    downloadCount: row.download_count || 0,
+    featured: row.featured || false,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
 
 export async function getManagedResources(): Promise<ManagedResource[]> {
   const { data, error } = await supabase.from('vault_resources').select('*').order('created_at', { ascending: false })
@@ -68,12 +79,16 @@ export async function uploadResource(input: ResourceInput, file: File): Promise<
   if (uploadError) throw new Error(`Storage upload failed: ${getErrorMessage(uploadError)}`)
 
   const { data: publicData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path)
+  const publicUrl = publicData.publicUrl
+  const thumbnail = IMAGE_EXT.test(file.name) || file.type.startsWith('image/') ? publicUrl : null
+
   const { data, error } = await supabase.from('vault_resources').insert({
     title: input.title || file.name,
     description: input.description || null,
     type: input.type,
     product_id: input.productId,
-    source_url: publicData.publicUrl,
+    source_url: publicUrl,
+    thumbnail,
     storage_path: path,
     file_format: ext,
     file_size: formatFileSize(file.size),
