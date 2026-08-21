@@ -38,6 +38,12 @@ export async function syncFigma(fileKey?: string, tag?: string): Promise<FigmaSy
   return data;
 }
 
+function isImageResource(row: any): boolean {
+  const format = String(row.file_format || '').toLowerCase().replace(/^\./, '');
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif'].includes(format)) return true;
+  return /\.(png|jpe?g|gif|webp|svg|avif)(?:[?#].*)?$/i.test(String(row.source_url || ''));
+}
+
 /**
  * The main app historically called this only for Figma resources. The same
  * resource collection is also what drives product pages, so managed uploads
@@ -74,7 +80,10 @@ export async function getFigmaResources(): Promise<{ resources: any[]; lastSynce
     // document group. Map uploaded documents there so they are visible now.
     type: row.type === 'document' ? 'other' : row.type,
     productId: row.product_id,
-    thumbnail: row.thumbnail || undefined,
+    // Managed uploads usually do not have a separate thumbnail. For images,
+    // the uploaded file itself is the thumbnail and uses the same public URL
+    // that already powers Open/Download.
+    thumbnail: row.thumbnail || (isImageResource(row) ? row.source_url : undefined),
     sourceUrl: row.source_url,
     fileFormat: row.file_format || undefined,
     fileSize: row.file_size || undefined,
