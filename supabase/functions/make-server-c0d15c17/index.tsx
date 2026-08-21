@@ -15,7 +15,7 @@ app.use("/*", cors({ origin: APP_ORIGIN, allowHeaders: ["Content-Type", "Authori
 
 const service = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 async function requireUser(c: any) { const auth = c.req.header("Authorization"); if (!auth?.startsWith("Bearer ")) return null; const client = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: auth } } }); const { data, error } = await client.auth.getUser(); if (error || !data.user) return null; return data.user; }
-async function requireAdmin(c: any) { const user = await requireUser(c); if (!user) return { user: null, error: c.json({ error: "Unauthorized" }, 401) }; const { data, error } = await service().from("user_roles").select("role").eq("user_id", user.id).maybeSingle(); if (error || data?.role !== "admin") return { user: null, error: c.json({ error: "Admin access required" }, 403) }; return { user, error: null }; }
+async function requireAdmin(c: any) { const user = await requireUser(c); if (!user) return { user: null, error: c.json({ error: "Unauthorized" }, 401) }; const { data, error } = await service().from("user_roles").select("role").eq("user_id", user.id).maybeSingle(); if (error || data?.role !== "admin") return { user, error: c.json({ error: "Admin access required" }, 403) }; return { user, error: null }; }
 
 app.get(`${FUNCTION}/health`, (c) => c.json({ status: "ok" }));
 app.get(`${FUNCTION}/catalog`, async (c) => { if (!await requireUser(c)) return c.json({ error: "Unauthorized" }, 401); return c.json({ catalog: (await kv.get("catalog_v1")) ?? null }); });
@@ -26,50 +26,92 @@ app.post(`${FUNCTION}/events`, async (c) => { const gate = await requireAdmin(c)
 app.post(`${FUNCTION}/figma/token`, async (c) => { const gate = await requireAdmin(c); if (gate.error) return gate.error; const { token } = await c.req.json(); if (!token || typeof token !== "string") return c.json({ error: "Missing token" }, 400); await kv.set("figma_token", token); return c.json({ ok: true }); });
 app.get(`${FUNCTION}/figma/token/status`, async (c) => { const gate = await requireAdmin(c); if (gate.error) return gate.error; return c.json({ hasToken: !!(await kv.get("figma_token")) }); });
 
-// Figma hierarchy: file -> qualifying page -> SECTION nodes only.
-// Raw frames, groups and components are intentionally ignored. A page qualifies
-// when its name or one of its top-level nodes contains the configured tag.
+type FigmaSectionMatch = { nodeId: string; sectionName: string; pageName: string };
+
+async function fetchSectionImages(fileKey: string, token: string, ids: string[]) {
+  const images: Record<string, string> = {};
+  // Batch IDs so a large page cannot exceed the request URL limit.
+  for (let i = 0; i < ids.length; i += 40) {
+    const batch = ids.slice(i, i + 40);
+    const url = new URL(`https://api.figma.com/v1/images/${fileKey}`);
+    url.searchParams.set("ids", batch.join(","));
+    url.searchParams.set("format", "png");
+    url.searchParams.set("scale", "1");
+    const response = await fetch(url, { headers: { "X-Figma-Token": token } });
+    if (!response.ok) continue;
+    const payload = await response.json().catch(() => ({}));
+    Object.assign(images, payload.images || {});
+  }
+  return images;
+}
+
+// Figma hierarchy: FILE -> qualifying PAGE -> direct SECTION nodes only.
+// Frames, groups, components and every descendant inside a SECTION are excluded.
 app.post(`${FUNCTION}/figma/sync`, async (c) => {
   const gate = await requireAdmin(c); if (gate.error) return gate.error;
   const token = await kv.get("figma_token");
   if (!token) return c.json({ error: "No Figma token configured. Add one first." }, 400);
+
   const body = await c.req.json().catch(() => ({}));
   const fileKey = body.fileKey || DEFAULT_FIGMA_FILE_KEY;
-  const tagPattern = String(body.tag || "[Final]");
+  const tagPattern = String(body.tag || "[Final]").trim();
+  const tagLower = tagPattern.toLowerCase();
+
   try {
+    // Depth 2 is intentional: it exposes only page children, which is exactly
+    // the level where final SECTION containers are selected. We never walk
+    // into section children, so slide/frame names cannot leak into the browser.
     const fileRes = await fetch(`https://api.figma.com/v1/files/${fileKey}?depth=2`, { headers: { "X-Figma-Token": token } });
     if (!fileRes.ok) return c.json({ error: `Figma API request failed (${fileRes.status})` }, 502);
+
     const file = await fileRes.json();
     const fileName = file.name || "Untitled Figma file";
-    const tagLower = tagPattern.toLowerCase();
-    const pages = (file.document?.children ?? []).filter((page: any) => {
-      const pageTagged = String(page.name || "").toLowerCase().includes(tagLower);
-      const nodeTagged = (page.children ?? []).some((node: any) => String(node.name || "").toLowerCase().includes(tagLower));
-      return pageTagged || nodeTagged;
+    const allPages = file.document?.children ?? [];
+
+    const pages = allPages.filter((page: any) => {
+      const pageName = String(page.name || "").toLowerCase();
+      const pageTagged = !tagPattern || pageName.includes(tagLower);
+      const containsTaggedSection = (page.children ?? []).some((node: any) =>
+        node?.type === "SECTION" && String(node.name || "").toLowerCase().includes(tagLower)
+      );
+      return pageTagged || containsTaggedSection;
     });
-    const matches = pages.flatMap((page: any) => (page.children ?? [])
-      .filter((node: any) => node.type === "SECTION")
-      .map((node: any) => ({ nodeId: node.id, sectionName: node.name, pageName: page.name })));
-    let thumbnails: Record<string, string> = {};
-    if (matches.length) {
-      const ids = matches.map(m => m.nodeId).join(",");
-      const imageRes = await fetch(`https://api.figma.com/v1/images/${fileKey}?ids=${encodeURIComponent(ids)}&format=png&scale=2`, { headers: { "X-Figma-Token": token } });
-      if (imageRes.ok) thumbnails = (await imageRes.json()).images || {};
-    }
-    const resources = matches.map(m => ({
-      id: `figma-${fileKey}-${m.nodeId.replace(/[:;]/g, "-")}`,
-      title: m.sectionName.replace(tagPattern, "").trim() || m.sectionName,
-      type: "figma", productId: "", pageName: m.pageName, fileName, fileKey,
-      thumbnail: thumbnails[m.nodeId] || undefined,
-      sourceUrl: `https://www.figma.com/design/${fileKey}?node-id=${m.nodeId.replace(":", "-")}`,
-      tags: ["figma", "section", tagPattern.replace(/[\[\]]/g, "").toLowerCase()],
-      viewCount: 0, downloadCount: 0, createdAt: new Date().toISOString(),
-    }));
+
+    const matches: FigmaSectionMatch[] = pages.flatMap((page: any) =>
+      (page.children ?? [])
+        .filter((node: any) => node?.type === "SECTION")
+        .map((node: any) => ({ nodeId: String(node.id), sectionName: String(node.name || "Untitled Section"), pageName: String(page.name || "Untitled Page") }))
+    );
+
+    const thumbnails = await fetchSectionImages(fileKey, token, matches.map(match => match.nodeId));
     const syncedAt = new Date().toISOString();
+
+    const resources = matches.map(match => ({
+      id: `figma-${fileKey}-${match.nodeId.replace(/[:;]/g, "-")}`,
+      nodeId: match.nodeId,
+      nodeType: "SECTION",
+      title: match.sectionName.replace(tagPattern, "").trim() || match.sectionName,
+      type: "figma",
+      productId: "",
+      pageName: match.pageName,
+      fileName,
+      fileKey,
+      thumbnail: thumbnails[match.nodeId] || null,
+      sourceUrl: `https://www.figma.com/design/${fileKey}?node-id=${encodeURIComponent(match.nodeId)}`,
+      tags: ["figma", "section", ...(tagPattern ? [tagPattern.replace(/[\[\]]/g, "").toLowerCase()] : [])],
+      viewCount: 0,
+      downloadCount: 0,
+      createdAt: syncedAt,
+    }));
+
+    // Replace the complete sync result, eliminating stale frame-level records.
     await kv.set("figma_resources_v1", resources);
     await kv.set("figma_last_synced_at", syncedAt);
-    return c.json({ resources, syncedAt, pagesScanned: file.document?.children?.length ?? 0, pagesLoaded: pages.length, fileName });
-  } catch (error) { return c.json({ error: "Figma sync failed", detail: String(error) }, 500); }
+
+    return c.json({ resources, syncedAt, pagesScanned: allPages.length, pagesLoaded: pages.length, fileName });
+  } catch (error) {
+    return c.json({ error: "Figma sync failed", detail: String(error) }, 500);
+  }
 });
 
 app.post(`${FUNCTION}/upload`, async (c) => { const gate = await requireAdmin(c); if (gate.error) return gate.error; const formData = await c.req.formData(); const file = formData.get("file") as File | null; if (!file) return c.json({ error: "No file provided" }, 400); const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_"); const path = `${Date.now()}_${crypto.randomUUID()}_${safeName}`; const bytes = await file.arrayBuffer(); const { error } = await service().storage.from(BUCKET).upload(path, bytes, { contentType: file.type, upsert: false }); if (error) return c.json({ error: error.message }, 500); const { data: { publicUrl } } = service().storage.from(BUCKET).getPublicUrl(path); const size = file.size < 1048576 ? `${(file.size / 1024).toFixed(0)} KB` : `${(file.size / 1048576).toFixed(1)} MB`; return c.json({ url: publicUrl, thumbnailUrl: file.type.startsWith("image/") ? publicUrl : undefined, name: file.name, size }); });
