@@ -5,7 +5,7 @@ let mounted: HTMLElement | null = null
 let root: Root | null = null
 
 function mountAdmin(target: HTMLElement) {
-  if (mounted === target) return
+  if (target.querySelector('[data-admin-console="true"]')) return
   root?.unmount()
   mounted = target
   target.innerHTML = ''
