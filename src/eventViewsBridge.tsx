@@ -13,11 +13,34 @@ const FALLBACK_IMAGES = [
 ]
 
 const imageFor = (event: ManagedEvent) => event.banner || FALLBACK_IMAGES[Math.abs([...event.id].reduce((n, c) => n * 31 + c.charCodeAt(0), 7)) % FALLBACK_IMAGES.length]
-const isUpcoming = (event: ManagedEvent) => new Date(event.event_date).getTime() >= new Date().setHours(0, 0, 0, 0)
+
+// Parse YYYY-MM-DD as a local calendar date. new Date('YYYY-MM-DD') is UTC and can
+// shift the displayed/comparison date depending on the user's timezone.
+const localEventDate = (value: string) => {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (!match) return new Date(value)
+  const [, year, month, day] = match
+  return new Date(Number(year), Number(month) - 1, Number(day))
+}
+
+const startOfToday = () => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return today
+}
+
+const eventDay = (event: ManagedEvent) => {
+  const date = localEventDate(event.event_date)
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
+const isUpcoming = (event: ManagedEvent) => eventDay(event).getTime() >= startOfToday().getTime()
 const productFor = (event: ManagedEvent) => products.find(p => p.id === event.product_id)
-const dateText = (event: ManagedEvent) => new Date(event.event_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+const dateText = (event: ManagedEvent) => localEventDate(event.event_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 const metaText = (event: ManagedEvent) => [event.location, event.event_type].filter(Boolean).join(' · ')
-const daysLeft = (event: ManagedEvent) => Math.max(0, Math.ceil((new Date(event.event_date).getTime() - Date.now()) / 86400000))
+const daysLeft = (event: ManagedEvent) => Math.max(0, Math.round((eventDay(event).getTime() - startOfToday().getTime()) / 86400000))
+const eventSort = (a: ManagedEvent, b: ManagedEvent) => eventDay(a).getTime() - eventDay(b).getTime()
 
 function useLiveEvents() {
   const [events, setEvents] = useState<ManagedEvent[]>([])
@@ -47,20 +70,20 @@ function SmallEventCard({ event }: { event: ManagedEvent }) {
 }
 
 function HomeUpcoming() {
-  const events = useLiveEvents().filter(isUpcoming).sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
-  if (!events.length) return <div className="text-[13px] text-[var(--ink-45)] py-6">No upcoming events.</div>
+  const events = useLiveEvents().filter(isUpcoming).sort(eventSort)
+  if (!events.length) return <div className="w-full text-[13px] text-[var(--ink-45)] py-6">No upcoming events.</div>
   const [first, ...rest] = events
-  return <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">
+  return <div className="w-full mt-3 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 items-stretch">
     <div className="relative overflow-hidden rounded-2xl min-h-[196px] bg-[var(--canvas-deep)]"><img src={imageFor(first)} className="absolute inset-0 w-full h-full object-cover" alt="" /><div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" /><div className="absolute top-4 left-4"><ProductPill event={first} /></div><div className="absolute top-4 right-4 px-2.5 py-1 rounded-md bg-white/85 text-[11px] font-semibold text-[var(--ink)]">{daysLeft(first) === 0 ? 'TODAY' : `${daysLeft(first)} DAYS LEFT`}</div><div className="absolute left-5 right-5 bottom-5 text-white"><div className="font-display text-[20px] font-bold">{first.title}</div><div className="text-[11px] text-white/80 mt-1">{dateText(first)}{metaText(first) ? ` · ${metaText(first)}` : ''}</div></div></div>
     <div className="flex flex-col gap-3">{rest.slice(0, 2).map(event => <SmallEventCard key={event.id} event={event} />)}{rest.length === 0 && <div className="rounded-xl border border-dashed border-[var(--line-soft)] flex-1 min-h-[92px] flex items-center justify-center text-[12px] text-[var(--ink-45)]">More events will appear here</div>}</div>
   </div>
 }
 
 function EventsListing() {
-  const all = useLiveEvents().sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
+  const all = useLiveEvents().sort(eventSort)
   const upcoming = all.filter(isUpcoming)
   const past = all.filter(event => !isUpcoming(event)).reverse()
-  const render = (event: ManagedEvent) => <div key={event.id} className="rounded-xl border border-[var(--line-soft)] bg-white overflow-hidden"><img src={imageFor(event)} className="w-full h-36 object-cover" alt="" /><div className="p-4"><div className="flex items-center justify-between gap-3 mb-2"><ProductPill event={event} /><span className="text-[11px] text-[var(--ink-45)]">{isUpcoming(event) ? `${daysLeft(event)}d` : 'Past'}</span></div><div className="font-display text-[14px] font-bold text-[var(--ink)]">{event.title}</div><div className="text-[11px] text-[var(--ink-45)] mt-1.5">{dateText(event)}{metaText(event) ? ` · ${metaText(event)}` : ''}</div></div></div>
+  const render = (event: ManagedEvent) => <div key={event.id} className="rounded-xl border border-[var(--line-soft)] bg-white overflow-hidden"><img src={imageFor(event)} className="w-full h-36 object-cover" alt="" /><div className="p-4"><div className="flex items-center justify-between gap-3 mb-2"><ProductPill event={event} /><span className="text-[11px] text-[var(--ink-45)]">{isUpcoming(event) ? (daysLeft(event) === 0 ? 'Today' : `${daysLeft(event)}d`) : 'Past'}</span></div><div className="font-display text-[14px] font-bold text-[var(--ink)]">{event.title}</div><div className="text-[11px] text-[var(--ink-45)] mt-1.5">{dateText(event)}{metaText(event) ? ` · ${metaText(event)}` : ''}</div></div></div>
   return <div className="flex-1 overflow-y-auto"><div className="px-8 py-6 max-w-[1400px] flex flex-col gap-8 pb-8"><h1 className="font-display text-[22px] font-bold text-[var(--ink)] tracking-tight">Events</h1><section><h2 className="font-display text-[15px] font-bold text-[var(--ink)] mb-3">Upcoming</h2>{upcoming.length ? <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{upcoming.map(render)}</div> : <div className="text-[13px] text-[var(--ink-45)] py-8">No upcoming events.</div>}</section>{past.length > 0 && <section><h2 className="font-display text-[15px] font-bold text-[var(--ink)] mb-3">Past</h2><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 opacity-70">{past.map(render)}</div></section>}</div></div>
 }
 
@@ -93,8 +116,16 @@ export function startEventViewsBridge() {
     if (upcomingTitle) {
       const section = upcomingTitle.parentElement
       if (section) {
+        // The original generated layout can be a flex/grid container. Force the live
+        // events section into a normal vertical flow so the heading stays above the cards.
+        section.style.display = 'block'
+        section.style.width = '100%'
+        section.style.alignItems = 'stretch'
         let host = section.querySelector(':scope > [data-live-events]') as HTMLElement | null
         if (!host) { host = document.createElement('div'); host.dataset.liveEvents = 'true'; section.appendChild(host) }
+        host.style.display = 'block'
+        host.style.width = '100%'
+        host.style.maxWidth = 'none'
         Array.from(section.children).forEach(child => { if (child !== upcomingTitle && child !== host) child.remove() })
         mountHome(host)
       }
