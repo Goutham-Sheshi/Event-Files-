@@ -6,10 +6,7 @@ const BASE = `https://${projectId}.supabase.co/functions/v1/make-server-c0d15c17
 async function authHeaders(contentType = false): Promise<HeadersInit> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Your session has expired. Please sign in again.');
-  return {
-    Authorization: `Bearer ${session.access_token}`,
-    ...(contentType ? { 'Content-Type': 'application/json' } : {}),
-  };
+  return { Authorization: `Bearer ${session.access_token}`, ...(contentType ? { 'Content-Type': 'application/json' } : {}) };
 }
 
 export async function setFigmaToken(token: string): Promise<void> {
@@ -18,11 +15,7 @@ export async function setFigmaToken(token: string): Promise<void> {
 }
 
 export async function getFigmaTokenStatus(): Promise<boolean> {
-  try {
-    const res = await fetch(`${BASE}/figma/token/status`, { headers: await authHeaders() });
-    if (!res.ok) return false;
-    return (await res.json()).hasToken === true;
-  } catch { return false; }
+  try { const res = await fetch(`${BASE}/figma/token/status`, { headers: await authHeaders() }); return res.ok && (await res.json()).hasToken === true; } catch { return false; }
 }
 
 export type FigmaSyncResult = { resources: any[]; syncedAt: string; pagesScanned: number; pagesLoaded?: number; fileName?: string };
@@ -40,32 +33,9 @@ function isImageResource(row: any): boolean {
   return /\.(png|jpe?g|gif|webp|svg|avif)(?:[?#].*)?$/i.test(String(row.source_url || ''));
 }
 
-// Figma is its own source of truth. Do not merge uploaded product resources here:
-// Figma Files and Product Files are intentionally separate parts of the UI.
-export async function getFigmaResources(): Promise<{ resources: any[]; lastSyncedAt: string | null }> {
-  try {
-    const res = await fetch(`${BASE}/figma/resources`, { headers: await authHeaders() });
-    if (!res.ok) return { resources: [], lastSyncedAt: null };
-    const data = await res.json();
-    const resources = Array.isArray(data.resources) ? data.resources.map((row: any) => ({
-      ...row,
-      type: 'figma',
-      // Defensive client-side rule for older synced records as well.
-      productId: '',
-    })) : [];
-    return { resources, lastSyncedAt: data.lastSyncedAt ?? null };
-  } catch {
-    return { resources: [], lastSyncedAt: null };
-  }
-}
-
-// Managed uploads remain regular catalog resources and are loaded independently.
 export async function getManagedResources(): Promise<any[]> {
   const { data, error } = await supabase.from('vault_resources').select('*').order('created_at', { ascending: false });
-  if (error) {
-    console.error('Could not load managed resources:', error.message);
-    return [];
-  }
+  if (error) { console.error('Could not load managed resources:', error.message); return []; }
   return (data || []).map((row: any) => ({
     id: row.id,
     title: row.title,
@@ -82,4 +52,22 @@ export async function getManagedResources(): Promise<any[]> {
     featured: row.featured || false,
     createdAt: row.created_at,
   }));
+}
+
+// The current app consumes one resource collection. Keep managed files in that
+// collection so product pages continue to work, but force Figma resources to be
+// productless. ProductPage therefore cannot show Figma content, while the
+// Figma section still receives all synced frames.
+export async function getFigmaResources(): Promise<{ resources: any[]; lastSyncedAt: string | null }> {
+  const figmaRequest = (async () => {
+    try {
+      const res = await fetch(`${BASE}/figma/resources`, { headers: await authHeaders() });
+      if (!res.ok) return { resources: [], lastSyncedAt: null };
+      return await res.json();
+    } catch { return { resources: [], lastSyncedAt: null }; }
+  })();
+
+  const [figmaResult, managedResources] = await Promise.all([figmaRequest, getManagedResources()]);
+  const figmaResources = Array.isArray(figmaResult.resources) ? figmaResult.resources.map((row: any) => ({ ...row, type: 'figma', productId: '' })) : [];
+  return { resources: [...managedResources, ...figmaResources], lastSyncedAt: figmaResult.lastSyncedAt ?? null };
 }
