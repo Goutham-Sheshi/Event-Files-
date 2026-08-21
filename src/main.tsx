@@ -6,6 +6,7 @@ import { startAdminBridge } from './adminBridge'
 import { startAdminLabelBridge } from './adminLabelBridge'
 import { startEventViewsBridge } from './eventViewsBridge'
 import { startFileViewerBridge } from './fileViewerBridge'
+import { startFigmaFolderBridge } from './figmaFolderBridge'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -20,3 +21,4 @@ startAdminBridge()
 startAdminLabelBridge()
 startEventViewsBridge()
 startFileViewerBridge()
+startFigmaFolderBridge()
