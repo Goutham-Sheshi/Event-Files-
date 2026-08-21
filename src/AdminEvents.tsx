@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { createEvent, deleteEvent, getEvents, updateEvent, type EventInput, type ManagedEvent } from './eventsApi'
+import { createEvent, deleteEvent, getEvents, isCurrentUserAdmin, updateEvent, type EventInput, type ManagedEvent } from './eventsApi'
 import { products } from './data'
 
 const defaultEventDate = () => {
@@ -23,9 +23,15 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [checkingAdmin, setCheckingAdmin] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    isCurrentUserAdmin().then(result => { setIsAdmin(result); setCheckingAdmin(false) })
+  }, [])
 
   const load = async () => { try { setEvents(await getEvents()) } catch (e) { setError(e instanceof Error ? e.message : 'Failed to load events') } }
-  useEffect(() => { load() }, [])
+  useEffect(() => { if (isAdmin) load() }, [isAdmin])
 
   const startAdd = () => { setEditing(null); setForm(emptyForm()); setError(''); setOpen(true) }
   const startEdit = (event: ManagedEvent) => {
@@ -45,10 +51,27 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
   }
 
   const remove = async (event: ManagedEvent) => {
-    if (!window.confirm(`Delete “${event.title}”? This cannot be undone.`)) return
+    if (!window.confirm(`Delete "${event.title}"? This cannot be undone.`)) return
     try { setBusy(true); await deleteEvent(event.id); await load(); onChanged?.() }
     catch (err) { setError(err instanceof Error ? err.message : 'Failed to delete event') }
     finally { setBusy(false) }
+  }
+
+  if (checkingAdmin) {
+    return <div className="flex-1 flex items-center justify-center text-[13px] text-[var(--ink-45)]">Checking access…</div>
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center max-w-sm">
+          <div className="font-display text-[16px] font-bold text-[var(--ink)] mb-1.5">Admin access required</div>
+          <div className="text-[13px] text-[var(--ink-45)] leading-relaxed">
+            Your account isn't marked as an admin. Ask an existing admin to grant you access if you believe this is a mistake.
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return <div className="flex-1 self-stretch w-full overflow-y-auto"><div className="px-8 py-6 max-w-[1400px]">
