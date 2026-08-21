@@ -1,14 +1,6 @@
 import { getFigmaResources } from './api';
 
-type FigmaResource = {
-  id: string;
-  title: string;
-  type: string;
-  fileName?: string;
-  pageName?: string;
-  sourceUrl?: string;
-};
-
+type FigmaResource = { id: string; title: string; type: string; fileName?: string; pageName?: string; sourceUrl?: string; };
 const TREE_ID = 'figma-folder-tree';
 const STYLE_ID = 'figma-folder-tree-style';
 
@@ -27,7 +19,7 @@ function injectStyles() {
     #${TREE_ID} .fft-group[data-open="true"]>.fft-folder .fft-chevron{transform:rotate(90deg)}
     #${TREE_ID} .fft-children{display:flex;flex-direction:column;gap:1px}
     #${TREE_ID} .fft-empty{padding:6px 8px;color:var(--ink-45);font-size:11px}
-    .fft-parent-chevron{margin-left:auto;width:12px;height:12px;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s}
+    .fft-parent-chevron{margin-left:auto;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;transition:transform .15s;cursor:pointer}
     .fft-parent-chevron[data-open="true"]{transform:rotate(90deg)}
   `;
   document.head.appendChild(style);
@@ -42,103 +34,65 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string, t
 
 function icon(kind: 'folder' | 'file' | 'chevron') {
   const span = document.createElement('span');
-  span.innerHTML = kind === 'chevron'
-    ? '›'
-    : kind === 'folder'
-      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>'
-      : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>';
+  span.innerHTML = kind === 'chevron' ? '›' : kind === 'folder'
+    ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>'
+    : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>';
   return span;
 }
 
 function renderTree(resources: FigmaResource[]) {
   const navButton = Array.from(document.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Figma Files');
   if (!navButton || document.getElementById(TREE_ID)) return false;
-
-  const tree = el('div');
-  tree.id = TREE_ID;
-
+  const tree = el('div'); tree.id = TREE_ID;
   const byFile = new Map<string, Map<string, FigmaResource[]>>();
   resources.forEach(resource => {
-    const file = resource.fileName || 'Figma File';
-    const page = resource.pageName || 'Untitled Page';
+    const file = resource.fileName || 'Figma File'; const page = resource.pageName || 'Untitled Page';
     if (!byFile.has(file)) byFile.set(file, new Map());
-    const pages = byFile.get(file)!;
-    if (!pages.has(page)) pages.set(page, []);
-    pages.get(page)!.push(resource);
+    const pages = byFile.get(file)!; if (!pages.has(page)) pages.set(page, []); pages.get(page)!.push(resource);
   });
-
-  if (!byFile.size) {
-    tree.appendChild(el('div', 'fft-empty', 'No synced Figma files'));
-  }
-
+  if (!byFile.size) tree.appendChild(el('div', 'fft-empty', 'No synced Figma files'));
   byFile.forEach((pages, fileName) => {
-    const fileGroup = el('div', 'fft-group');
-    fileGroup.dataset.open = 'true';
-    const fileButton = el('button', 'fft-row fft-folder');
-    const fileChevron = icon('chevron'); fileChevron.className = 'fft-chevron';
+    const fileGroup = el('div', 'fft-group'); fileGroup.dataset.open = 'true';
+    const fileButton = el('button', 'fft-row fft-folder'); const fileChevron = icon('chevron'); fileChevron.className = 'fft-chevron';
     fileButton.append(fileChevron, icon('folder'), document.createTextNode(fileName));
     const pageChildren = el('div', 'fft-children');
     fileButton.onclick = () => { fileGroup.dataset.open = fileGroup.dataset.open === 'true' ? 'false' : 'true'; };
-
     pages.forEach((frames, pageName) => {
-      const pageGroup = el('div', 'fft-group');
-      pageGroup.dataset.open = 'true';
-      const pageButton = el('button', 'fft-row fft-folder');
-      const pageChevron = icon('chevron'); pageChevron.className = 'fft-chevron';
+      const pageGroup = el('div', 'fft-group'); pageGroup.dataset.open = 'true';
+      const pageButton = el('button', 'fft-row fft-folder'); const pageChevron = icon('chevron'); pageChevron.className = 'fft-chevron';
       pageButton.append(pageChevron, icon('folder'), document.createTextNode(pageName));
       const frameChildren = el('div', 'fft-children');
       pageButton.onclick = () => { pageGroup.dataset.open = pageGroup.dataset.open === 'true' ? 'false' : 'true'; };
-
       frames.forEach(frame => {
-        const frameButton = el('button', 'fft-row fft-file');
-        frameButton.title = frame.title;
+        const frameButton = el('button', 'fft-row fft-file'); frameButton.title = frame.title;
         frameButton.append(icon('file'), document.createTextNode(frame.title));
-        frameButton.onclick = (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          if (frame.sourceUrl) window.open(frame.sourceUrl, '_blank', 'noopener,noreferrer');
-        };
+        frameButton.onclick = event => { event.preventDefault(); event.stopPropagation(); if (frame.sourceUrl) window.open(frame.sourceUrl, '_blank', 'noopener,noreferrer'); };
         frameChildren.appendChild(frameButton);
       });
-
-      pageGroup.append(pageButton, frameChildren);
-      pageChildren.appendChild(pageGroup);
+      pageGroup.append(pageButton, frameChildren); pageChildren.appendChild(pageGroup);
     });
-
-    fileGroup.append(fileButton, pageChildren);
-    tree.appendChild(fileGroup);
+    fileGroup.append(fileButton, pageChildren); tree.appendChild(fileGroup);
   });
-
   navButton.insertAdjacentElement('afterend', tree);
-
-  const parentChevron = el('span', 'fft-parent-chevron', '›');
-  parentChevron.dataset.open = 'true';
+  const parentChevron = el('span', 'fft-parent-chevron', '›'); parentChevron.dataset.open = 'true';
+  parentChevron.onclick = event => {
+    event.preventDefault(); event.stopPropagation();
+    const open = tree.style.display !== 'none'; tree.style.display = open ? 'none' : 'flex'; parentChevron.dataset.open = open ? 'false' : 'true';
+  };
   navButton.appendChild(parentChevron);
-  navButton.addEventListener('dblclick', event => {
-    event.preventDefault();
-    const open = tree.style.display !== 'none';
-    tree.style.display = open ? 'none' : 'flex';
-    parentChevron.dataset.open = open ? 'false' : 'true';
-  });
   return true;
 }
 
 export function startFigmaFolderBridge() {
-  injectStyles();
-  let started = false;
-
+  injectStyles(); let started = false;
   const boot = async () => {
     if (started) return;
     try {
       const { resources } = await getFigmaResources();
       const figma = (resources as FigmaResource[]).filter(resource => resource.type === 'figma');
       if (renderTree(figma)) started = true;
-    } catch {
-      if (renderTree([])) started = true;
-    }
+    } catch { if (renderTree([])) started = true; }
   };
-
   const observer = new MutationObserver(() => { void boot(); });
-  observer.observe(document.body, { childList: true, subtree: true });
-  void boot();
+  observer.observe(document.body, { childList: true, subtree: true }); void boot();
 }
