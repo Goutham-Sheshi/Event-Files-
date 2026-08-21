@@ -30,23 +30,26 @@ type FigmaSectionMatch = { nodeId: string; sectionName: string; pageName: string
 
 async function fetchSectionImages(fileKey: string, token: string, ids: string[]) {
   const images: Record<string, string> = {};
-  // Batch IDs so a large page cannot exceed the request URL limit.
   for (let i = 0; i < ids.length; i += 40) {
     const batch = ids.slice(i, i + 40);
-    const url = new URL(`https://api.figma.com/v1/images/${fileKey}`);
-    url.searchParams.set("ids", batch.join(","));
-    url.searchParams.set("format", "png");
-    url.searchParams.set("scale", "1");
-    const response = await fetch(url, { headers: { "X-Figma-Token": token } });
-    if (!response.ok) continue;
-    const payload = await response.json().catch(() => ({}));
-    Object.assign(images, payload.images || {});
+    try {
+      const url = new URL(`https://api.figma.com/v1/images/${fileKey}`);
+      url.searchParams.set("ids", batch.join(","));
+      url.searchParams.set("format", "png");
+      url.searchParams.set("scale", "1");
+      const response = await fetch(url, { headers: { "X-Figma-Token": token } });
+      if (!response.ok) continue;
+      const payload = await response.json().catch(() => ({}));
+      Object.assign(images, payload.images || {});
+    } catch (error) {
+      console.error("Figma image batch failed", String(error));
+    }
   }
   return images;
 }
 
-// Figma hierarchy: FILE -> qualifying PAGE -> direct SECTION nodes only.
-// Frames, groups, components and every descendant inside a SECTION are excluded.
+// FILE -> PAGE -> direct SECTION only. Sections are the final grouped units;
+// no frame/group/component descendants are ever synced into the browser.
 app.post(`${FUNCTION}/figma/sync`, async (c) => {
   const gate = await requireAdmin(c); if (gate.error) return gate.error;
   const token = await kv.get("figma_token");
@@ -54,27 +57,30 @@ app.post(`${FUNCTION}/figma/sync`, async (c) => {
 
   const body = await c.req.json().catch(() => ({}));
   const fileKey = body.fileKey || DEFAULT_FIGMA_FILE_KEY;
-  const tagPattern = String(body.tag || "[Final]").trim();
+  // A SECTION is already the requested final unit. Do not silently require a
+  // [Final] name tag, because that was excluding valid sections and producing
+  // an empty browser after sync.
+  const tagPattern = typeof body.tag === "string" ? body.tag.trim() : "";
   const tagLower = tagPattern.toLowerCase();
 
   try {
-    // Depth 2 is intentional: it exposes only page children, which is exactly
-    // the level where final SECTION containers are selected. We never walk
-    // into section children, so slide/frame names cannot leak into the browser.
-    const fileRes = await fetch(`https://api.figma.com/v1/files/${fileKey}?depth=2`, { headers: { "X-Figma-Token": token } });
-    if (!fileRes.ok) return c.json({ error: `Figma API request failed (${fileRes.status})` }, 502);
+    let fileRes = await fetch(`https://api.figma.com/v1/files/${fileKey}?depth=2`, { headers: { "X-Figma-Token": token } });
+    // Some Figma files/API responses are more reliable without a depth query.
+    if (!fileRes.ok) fileRes = await fetch(`https://api.figma.com/v1/files/${fileKey}`, { headers: { "X-Figma-Token": token } });
+    if (!fileRes.ok) {
+      const detail = await fileRes.text().catch(() => "");
+      return c.json({ error: `Figma API request failed (${fileRes.status})`, detail: detail.slice(0, 500) }, 502);
+    }
 
     const file = await fileRes.json();
     const fileName = file.name || "Untitled Figma file";
-    const allPages = file.document?.children ?? [];
+    const allPages = Array.isArray(file.document?.children) ? file.document.children : [];
 
     const pages = allPages.filter((page: any) => {
+      const directSections = (page.children ?? []).filter((node: any) => node?.type === "SECTION");
+      if (!tagPattern) return directSections.length > 0;
       const pageName = String(page.name || "").toLowerCase();
-      const pageTagged = !tagPattern || pageName.includes(tagLower);
-      const containsTaggedSection = (page.children ?? []).some((node: any) =>
-        node?.type === "SECTION" && String(node.name || "").toLowerCase().includes(tagLower)
-      );
-      return pageTagged || containsTaggedSection;
+      return pageName.includes(tagLower) || directSections.some((node: any) => String(node.name || "").toLowerCase().includes(tagLower));
     });
 
     const matches: FigmaSectionMatch[] = pages.flatMap((page: any) =>
@@ -85,12 +91,11 @@ app.post(`${FUNCTION}/figma/sync`, async (c) => {
 
     const thumbnails = await fetchSectionImages(fileKey, token, matches.map(match => match.nodeId));
     const syncedAt = new Date().toISOString();
-
     const resources = matches.map(match => ({
       id: `figma-${fileKey}-${match.nodeId.replace(/[:;]/g, "-")}`,
       nodeId: match.nodeId,
       nodeType: "SECTION",
-      title: match.sectionName.replace(tagPattern, "").trim() || match.sectionName,
+      title: tagPattern ? (match.sectionName.replace(tagPattern, "").trim() || match.sectionName) : match.sectionName,
       type: "figma",
       productId: "",
       pageName: match.pageName,
@@ -104,13 +109,12 @@ app.post(`${FUNCTION}/figma/sync`, async (c) => {
       createdAt: syncedAt,
     }));
 
-    // Replace the complete sync result, eliminating stale frame-level records.
     await kv.set("figma_resources_v1", resources);
     await kv.set("figma_last_synced_at", syncedAt);
-
     return c.json({ resources, syncedAt, pagesScanned: allPages.length, pagesLoaded: pages.length, fileName });
   } catch (error) {
-    return c.json({ error: "Figma sync failed", detail: String(error) }, 500);
+    console.error("Figma sync failed", error);
+    return c.json({ error: "Figma sync failed", detail: error instanceof Error ? error.message : String(error) }, 500);
   }
 });
 
