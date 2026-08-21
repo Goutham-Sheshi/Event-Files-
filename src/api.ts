@@ -54,20 +54,22 @@ export async function getManagedResources(): Promise<any[]> {
   }));
 }
 
-// The current app consumes one resource collection. Keep managed files in that
-// collection so product pages continue to work, but force Figma resources to be
-// productless. ProductPage therefore cannot show Figma content, while the
-// Figma section still receives all synced frames.
+// Figma Files is intentionally isolated from the managed resource catalogue.
+// Older vault_resources rows that were previously marked as `figma` are not
+// included here, because they can contain stale frame-level data and do not
+// belong on the Figma section browser.
 export async function getFigmaResources(): Promise<{ resources: any[]; lastSyncedAt: string | null }> {
-  const figmaRequest = (async () => {
-    try {
-      const res = await fetch(`${BASE}/figma/resources`, { headers: await authHeaders() });
-      if (!res.ok) return { resources: [], lastSyncedAt: null };
-      return await res.json();
-    } catch { return { resources: [], lastSyncedAt: null }; }
-  })();
-
-  const [figmaResult, managedResources] = await Promise.all([figmaRequest, getManagedResources()]);
-  const figmaResources = Array.isArray(figmaResult.resources) ? figmaResult.resources.map((row: any) => ({ ...row, type: 'figma', productId: '' })) : [];
-  return { resources: [...managedResources, ...figmaResources], lastSyncedAt: figmaResult.lastSyncedAt ?? null };
+  try {
+    const res = await fetch(`${BASE}/figma/resources`, { headers: await authHeaders() });
+    if (!res.ok) return { resources: [], lastSyncedAt: null };
+    const result = await res.json();
+    const resources = Array.isArray(result.resources)
+      ? result.resources
+          .filter((row: any) => row?.type === 'figma' && row?.nodeType === 'SECTION')
+          .map((row: any) => ({ ...row, productId: '' }))
+      : [];
+    return { resources, lastSyncedAt: result.lastSyncedAt ?? null };
+  } catch {
+    return { resources: [], lastSyncedAt: null };
+  }
 }
