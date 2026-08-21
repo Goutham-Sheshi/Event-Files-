@@ -1,5 +1,5 @@
 import { createRoot, type Root } from 'react-dom/client'
-import AdminEvents from './AdminEvents'
+import AdminConsole from './AdminConsole'
 
 let mounted: HTMLElement | null = null
 let root: Root | null = null
@@ -10,7 +10,7 @@ function mountAdmin(target: HTMLElement) {
   mounted = target
   target.innerHTML = ''
   root = createRoot(target)
-  root.render(<AdminEvents />)
+  root.render(<AdminConsole />)
 }
 
 export function startAdminBridge() {
