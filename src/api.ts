@@ -38,10 +38,56 @@ export async function syncFigma(fileKey?: string, tag?: string): Promise<FigmaSy
   return data;
 }
 
+/**
+ * The main app historically called this only for Figma resources. The same
+ * resource collection is also what drives product pages, so managed uploads
+ * must be merged here as well. This keeps every uploaded file visible after a
+ * normal page refresh, regardless of which product it belongs to.
+ */
 export async function getFigmaResources(): Promise<{ resources: any[]; lastSyncedAt: string | null }> {
-  try {
-    const res = await fetch(`${BASE}/figma/resources`, { headers: await authHeaders() });
-    if (!res.ok) return { resources: [], lastSyncedAt: null };
-    return await res.json();
-  } catch { return { resources: [], lastSyncedAt: null }; }
+  const figmaRequest = (async () => {
+    try {
+      const res = await fetch(`${BASE}/figma/resources`, { headers: await authHeaders() });
+      if (!res.ok) return { resources: [], lastSyncedAt: null };
+      return await res.json();
+    } catch {
+      return { resources: [], lastSyncedAt: null };
+    }
+  })();
+
+  const managedRequest = supabase
+    .from('vault_resources')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  const [figmaResult, managedResult] = await Promise.all([figmaRequest, managedRequest]);
+
+  if (managedResult.error) {
+    console.error('Could not load managed resources:', managedResult.error.message);
+  }
+
+  const managedResources = (managedResult.data || []).map((row: any) => ({
+    id: row.id,
+    title: row.title,
+    description: row.description || undefined,
+    // ProductPage currently groups "other" resources but has no dedicated
+    // document group. Map uploaded documents there so they are visible now.
+    type: row.type === 'document' ? 'other' : row.type,
+    productId: row.product_id,
+    thumbnail: row.thumbnail || undefined,
+    sourceUrl: row.source_url,
+    fileFormat: row.file_format || undefined,
+    fileSize: row.file_size || undefined,
+    tags: row.tags || [],
+    viewCount: row.view_count || 0,
+    downloadCount: row.download_count || 0,
+    featured: row.featured || false,
+    createdAt: row.created_at,
+  }));
+
+  const figmaResources = Array.isArray(figmaResult.resources) ? figmaResult.resources : [];
+  return {
+    resources: [...managedResources, ...figmaResources],
+    lastSyncedAt: figmaResult.lastSyncedAt ?? null,
+  };
 }
