@@ -2,6 +2,14 @@ import { FormEvent, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 
+const getDisplayName = (session: Session | null) => {
+  const metadata = session?.user?.user_metadata || {}
+  const candidate = metadata.full_name || metadata.name || metadata.display_name || metadata.user_name
+  if (typeof candidate === 'string' && candidate.trim()) return candidate.trim().split(/\s+/)[0]
+  const email = session?.user?.email
+  return email ? email.split('@')[0] : ''
+}
+
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
@@ -21,6 +29,31 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     })
     return () => subscription.subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (!session) return
+    const name = getDisplayName(session)
+    if (name) window.localStorage.setItem('sheshi-vault-user-name', name)
+
+    const applyWelcome = () => {
+      const heading = Array.from(document.querySelectorAll('h1')).find(node => node.textContent?.trim() === 'Welcome back') as HTMLElement | undefined
+      if (!heading) return false
+      heading.textContent = name ? `Welcome back, ${name}` : 'Welcome back'
+      heading.style.fontSize = 'clamp(42px, 5vw, 72px)'
+      heading.style.lineHeight = '0.98'
+      heading.style.fontWeight = '800'
+      heading.style.letterSpacing = '-0.045em'
+      heading.style.marginTop = '10px'
+      return true
+    }
+
+    if (applyWelcome()) return
+    const observer = new MutationObserver(() => {
+      if (applyWelcome()) observer.disconnect()
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [session])
 
   async function signIn(event: FormEvent) {
     event.preventDefault()
@@ -53,7 +86,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       <label style={{display:'block',fontSize:13,fontWeight:600,marginBottom:6}}>Email</label>
       <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',border:'1px solid #d1d5db',borderRadius:10,marginBottom:14}} />
       <label style={{display:'block',fontSize:13,fontWeight:600,marginBottom:6}}>Password</label>
-      <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',border:'1px solid #d1d5db',borderRadius:10,marginBottom:16}} />
+      <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:10,marginBottom:16}} />
       <button disabled={busy} type="submit" style={{width:'100%',padding:12,border:0,borderRadius:10,background:'#2563EB',color:'#fff',fontWeight:700,cursor:'pointer'}}>{busy?'Signing in…':'Sign in'}</button>
       <button disabled={busy} type="button" onClick={sendMagicLink} style={{width:'100%',padding:12,border:0,background:'transparent',color:'#2563EB',fontWeight:700,cursor:'pointer',marginTop:8}}>Email me a sign-in link</button>
       {message && <p style={{fontSize:13,color:'#b91c1c',marginTop:12}}>{message}</p>}
