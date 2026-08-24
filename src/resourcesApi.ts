@@ -207,6 +207,12 @@ export async function uploadResource(input: ResourceInput, file: File): Promise<
   return mapRow(data)
 }
 
+export async function updateManagedResourceTags(resourceId: string, tags: string[]): Promise<void> {
+  const cleanTags = tags.map(tag => tag.trim()).filter(Boolean)
+  const { error } = await supabase.from('vault_resources').update({ tags: cleanTags }).eq('id', resourceId)
+  if (error) throw new Error(`Could not update tags: ${getErrorMessage(error)}`)
+}
+
 export async function deleteManagedResource(resource: ManagedResource): Promise<void> {
   const { error } = await supabase.from('vault_resources').delete().eq('id', resource.id)
   if (error) throw new Error(`Could not delete file record: ${getErrorMessage(error)}`)
