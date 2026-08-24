@@ -207,6 +207,11 @@ export async function uploadResource(input: ResourceInput, file: File): Promise<
   return mapRow(data)
 }
 
+export async function updateManagedResourceType(resourceId: string, type: ResourceType): Promise<void> {
+  const { error } = await supabase.from('vault_resources').update({ type }).eq('id', resourceId)
+  if (error) throw new Error(`Could not update file type: ${getErrorMessage(error)}`)
+}
+
 export async function updateManagedResourceTags(resourceId: string, tags: string[]): Promise<void> {
   const cleanTags = tags.map(tag => tag.trim()).filter(Boolean)
   const { error } = await supabase.from('vault_resources').update({ tags: cleanTags }).eq('id', resourceId)
