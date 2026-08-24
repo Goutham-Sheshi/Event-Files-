@@ -18,12 +18,68 @@ export type ResourceInput = {
 
 const STORAGE_BUCKET = 'event-assets'
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif)(?:[?#].*)?$/i
+const PDF_EXT = /\.pdf(?:[?#].*)?$/i
+const PDFJS_VERSION = '4.10.38'
+let pdfjsPromise: Promise<any> | null = null
 
 const safeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9._-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
 
 function isImageFile(row: any): boolean {
   const format = String(row.file_format || '').trim().toLowerCase()
   return IMAGE_EXT.test(String(row.source_url || '')) || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif'].includes(format)
+}
+
+function isPdfFile(row: any): boolean {
+  const format = String(row.file_format || '').trim().toLowerCase()
+  return PDF_EXT.test(String(row.source_url || '')) || format === 'pdf'
+}
+
+async function getPdfJs(): Promise<any> {
+  if (!pdfjsPromise) {
+    const moduleUrl = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.mjs`
+    pdfjsPromise = import(/* @vite-ignore */ moduleUrl).then((pdfjs: any) => {
+      pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.mjs`
+      return pdfjs
+    })
+  }
+  return pdfjsPromise
+}
+
+async function renderPdfPreview(blob: Blob): Promise<Blob | null> {
+  try {
+    const pdfjs = await getPdfJs()
+    const data = new Uint8Array(await blob.arrayBuffer())
+    const loadingTask = pdfjs.getDocument({ data })
+    const pdf = await loadingTask.promise
+    const page = await pdf.getPage(1)
+    const base = page.getViewport({ scale: 1 })
+    const scale = Math.min(2, Math.max(0.6, 900 / Math.max(base.width, base.height)))
+    const viewport = page.getViewport({ scale })
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.floor(viewport.width))
+    canvas.height = Math.max(1, Math.floor(viewport.height))
+    const context = canvas.getContext('2d', { alpha: false })
+    if (!context) return null
+    context.fillStyle = '#ffffff'
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    await page.render({ canvasContext: context, viewport }).promise
+    return await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.9))
+  } catch (error) {
+    console.warn('Could not generate PDF preview', error)
+    return null
+  }
+}
+
+async function uploadPdfPreview(preview: Blob, basePath: string): Promise<string | null> {
+  const previewPath = `${basePath}.preview.png`
+  const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(previewPath, preview, {
+    cacheControl: '31536000', upsert: true, contentType: 'image/png',
+  })
+  if (error) {
+    console.warn('Could not upload PDF preview', error)
+    return null
+  }
+  return supabase.storage.from(STORAGE_BUCKET).getPublicUrl(previewPath).data.publicUrl
 }
 
 export function getErrorMessage(error: unknown, fallback = 'Something went wrong'): string {
@@ -62,10 +118,29 @@ const mapRow = (row: any): ManagedResource => {
   }
 }
 
+async function ensurePdfPreview(row: any): Promise<any> {
+  if (!isPdfFile(row) || row.thumbnail || !row.source_url || !row.storage_path) return row
+  try {
+    const response = await fetch(row.source_url)
+    if (!response.ok) return row
+    const preview = await renderPdfPreview(await response.blob())
+    if (!preview) return row
+    const thumbnail = await uploadPdfPreview(preview, row.storage_path)
+    if (!thumbnail) return row
+    const { error } = await supabase.from('vault_resources').update({ thumbnail }).eq('id', row.id)
+    if (error) return row
+    return { ...row, thumbnail }
+  } catch (error) {
+    console.warn('Could not restore missing PDF preview', error)
+    return row
+  }
+}
+
 export async function getManagedResources(): Promise<ManagedResource[]> {
   const { data, error } = await supabase.from('vault_resources').select('*').order('created_at', { ascending: false })
   if (error) throw new Error(`Could not load files: ${getErrorMessage(error)}`)
-  return (data || []).map(mapRow)
+  const rows = await Promise.all((data || []).map(ensurePdfPreview))
+  return rows.map(mapRow)
 }
 
 export async function uploadResource(input: ResourceInput, file: File): Promise<ManagedResource> {
@@ -80,7 +155,12 @@ export async function uploadResource(input: ResourceInput, file: File): Promise<
 
   const { data: publicData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path)
   const publicUrl = publicData.publicUrl
-  const thumbnail = IMAGE_EXT.test(file.name) || file.type.startsWith('image/') ? publicUrl : null
+  let thumbnail: string | null = IMAGE_EXT.test(file.name) || file.type.startsWith('image/') ? publicUrl : null
+
+  if (!thumbnail && (PDF_EXT.test(file.name) || file.type === 'application/pdf')) {
+    const preview = await renderPdfPreview(file)
+    if (preview) thumbnail = await uploadPdfPreview(preview, path)
+  }
 
   const { data, error } = await supabase.from('vault_resources').insert({
     title: input.title || file.name,
@@ -107,7 +187,7 @@ export async function deleteManagedResource(resource: ManagedResource): Promise<
   const { error } = await supabase.from('vault_resources').delete().eq('id', resource.id)
   if (error) throw new Error(`Could not delete file record: ${getErrorMessage(error)}`)
   if (resource.storagePath) {
-    const { error: storageError } = await supabase.storage.from(STORAGE_BUCKET).remove([resource.storagePath])
+    const { error: storageError } = await supabase.storage.from(STORAGE_BUCKET).remove([resource.storagePath, `${resource.storagePath}.preview.png`])
     if (storageError) throw new Error(`Could not delete stored file: ${getErrorMessage(storageError)}`)
   }
 }
