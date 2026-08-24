@@ -15,6 +15,19 @@ export type ManagedEvent = {
 
 export type EventInput = Pick<ManagedEvent, 'title' | 'description' | 'event_date' | 'location' | 'product_id' | 'event_type' | 'banner'>
 
+export async function uploadEventBanner(file: File): Promise<string> {
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-')
+  const path = `events/${crypto.randomUUID()}-${safeName}`
+  const { error } = await supabase.storage
+    .from('event-assets')
+    .upload(path, file, { cacheControl: '31536000', upsert: false, contentType: file.type || undefined })
+  if (error) throw error
+
+  const { data } = supabase.storage.from('event-assets').getPublicUrl(path)
+  if (!data.publicUrl) throw new Error('Event image uploaded, but no public URL was returned.')
+  return data.publicUrl
+}
+
 export async function getEvents(): Promise<ManagedEvent[]> {
   const { data, error } = await supabase.from('events').select('*').order('event_date', { ascending: true })
   if (error) throw error
