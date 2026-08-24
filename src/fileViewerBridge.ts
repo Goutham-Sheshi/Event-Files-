@@ -2,112 +2,22 @@ const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif)(?:[?#].*)?$/i;
 const VIDEO_EXT = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i;
 const PDF_EXT = /\.pdf(?:[?#].*)?$/i;
 
-function fileNameFromUrl(url: string) {
-  try {
-    return decodeURIComponent(new URL(url).pathname.split('/').pop() || 'File');
-  } catch {
-    return 'File';
-  }
-}
-
-function closeViewer() {
-  document.getElementById('vault-file-viewer')?.remove();
-  document.body.style.overflow = '';
-}
-
+function fileNameFromUrl(url: string) { try { return decodeURIComponent(new URL(url).pathname.split('/').pop() || 'File'); } catch { return 'File'; } }
+function closeViewer() { document.getElementById('vault-file-viewer')?.remove(); document.body.style.overflow = ''; }
 function openViewer(url: string, title: string) {
-  closeViewer();
-  document.body.style.overflow = 'hidden';
-
-  const modal = document.createElement('div');
-  modal.id = 'vault-file-viewer';
-  modal.setAttribute('role', 'dialog');
-  modal.setAttribute('aria-modal', 'true');
-  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(15,18,24,.72);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:24px;';
-
-  const panel = document.createElement('div');
-  panel.style.cssText = 'width:min(1100px,96vw);height:min(820px,92vh);background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 28px 80px rgba(0,0,0,.35);display:flex;flex-direction:column;';
-
-  const header = document.createElement('div');
-  header.style.cssText = 'height:64px;flex:none;padding:0 20px;border-bottom:1px solid #e8ebef;display:flex;align-items:center;justify-content:space-between;gap:16px;font-family:Inter,system-ui,sans-serif;';
-  const name = document.createElement('div');
-  name.textContent = title || fileNameFromUrl(url);
-  name.style.cssText = 'font-size:14px;font-weight:650;color:#1d232c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
-
-  const actions = document.createElement('div');
-  actions.style.cssText = 'display:flex;align-items:center;gap:8px;flex:none;';
-  const download = document.createElement('a');
-  download.href = url;
-  download.download = '';
-  download.target = '_blank';
-  download.rel = 'noreferrer';
-  download.textContent = 'Download';
-  download.style.cssText = 'text-decoration:none;background:#315fb5;color:#fff;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:650;';
-  const close = document.createElement('button');
-  close.type = 'button';
-  close.textContent = '×';
-  close.setAttribute('aria-label', 'Close viewer');
-  close.style.cssText = 'border:0;background:#f1f3f5;color:#30353c;border-radius:8px;width:34px;height:34px;font-size:24px;line-height:1;cursor:pointer;';
-  close.onclick = closeViewer;
-  actions.append(download, close);
-  header.append(name, actions);
-
-  const content = document.createElement('div');
-  content.style.cssText = 'flex:1;min-height:0;background:#f5f6f8;display:flex;align-items:center;justify-content:center;padding:18px;';
-
-  if (IMAGE_EXT.test(url)) {
-    const image = document.createElement('img');
-    image.src = url;
-    image.alt = title;
-    image.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 8px 28px rgba(0,0,0,.12);';
-    content.appendChild(image);
-  } else if (VIDEO_EXT.test(url)) {
-    const video = document.createElement('video');
-    video.src = url;
-    video.controls = true;
-    video.style.cssText = 'max-width:100%;max-height:100%;width:100%;height:auto;background:#111;border-radius:10px;';
-    content.appendChild(video);
-  } else if (PDF_EXT.test(url)) {
-    const frame = document.createElement('iframe');
-    frame.src = url;
-    frame.title = title;
-    frame.style.cssText = 'width:100%;height:100%;border:0;background:#fff;border-radius:8px;';
-    content.style.padding = '0';
-    content.appendChild(frame);
-  } else {
-    const message = document.createElement('div');
-    message.style.cssText = 'text-align:center;font-family:Inter,system-ui,sans-serif;color:#606874;';
-    message.innerHTML = '<div style="font-size:16px;font-weight:650;color:#242a32;margin-bottom:8px">Preview unavailable</div><div style="font-size:13px">This file type cannot be previewed in the browser. Use Download to open it.</div>';
-    content.appendChild(message);
-  }
-
-  panel.append(header, content);
-  modal.appendChild(panel);
-  modal.addEventListener('click', (event) => { if (event.target === modal) closeViewer(); });
-  document.body.appendChild(modal);
+  closeViewer(); document.body.style.overflow='hidden';
+  const modal=document.createElement('div'); modal.id='vault-file-viewer'; modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true'); modal.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(15,18,24,.72);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:24px;';
+  const panel=document.createElement('div'); panel.style.cssText='width:min(1100px,96vw);height:min(820px,92vh);background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 28px 80px rgba(0,0,0,.35);display:flex;flex-direction:column;';
+  const header=document.createElement('div'); header.style.cssText='height:64px;flex:none;padding:0 20px;border-bottom:1px solid #e8ebef;display:flex;align-items:center;justify-content:space-between;gap:16px;font-family:Inter,system-ui,sans-serif;';
+  const name=document.createElement('div'); name.textContent=title||fileNameFromUrl(url); name.style.cssText='font-size:14px;font-weight:650;color:#1d232c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+  const actions=document.createElement('div'); actions.style.cssText='display:flex;align-items:center;gap:8px;flex:none;';
+  const download=document.createElement('a'); download.href=url; download.download=''; download.target='_blank'; download.rel='noreferrer'; download.textContent='Download'; download.style.cssText='text-decoration:none;background:#315fb5;color:#fff;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:650;';
+  const close=document.createElement('button'); close.type='button'; close.textContent='×'; close.setAttribute('aria-label','Close viewer'); close.style.cssText='border:0;background:#f1f3f5;color:#30353c;border-radius:8px;width:34px;height:34px;font-size:24px;line-height:1;cursor:pointer;'; close.onclick=closeViewer; actions.append(download,close); header.append(name,actions);
+  const content=document.createElement('div'); content.style.cssText='flex:1;min-height:0;background:#f5f6f8;display:flex;align-items:center;justify-content:center;padding:18px;';
+  if(IMAGE_EXT.test(url)){const image=document.createElement('img');image.src=url;image.alt=title;image.style.cssText='max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 8px 28px rgba(0,0,0,.12);';content.appendChild(image)}
+  else if(VIDEO_EXT.test(url)){const video=document.createElement('video');video.src=url;video.controls=true;video.style.cssText='max-width:100%;max-height:100%;width:100%;height:auto;background:#111;border-radius:10px;';content.appendChild(video)}
+  else if(PDF_EXT.test(url)){const frame=document.createElement('iframe');frame.src=url;frame.title=title;frame.style.cssText='width:100%;height:100%;border:0;background:#fff;border-radius:8px;';content.style.padding='0';content.appendChild(frame)}
+  else {const message=document.createElement('div');message.style.cssText='text-align:center;font-family:Inter,system-ui,sans-serif;color:#606874;';message.innerHTML='<div style="font-size:16px;font-weight:650;color:#242a32;margin-bottom:8px">Preview unavailable</div><div style="font-size:13px">This file type cannot be previewed in the browser. Use Download to open it.</div>';content.appendChild(message)}
+  panel.append(header,content);modal.appendChild(panel);modal.addEventListener('click',e=>{if(e.target===modal)closeViewer()});document.body.appendChild(modal);
 }
-
-export function startFileViewerBridge() {
-  document.addEventListener('click', (event) => {
-    const target = event.target as HTMLElement | null;
-    if (!target || target.closest('#vault-file-viewer')) return;
-
-    const card = target.closest('.group');
-    if (!card) return;
-    const link = card.querySelector<HTMLAnchorElement>('a[href]');
-    if (!link?.href || !/^https?:/i.test(link.href)) return;
-
-    // Only intercept resource cards: they contain a preview image/icon and a resource action link.
-    const looksLikeResource = !!card.querySelector('img, svg');
-    if (!looksLikeResource) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    const title = card.querySelector('.line-clamp-2')?.textContent?.trim() || link.textContent?.trim() || fileNameFromUrl(link.href);
-    openViewer(link.href, title);
-  }, true);
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') closeViewer();
-  });
-}
+export function startFileViewerBridge(){document.addEventListener('click',event=>{const target=event.target as HTMLElement|null;if(!target||target.closest('#vault-file-viewer'))return;const card=target.closest('.group');if(!card)return;const link=card.querySelector<HTMLAnchorElement>('a[href]');if(!link?.href||!/^https?:/i.test(link.href))return;const label=(link.textContent||'').toLowerCase();const isFigma=label.includes('figma')||/figma\.com/i.test(link.href);if(isFigma)return;const looksLikeResource=!!card.querySelector('img,svg');if(!looksLikeResource)return;event.preventDefault();event.stopPropagation();const title=card.querySelector('.line-clamp-2')?.textContent?.trim()||link.textContent?.trim()||fileNameFromUrl(link.href);openViewer(link.href,title)},true);document.addEventListener('keydown',event=>{if(event.key==='Escape')closeViewer()})}
