@@ -9,8 +9,16 @@ function mountAdmin(target: HTMLElement) {
 
   root?.unmount()
   mounted = target
-  target.classList.add('flex-1', 'min-w-0', 'self-stretch', 'overflow-hidden')
+
+  // Admin can be taller than the viewport. Do not clip its content inside the
+  // right-pane placeholder; let the application's normal page scrolling handle it.
+  target.classList.remove('overflow-hidden', 'self-stretch')
+  target.classList.add('flex-1', 'min-w-0', 'overflow-visible')
+  target.style.height = 'auto'
+  target.style.minHeight = '100%'
+  target.style.overflowY = 'visible'
   target.innerHTML = ''
+
   root = createRoot(target)
   root.render(<AdminConsole />)
 }
