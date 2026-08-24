@@ -2,12 +2,17 @@ import { FormEvent, useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 
+const toFirstName = (value: string) => {
+  const first = value.trim().split(/\s+/)[0] || ''
+  return first ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase() : ''
+}
+
 const getDisplayName = (session: Session | null) => {
   const metadata = session?.user?.user_metadata || {}
   const candidate = metadata.full_name || metadata.name || metadata.display_name || metadata.user_name
-  if (typeof candidate === 'string' && candidate.trim()) return candidate.trim().split(/\s+/)[0]
+  if (typeof candidate === 'string' && candidate.trim()) return toFirstName(candidate)
   const email = session?.user?.email
-  return email ? email.split('@')[0] : ''
+  return email ? toFirstName(email.split('@')[0]) : ''
 }
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
@@ -36,14 +41,40 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     if (name) window.localStorage.setItem('sheshi-vault-user-name', name)
 
     const applyWelcome = () => {
-      const heading = Array.from(document.querySelectorAll('h1')).find(node => node.textContent?.trim() === 'Welcome back') as HTMLElement | undefined
+      const heading = Array.from(document.querySelectorAll('h1')).find(node => {
+        const text = node.textContent?.trim() || ''
+        return text === 'Welcome back' || text.startsWith('Welcome back,')
+      }) as HTMLElement | undefined
       if (!heading) return false
-      heading.textContent = name ? `Welcome back, ${name}` : 'Welcome back'
-      heading.style.fontSize = 'clamp(42px, 5vw, 72px)'
-      heading.style.lineHeight = '0.98'
-      heading.style.fontWeight = '800'
-      heading.style.letterSpacing = '-0.045em'
+
+      heading.innerHTML = ''
+      const prefix = document.createElement('span')
+      prefix.textContent = 'Welcome back'
+      prefix.style.fontFamily = 'Georgia, "Times New Roman", serif'
+      prefix.style.fontWeight = '800'
+      prefix.style.color = '#241f1a'
+      prefix.style.fontStyle = 'normal'
+
+      heading.appendChild(prefix)
+
+      if (name) {
+        heading.appendChild(document.createTextNode(' '))
+        const accent = document.createElement('span')
+        accent.textContent = name
+        accent.style.fontFamily = 'Georgia, "Times New Roman", serif'
+        accent.style.fontWeight = '500'
+        accent.style.fontStyle = 'italic'
+        accent.style.color = '#d65b18'
+        heading.appendChild(accent)
+      }
+
+      heading.style.fontSize = 'clamp(52px, 6.4vw, 104px)'
+      heading.style.lineHeight = '0.92'
+      heading.style.letterSpacing = '-0.055em'
       heading.style.marginTop = '10px'
+      heading.style.marginBottom = '14px'
+      heading.style.display = 'block'
+      heading.style.maxWidth = '100%'
       return true
     }
 
@@ -86,7 +117,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       <label style={{display:'block',fontSize:13,fontWeight:600,marginBottom:6}}>Email</label>
       <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',border:'1px solid #d1d5db',borderRadius:10,marginBottom:14}} />
       <label style={{display:'block',fontSize:13,fontWeight:600,marginBottom:6}}>Password</label>
-      <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',borderRadius:10,marginBottom:16}} />
+      <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',border:'1px solid #d1d5db',borderRadius:10,marginBottom:16}} />
       <button disabled={busy} type="submit" style={{width:'100%',padding:12,border:0,borderRadius:10,background:'#2563EB',color:'#fff',fontWeight:700,cursor:'pointer'}}>{busy?'Signing in…':'Sign in'}</button>
       <button disabled={busy} type="button" onClick={sendMagicLink} style={{width:'100%',padding:12,border:0,background:'transparent',color:'#2563EB',fontWeight:700,cursor:'pointer',marginTop:8}}>Email me a sign-in link</button>
       {message && <p style={{fontSize:13,color:'#b91c1c',marginTop:12}}>{message}</p>}
