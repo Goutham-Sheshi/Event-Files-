@@ -11,7 +11,7 @@ export type Product = {
   light: string;
 };
 
-export type ResourceType = 'figma' | 'logo' | 'brochure' | 'video' | 'document' | 'other';
+export type ResourceType = 'logo' | 'brochure' | 'video' | 'document' | 'other';
 
 export type Resource = {
   id: string;
