@@ -23,14 +23,37 @@ app.post(`${FUNCTION}/events`,async c=>{const gate=await requireAdmin(c);if(gate
 app.post(`${FUNCTION}/figma/token`,async c=>{const gate=await requireAdmin(c);if(gate.error)return gate.error;const {token}=await c.req.json();if(!token||typeof token!=="string")return c.json({error:"Missing token"},400);await kv.set("figma_token",token.trim());return c.json({ok:true});});
 app.get(`${FUNCTION}/figma/token/status`,async c=>{const gate=await requireAdmin(c);if(gate.error)return gate.error;return c.json({hasToken:!!(await kv.get("figma_token"))});});
 async function figmaFetch(url:string,token:string){return await fetch(url,{headers:{"X-Figma-Token":token}});}
+
+async function getFigmaThumbnails(fileKey:string,nodeIds:string[],token:string){
+  const thumbnails:Record<string,string>={};
+  for(let i=0;i<nodeIds.length;i+=50){
+    const ids=nodeIds.slice(i,i+50);
+    const url=new URL(`https://api.figma.com/v1/images/${fileKey}`);
+    url.searchParams.set("ids",ids.join(","));
+    url.searchParams.set("format","png");
+    url.searchParams.set("scale","0.5");
+    try{
+      const res=await figmaFetch(url.toString(),token);
+      if(!res.ok){console.warn("Figma thumbnail request failed",res.status,await res.text().catch(()=>""));continue;}
+      const payload=await res.json();
+      if(payload?.images&&typeof payload.images==="object"){
+        for(const [nodeId,imageUrl] of Object.entries(payload.images)){
+          if(typeof imageUrl==="string"&&imageUrl) thumbnails[nodeId]=imageUrl;
+        }
+      }
+    }catch(error){console.warn("Figma thumbnail request error",error);}
+  }
+  return thumbnails;
+}
+
 app.post(`${FUNCTION}/figma/sync`,async c=>{const gate=await requireAdmin(c);if(gate.error)return gate.error;const token=await kv.get("figma_token");if(!token)return c.json({error:"No Figma token configured. Add one first."},400);const body=await c.req.json().catch(()=>({}));const fileKey=String(body.fileKey||DEFAULT_FIGMA_FILE_KEY).trim();const tagPattern=typeof body.tag==="string"?body.tag.trim():"";try{
-  // Fetch the document tree only to depth 2: DOCUMENT -> CANVAS(page) -> SECTION.
-  // The previous implementation asked Figma for a synthetic root node (0:1), which can
-  // return successfully but contains no usable pages for this file, producing an empty sync.
   const url=new URL(`https://api.figma.com/v1/files/${fileKey}`);url.searchParams.set("depth","2");
-  const res=await figmaFetch(url.toString(),token);if(!res.ok){const detail=await res.text().catch(()=>"");return c.json({error:`Figma API request failed (${res.status})`,detail:detail.slice(0,500)},502);}const payload=await res.json();const pages=Array.isArray(payload?.document?.children)?payload.document.children:[];const fileName=String(payload?.name||"Figma file");const tagLower=tagPattern.toLowerCase();const matches:{nodeId:string;sectionName:string;pageName:string}[]=[];
+  const res=await figmaFetch(url.toString(),token);if(!res.ok){const detail=await res.text().catch(()=>"");return c.json({error:`Figma API request failed (${res.status})`,detail:detail.slice(0,500)},502);}
+  const payload=await res.json();const pages=Array.isArray(payload?.document?.children)?payload.document.children:[];const fileName=String(payload?.name||"Figma file");const tagLower=tagPattern.toLowerCase();const matches:{nodeId:string;sectionName:string;pageName:string}[]=[];
   for(const page of pages){const pageName=String(page?.name||"Untitled Page");const sections=Array.isArray(page?.children)?page.children.filter((node:any)=>node?.type==="SECTION"):[];const selected=!tagPattern||pageName.toLowerCase().includes(tagLower)?sections:sections.filter((node:any)=>String(node?.name||"").toLowerCase().includes(tagLower));for(const section of selected)matches.push({nodeId:String(section.id),sectionName:String(section.name||"Untitled Section"),pageName});}
-  const syncedAt=new Date().toISOString();const resources=matches.map(match=>({id:`figma-${fileKey}-${match.nodeId.replace(/[:;]/g,"-")}`,nodeId:match.nodeId,nodeType:"SECTION",title:match.sectionName,type:"figma",productId:"",pageName:match.pageName,fileName,fileKey,thumbnail:null,sourceUrl:`https://www.figma.com/design/${fileKey}?node-id=${encodeURIComponent(match.nodeId)}`,tags:["figma","section",...(tagPattern?[tagPattern.replace(/[\[\]]/g,"").toLowerCase()]:[])],viewCount:0,downloadCount:0,createdAt:syncedAt}));await kv.set("figma_resources_v1",resources);await kv.set("figma_last_synced_at",syncedAt);return c.json({resources,syncedAt,pagesScanned:pages.length,sectionsFound:resources.length,fileName});
+  const thumbnails=await getFigmaThumbnails(fileKey,matches.map(match=>match.nodeId),token);
+  const syncedAt=new Date().toISOString();const resources=matches.map(match=>({id:`figma-${fileKey}-${match.nodeId.replace(/[:;]/g,"-")}`,nodeId:match.nodeId,nodeType:"SECTION",title:match.sectionName,type:"figma",productId:"",pageName:match.pageName,fileName,fileKey,thumbnail:thumbnails[match.nodeId]||null,thumbnailUrl:thumbnails[match.nodeId]||null,sourceUrl:`https://www.figma.com/design/${fileKey}?node-id=${encodeURIComponent(match.nodeId)}`,tags:["figma","section",...(tagPattern?[tagPattern.replace(/[\[\]]/g,"").toLowerCase()]:[])],viewCount:0,downloadCount:0,createdAt:syncedAt}));
+  await kv.set("figma_resources_v1",resources);await kv.set("figma_last_synced_at",syncedAt);return c.json({resources,syncedAt,pagesScanned:pages.length,sectionsFound:resources.length,previewsFound:Object.keys(thumbnails).length,fileName});
 }catch(error){console.error("Figma sync failed",error);return c.json({error:"Figma sync failed",detail:error instanceof Error?error.message:String(error)},500)}});
 app.post(`${FUNCTION}/upload`,async c=>{const gate=await requireAdmin(c);if(gate.error)return gate.error;const formData=await c.req.formData();const file=formData.get("file") as File|null;if(!file)return c.json({error:"No file provided"},400);const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");const path=`${Date.now()}_${crypto.randomUUID()}_${safeName}`;const bytes=await file.arrayBuffer();const {error}=await service().storage.from(BUCKET).upload(path,bytes,{contentType:file.type,upsert:false});if(error)return c.json({error:error.message},500);const {data:{publicUrl}}=service().storage.from(BUCKET).getPublicUrl(path);const size=file.size<1048576?`${(file.size/1024).toFixed(0)} KB`:`${(file.size/1048576).toFixed(1)} MB`;return c.json({url:publicUrl,thumbnailUrl:file.type.startsWith("image/")?publicUrl:undefined,name:file.name,size});});
 Deno.serve(app.fetch);
