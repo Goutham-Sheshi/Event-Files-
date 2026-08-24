@@ -2,7 +2,8 @@ import { projectId } from '../utils/supabase/info';
 import { supabase } from './lib/supabase';
 
 const BASE = `https://${projectId}.supabase.co/functions/v1/make-server-c0d15c17`;
-const FIGMA_CACHE_KEY = 'event-files:figma-resources:v2';
+const FIGMA_REFRESH_BASE = `https://${projectId}.supabase.co/functions/v1/figma-sync-refresh`;
+const FIGMA_CACHE_KEY = 'event-files:figma-resources:v3';
 const FIGMA_TOKEN_STATUS_KEY = 'event-files:figma-token-configured:v1';
 
 type FigmaCache = { resources: any[]; lastSyncedAt: string | null };
@@ -24,15 +25,24 @@ export async function getManagedResources():Promise<any[]>{const {data,error}=aw
 
 function normalizeFigmaResources(rows:any[]):any[]{return rows.filter((row:any)=>{if(!row)return false;if(row.type&&row.type!=='figma')return false;const nodeType=String(row.nodeType??row.node_type??'').toUpperCase();return !nodeType||nodeType==='SECTION';}).map((row:any)=>({...row,type:'figma',productId:''}));}
 
-// Never let an empty or malformed server response erase the last successful sync. The local
-// snapshot is shown immediately and is only replaced when the server returns actual sections.
+async function loadFigmaResources(url:string){
+  const res=await fetch(url,{headers:await authHeaders()});
+  if(!res.ok)throw new Error(`Figma resources request failed (${res.status})`);
+  const result=await res.json().catch(()=>null);
+  if(!result||!Array.isArray(result.resources))throw new Error('Malformed Figma resources response');
+  return result;
+}
+
+// Figma image URLs are short-lived. On every app load we ask the server to regenerate fresh
+// preview URLs using the stored server-side token. The browser never receives that token.
+// The old endpoint and local snapshot remain fallbacks so a temporary preview failure never
+// wipes the synced section list.
 export async function getFigmaResources():Promise<{resources:any[];lastSyncedAt:string|null}>{
   const cached=readFigmaCache();
   try{
-    const res=await fetch(`${BASE}/figma/resources`,{headers:await authHeaders()});
-    if(!res.ok)return cached;
-    const result=await res.json().catch(()=>null);
-    if(!result||!Array.isArray(result.resources))return cached;
+    let result:any;
+    try{result=await loadFigmaResources(`${FIGMA_REFRESH_BASE}/`);}
+    catch{result=await loadFigmaResources(`${BASE}/figma/resources`);}
     const resources=normalizeFigmaResources(result.resources);
     if(!resources.length&&cached.resources.length)return cached;
     const lastSyncedAt=result.lastSyncedAt??cached.lastSyncedAt??null;
