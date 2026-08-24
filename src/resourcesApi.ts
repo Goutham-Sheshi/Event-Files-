@@ -169,7 +169,8 @@ export async function createLinkedVideo(input: ResourceInput, sourceUrl: string)
 export async function uploadResource(input: ResourceInput, file: File): Promise<ManagedResource> {
   const ext = file.name.includes('.') ? file.name.split('.').pop()?.toUpperCase() : 'FILE'
   const month = new Date().toISOString().slice(0, 7)
-  const path = `${input.productId}/${input.type}/${month}/${crypto.randomUUID()}-${safeName(file.name)}`
+  const libraryId = input.productId === 'sheshi' ? 'sheshi' : input.productId
+  const path = `${libraryId}/${input.type}/${month}/${crypto.randomUUID()}-${safeName(file.name)}`
 
   const { error: uploadError } = await supabase.storage.from(STORAGE_BUCKET).upload(path, file, {
     cacheControl: '3600', upsert: false, contentType: file.type || undefined,
