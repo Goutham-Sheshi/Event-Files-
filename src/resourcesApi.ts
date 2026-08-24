@@ -17,6 +17,7 @@ export type ResourceInput = {
 }
 
 const STORAGE_BUCKET = 'event-assets'
+const SIGNED_URL_TTL = 60 * 30
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif)(?:[?#].*)?$/i
 const PDF_EXT = /\.pdf(?:[?#].*)?$/i
 const PDFJS_VERSION = '4.10.38'
@@ -79,7 +80,14 @@ async function uploadPdfPreview(preview: Blob, basePath: string): Promise<string
     console.warn('Could not upload PDF preview', error)
     return null
   }
-  return supabase.storage.from(STORAGE_BUCKET).getPublicUrl(previewPath).data.publicUrl
+  return previewPath
+}
+
+async function signedUrl(path: string | null | undefined): Promise<string | undefined> {
+  if (!path || /^https?:\/\//i.test(path)) return path || undefined
+  const { data, error } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(path, SIGNED_URL_TTL)
+  if (error) return undefined
+  return data.signedUrl
 }
 
 export function getErrorMessage(error: unknown, fallback = 'Something went wrong'): string {
@@ -94,28 +102,35 @@ export function getErrorMessage(error: unknown, fallback = 'Something went wrong
   return fallback
 }
 
-const mapRow = (row: any): ManagedResource => {
-  const sourceUrl = row.source_url || ''
-  const thumbnail = row.thumbnail || (isImageFile(row) ? sourceUrl : undefined)
+const mapRow = (row: any, sourceUrl: string, thumbnail?: string): ManagedResource => ({
+  id: row.id,
+  title: row.title,
+  description: row.description || undefined,
+  type: row.type as ResourceType,
+  productId: row.product_id,
+  thumbnail,
+  sourceUrl,
+  storagePath: row.storage_path || undefined,
+  fileFormat: row.file_format || undefined,
+  fileSize: row.file_size || undefined,
+  tags: row.tags || [],
+  viewCount: row.view_count || 0,
+  downloadCount: row.download_count || 0,
+  featured: row.featured || false,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+})
 
-  return {
-    id: row.id,
-    title: row.title,
-    description: row.description || undefined,
-    type: row.type as ResourceType,
-    productId: row.product_id,
-    thumbnail,
-    sourceUrl,
-    storagePath: row.storage_path || undefined,
-    fileFormat: row.file_format || undefined,
-    fileSize: row.file_size || undefined,
-    tags: row.tags || [],
-    viewCount: row.view_count || 0,
-    downloadCount: row.download_count || 0,
-    featured: row.featured || false,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+async function hydrateRow(row: any): Promise<ManagedResource> {
+  if (row.storage_path) {
+    const sourceUrl = (await signedUrl(row.storage_path)) || ''
+    let thumbnailPath: string | undefined
+    if (isImageFile(row)) thumbnailPath = row.storage_path
+    else if (isPdfFile(row)) thumbnailPath = `${row.storage_path}.preview.png`
+    const thumbnail = thumbnailPath ? await signedUrl(thumbnailPath) : undefined
+    return mapRow(row, sourceUrl, thumbnail)
   }
+  return mapRow(row, row.source_url || '', row.thumbnail || (isImageFile(row) ? row.source_url || undefined : undefined))
 }
 
 async function ensurePdfPreview(row: any): Promise<any> {
@@ -140,7 +155,7 @@ export async function getManagedResources(): Promise<ManagedResource[]> {
   const { data, error } = await supabase.from('vault_resources').select('*').order('created_at', { ascending: false })
   if (error) throw new Error(`Could not load files: ${getErrorMessage(error)}`)
   const rows = await Promise.all((data || []).map(ensurePdfPreview))
-  return rows.map(mapRow)
+  return Promise.all(rows.map(hydrateRow))
 }
 
 export async function createLinkedVideo(input: ResourceInput, sourceUrl: string): Promise<ManagedResource> {
@@ -163,7 +178,7 @@ export async function createLinkedVideo(input: ResourceInput, sourceUrl: string)
   }).select().single()
 
   if (error) throw new Error(`Video link failed: ${getErrorMessage(error)}`)
-  return mapRow(data)
+  return hydrateRow(data)
 }
 
 export async function uploadResource(input: ResourceInput, file: File): Promise<ManagedResource> {
@@ -177,9 +192,8 @@ export async function uploadResource(input: ResourceInput, file: File): Promise<
   })
   if (uploadError) throw new Error(`Storage upload failed: ${getErrorMessage(uploadError)}`)
 
-  const { data: publicData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path)
-  const publicUrl = publicData.publicUrl
-  let thumbnail: string | null = IMAGE_EXT.test(file.name) || file.type.startsWith('image/') ? publicUrl : null
+  const publicUrl = path
+  let thumbnail: string | null = IMAGE_EXT.test(file.name) || file.type.startsWith('image/') ? path : null
 
   if (!thumbnail && (PDF_EXT.test(file.name) || file.type === 'application/pdf')) {
     const preview = await renderPdfPreview(file)
@@ -204,7 +218,7 @@ export async function uploadResource(input: ResourceInput, file: File): Promise<
     await supabase.storage.from(STORAGE_BUCKET).remove([path])
     throw new Error(`Database record failed: ${getErrorMessage(error)}`)
   }
-  return mapRow(data)
+  return hydrateRow(data)
 }
 
 export async function updateManagedResourceType(resourceId: string, type: ResourceType): Promise<void> {
