@@ -10,13 +10,13 @@ function mountAdmin(target: HTMLElement) {
   root?.unmount()
   mounted = target
 
-  // Admin can be taller than the viewport. Do not clip its content inside the
-  // right-pane placeholder; let the application's normal page scrolling handle it.
-  target.classList.remove('overflow-hidden', 'self-stretch')
-  target.classList.add('flex-1', 'min-w-0', 'overflow-visible')
-  target.style.height = 'auto'
-  target.style.minHeight = '100%'
-  target.style.overflowY = 'visible'
+  // Keep the original right-pane sizing/alignment, but make this pane itself
+  // the scroll container so content below the viewport remains reachable.
+  target.classList.remove('overflow-hidden', 'overflow-visible')
+  target.classList.add('flex-1', 'min-w-0', 'self-stretch', 'overflow-y-auto')
+  target.style.height = ''
+  target.style.minHeight = ''
+  target.style.overflowY = ''
   target.innerHTML = ''
 
   root = createRoot(target)
