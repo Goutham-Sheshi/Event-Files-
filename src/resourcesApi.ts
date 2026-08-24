@@ -143,6 +143,29 @@ export async function getManagedResources(): Promise<ManagedResource[]> {
   return rows.map(mapRow)
 }
 
+export async function createLinkedVideo(input: ResourceInput, sourceUrl: string): Promise<ManagedResource> {
+  const url = sourceUrl.trim()
+  if (!url) throw new Error('Please enter a video link')
+  try { new URL(url) } catch { throw new Error('Please enter a valid video URL') }
+
+  const { data, error } = await supabase.from('vault_resources').insert({
+    title: input.title.trim() || 'Video',
+    description: input.description || null,
+    type: 'video',
+    product_id: input.productId,
+    source_url: url,
+    thumbnail: null,
+    storage_path: null,
+    file_format: 'LINK',
+    file_size: null,
+    tags: input.tags || [],
+    featured: input.featured || false,
+  }).select().single()
+
+  if (error) throw new Error(`Video link failed: ${getErrorMessage(error)}`)
+  return mapRow(data)
+}
+
 export async function uploadResource(input: ResourceInput, file: File): Promise<ManagedResource> {
   const ext = file.name.includes('.') ? file.name.split('.').pop()?.toUpperCase() : 'FILE'
   const month = new Date().toISOString().slice(0, 7)
