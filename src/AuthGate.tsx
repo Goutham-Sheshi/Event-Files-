@@ -39,51 +39,6 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     if (!session) return
     const name = getDisplayName(session)
     if (name) window.localStorage.setItem('sheshi-vault-user-name', name)
-
-    const applyWelcome = () => {
-      const heading = Array.from(document.querySelectorAll('h1')).find(node => {
-        const text = node.textContent?.trim() || ''
-        return text === 'Welcome back' || text.startsWith('Welcome back,')
-      }) as HTMLElement | undefined
-      if (!heading) return false
-
-      heading.innerHTML = ''
-      const prefix = document.createElement('span')
-      prefix.textContent = 'Welcome back'
-      prefix.style.fontFamily = 'Georgia, "Times New Roman", serif'
-      prefix.style.fontWeight = '800'
-      prefix.style.color = '#241f1a'
-      prefix.style.fontStyle = 'normal'
-
-      heading.appendChild(prefix)
-
-      if (name) {
-        heading.appendChild(document.createTextNode(' '))
-        const accent = document.createElement('span')
-        accent.textContent = name
-        accent.style.fontFamily = 'Georgia, "Times New Roman", serif'
-        accent.style.fontWeight = '500'
-        accent.style.fontStyle = 'italic'
-        accent.style.color = '#d65b18'
-        heading.appendChild(accent)
-      }
-
-      heading.style.fontSize = 'clamp(52px, 6.4vw, 104px)'
-      heading.style.lineHeight = '0.92'
-      heading.style.letterSpacing = '-0.055em'
-      heading.style.marginTop = '10px'
-      heading.style.marginBottom = '14px'
-      heading.style.display = 'block'
-      heading.style.maxWidth = '100%'
-      return true
-    }
-
-    if (applyWelcome()) return
-    const observer = new MutationObserver(() => {
-      if (applyWelcome()) observer.disconnect()
-    })
-    observer.observe(document.body, { childList: true, subtree: true })
-    return () => observer.disconnect()
   }, [session])
 
   async function signIn(event: FormEvent) {
