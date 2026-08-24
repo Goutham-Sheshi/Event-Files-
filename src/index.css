@@ -51,7 +51,7 @@ body {
 }
 
 .font-display {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
 .font-mono {
@@ -171,7 +171,7 @@ a[class*="bg-blue"]:hover {
 #root main, [data-admin-console="true"] { min-width: 0; min-height: 0; }
 [data-admin-console="true"] { display:flex; flex-direction:column; overflow:hidden; }
 [data-admin-console="true"] > :last-child { flex:1 1 auto; min-height:0; overflow-y:auto; }
-.welcome-title { font-size:clamp(48px,6.4vw,104px); line-height:.92; letter-spacing:-.055em; font-weight:800; }
+.welcome-title { font-family:'Playfair Display', Georgia, serif; font-size:clamp(48px,6.4vw,104px); line-height:.92; letter-spacing:-.055em; font-weight:800; }
 .welcome-title em { color:var(--primary); font-weight:500; font-style:italic; }
 @media (max-width: 700px) { .welcome-title { font-size:clamp(42px,14vw,68px); } }
 
