@@ -37,7 +37,7 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
   const startAdd = () => { setEditing(null); setForm(emptyForm()); setBannerFile(null); setError(''); setOpen(true) }
   const startEdit = (event: ManagedEvent) => {
     setEditing(event)
-    setForm({ title: event.title, description: event.description || '', event_date: toDateInput(event.event_date), location: event.location || '', product_id: event.product_id, event_type: event.event_type, banner: event.banner || '' })
+    setForm({ title: event.title, description: event.description || '', event_date: toDateInput(event.event_date), location: event.location || '', product_id: event.product_id, event_type: event.event_type, banner: event.banner_path || event.banner || '' })
     setBannerFile(null); setError(''); setOpen(true)
   }
 
