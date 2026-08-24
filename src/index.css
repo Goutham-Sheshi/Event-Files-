@@ -179,3 +179,6 @@ a[class*="bg-blue"]:hover {
 .section-heading{display:flex;align-items:center;gap:12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);}
 .section-heading:after{content:'';height:1px;flex:1;background:var(--line);}
 .resource-tag{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:var(--primary-soft);color:var(--primary);border:1px solid rgba(224,90,28,.16);font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:.02em;line-height:1.1;}
+
+.resource-preview img{object-position:left top!important;}
+.resource-card-title{font-size:20px;line-height:1.15;font-weight:600;}
