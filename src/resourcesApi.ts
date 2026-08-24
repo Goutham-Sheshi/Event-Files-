@@ -134,11 +134,11 @@ async function hydrateRow(row: any): Promise<ManagedResource> {
 }
 
 async function ensurePdfPreview(row: any): Promise<any> {
-  if (!isPdfFile(row) || row.thumbnail || !row.source_url || !row.storage_path) return row
+  if (!isPdfFile(row) || row.thumbnail || !row.storage_path) return row
   try {
-    const response = await fetch(row.source_url)
-    if (!response.ok) return row
-    const preview = await renderPdfPreview(await response.blob())
+    const { data: file, error: downloadError } = await supabase.storage.from(STORAGE_BUCKET).download(row.storage_path)
+    if (downloadError || !file) return row
+    const preview = await renderPdfPreview(file)
     if (!preview) return row
     const thumbnail = await uploadPdfPreview(preview, row.storage_path)
     if (!thumbnail) return row
