@@ -32,3 +32,12 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.14); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.26); }
+
+/* Keep the existing app shell and alignment, but make the main content pane
+   the scroll container. The outer viewport intentionally stays locked so the
+   sidebar remains fixed while long admin/product lists can reach their bottom. */
+#root > .h-screen > .flex-1.flex.flex-col.min-w-0.overflow-hidden {
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
