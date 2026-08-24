@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600;1,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600;1,700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
 @import 'tailwindcss';
 
 /* Visual system adapted from Branding 2.0 Design Catalog */
@@ -47,7 +47,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
 .font-display {
@@ -174,3 +174,8 @@ a[class*="bg-blue"]:hover {
 .welcome-title { font-size:clamp(48px,6.4vw,104px); line-height:.92; letter-spacing:-.055em; font-weight:800; }
 .welcome-title em { color:var(--primary); font-weight:500; font-style:italic; }
 @media (max-width: 700px) { .welcome-title { font-size:clamp(42px,14vw,68px); } }
+
+
+.section-heading{display:flex;align-items:center;gap:12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);}
+.section-heading:after{content:'';height:1px;flex:1;background:var(--line);}
+.resource-tag{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:var(--primary-soft);color:var(--primary);border:1px solid rgba(224,90,28,.16);font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:.02em;line-height:1.1;}
