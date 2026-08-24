@@ -6,7 +6,7 @@ import * as kv from "./kv_store.tsx";
 
 const app = new Hono();
 const FUNCTION = "/make-server-c0d15c17";
-const BUCKET = "media-catalog-files";
+const BUCKET = "event-assets";
 const APP_ORIGIN = Deno.env.get("APP_ORIGIN") || "https://goutham-sheshi.github.io";
 app.use("*", logger(console.log));
 app.use("/*", cors({ origin: APP_ORIGIN, allowHeaders: ["Content-Type", "Authorization"], allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], maxAge: 600 }));

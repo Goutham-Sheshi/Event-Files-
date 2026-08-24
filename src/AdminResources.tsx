@@ -22,7 +22,7 @@ export default function AdminResources() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-  const load = async () => { try { setItems((await getManagedResources()).filter(item=>item.type!=='figma')) } catch (e) { setError(getErrorMessage(e, 'Failed to load files')) } }
+  const load = async () => { try { setItems(await getManagedResources()) } catch (e) { setError(getErrorMessage(e, 'Failed to load files')) } }
   useEffect(() => { load() }, [])
   const grouped = useMemo(() => products.map(product => ({ product, items: items.filter(item => item.productId === product.id) })), [items])
   const pickFiles = (e: ChangeEvent<HTMLInputElement>) => { const next = Array.from(e.target.files || []); setFiles(next); if (next.length === 1 && !title) setTitle(next[0].name.replace(/\.[^.]+$/, '')) }
