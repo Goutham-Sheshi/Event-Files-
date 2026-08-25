@@ -10,12 +10,11 @@ function mountAdmin(target: HTMLElement) {
   root?.unmount()
   mounted = target
 
-  target.classList.remove('overflow-hidden', 'overflow-visible')
-  target.classList.add('flex-1', 'min-w-0', 'self-stretch', 'overflow-y-auto')
+  target.innerHTML = ''
+  target.className = 'flex-1 min-w-0 min-h-0 self-stretch overflow-y-auto'
   target.style.height = ''
   target.style.minHeight = ''
   target.style.overflowY = ''
-  target.innerHTML = ''
 
   root = createRoot(target)
   root.render(<AdminConsole />)
@@ -23,25 +22,31 @@ function mountAdmin(target: HTMLElement) {
 
 export function startAdminBridge() {
   const scan = () => {
-    // Legacy placeholder route.
-    const placeholder = Array.from(document.querySelectorAll<HTMLElement>('div'))
-      .find(el => el.textContent?.trim() === 'Admin Console')
-    if (placeholder) {
-      mountAdmin(placeholder)
+    const adminConsole = document.querySelector<HTMLElement>('[data-admin-console="true"]')
+    if (adminConsole) return
+
+    const denied = Array.from(document.querySelectorAll<HTMLElement>('h1,h2,h3,div'))
+      .find(el => el.textContent?.trim() === 'Admin access required')
+
+    if (denied) {
+      // Mount into the actual page pane, not the small message wrapper. The old
+      // guard is still part of the legacy LiveApp render tree, so replacing the
+      // pane itself makes the Admin route deterministic while auth is disabled.
+      const pane = denied.closest('main') || denied.parentElement?.parentElement || denied.parentElement
+      if (pane) mountAdmin(pane)
       return
     }
 
-    // Auth has been intentionally disabled for now. If an older route guard
-    // still renders the access-denied state, replace that content pane with
-    // the admin console instead of leaving a visible but unusable Admin link.
-    const deniedHeading = Array.from(document.querySelectorAll<HTMLElement>('h1,h2,h3,div'))
-      .find(el => el.textContent?.trim() === 'Admin access required')
-    if (deniedHeading?.parentElement) {
-      mountAdmin(deniedHeading.parentElement)
-    }
+    const legacy = Array.from(document.querySelectorAll<HTMLElement>('div'))
+      .find(el => el.textContent?.trim() === 'Admin Console')
+    if (legacy) mountAdmin(legacy.closest('main') || legacy)
   }
 
-  const observer = new MutationObserver(scan)
+  const observer = new MutationObserver(() => queueMicrotask(scan))
   observer.observe(document.body, { childList: true, subtree: true })
+
   scan()
+  window.setTimeout(scan, 50)
+  window.setTimeout(scan, 250)
+  window.setTimeout(scan, 1000)
 }
