@@ -2,7 +2,6 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import LiveApp from './LiveApp'
 import { startFileViewerBridge } from './fileViewerBridge'
-import { startAdminBridge } from './adminBridge'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -12,4 +11,3 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 )
 
 startFileViewerBridge()
-startAdminBridge()
