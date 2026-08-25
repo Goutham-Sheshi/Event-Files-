@@ -234,6 +234,17 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (session && profile?.status === 'approved') return <>{children}</>
 
+  if (session && !profile) {
+    return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:24,fontFamily:'Inter, system-ui, sans-serif',background:'#f8fafc'}}>
+      <div style={{width:'100%',maxWidth:400,background:'#fff',padding:32,borderRadius:16,boxShadow:'0 12px 40px rgba(15,23,42,.12)'}}>
+        <h1 style={{margin:'0 0 8px',fontSize:28,color:'#111827'}}>Account setup incomplete</h1>
+        <p style={{margin:0,color:'#6b7280'}}>You're signed in, but no Sheshi Vault profile exists for this account yet. Try again, or contact an admin if this keeps happening.</p>
+        <button onClick={()=>{ setLoading(true); void loadProfile() }} style={{...buttonStyle,marginTop:24}}>Try again</button>
+        <button onClick={()=>supabase.auth.signOut()} style={{width:'100%',padding:12,border:0,background:'transparent',color:'#E05A1C',fontWeight:700,cursor:'pointer',marginTop:8}}>Sign out</button>
+      </div>
+    </main>
+  }
+
   const submit = mode==='sign-in' ? signIn : mode==='request' ? requestAccess : sendRecovery
   const title = mode==='forgot' ? 'Reset password' : 'Sheshi Vault'
   const subtitle = mode==='sign-in' ? 'Sign in with your approved @sheshi.ai account.' : mode==='request' ? 'Request access with your @sheshi.ai account.' : 'Enter your approved @sheshi.ai email and we’ll send you a reset link.'

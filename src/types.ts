@@ -1,6 +1,6 @@
 // ─── BrandHub data model ────────────────────────────────────────────────────
 
-export type ProductSlug = 'quanta' | 'catalyx' | 'fr' | 'consultease';
+export type ProductSlug = 'quanta' | 'catalyx' | 'fr' | 'consultease' | 'sheshi';
 
 export type Product = {
   id: string;
