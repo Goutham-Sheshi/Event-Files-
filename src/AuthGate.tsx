@@ -18,14 +18,21 @@ const getDisplayName = (session: Session | null) => {
 
 const fieldStyle = { width:'100%', boxSizing:'border-box' as const, padding:'12px 14px', border:'1px solid #d1d5db', borderRadius:10, marginBottom:14 }
 const buttonStyle = { width:'100%', padding:12, border:0, borderRadius:10, background:'#E05A1C', color:'#fff', fontWeight:700, cursor:'pointer' as const }
-const hasRecoveryMarker = () => window.location.hash.includes('type=recovery') || new URLSearchParams(window.location.search).get('type') === 'recovery'
+
+const isRecoveryUrl = () => {
+  const search = new URLSearchParams(window.location.search)
+  return search.get('reset') === '1' || search.get('type') === 'recovery' || window.location.hash.includes('type=recovery')
+}
+
+const recoveryRedirect = () => `${window.location.origin}${window.location.pathname}?reset=1`
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<VaultProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [mode, setMode] = useState<'sign-in'|'request'|'forgot'>('sign-in')
-  const [recoveryMode, setRecoveryMode] = useState(hasRecoveryMarker)
+  const [recoveryMode, setRecoveryMode] = useState(isRecoveryUrl)
+  const [recoveryReady, setRecoveryReady] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -41,32 +48,57 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    const recoveryAtStart = hasRecoveryMarker()
-    supabase.auth.getSession().then(async ({ data }) => {
-      setSession(data.session)
-      if (recoveryAtStart) {
-        setRecoveryMode(true)
-        setLoading(false)
-      } else if (data.session) {
-        await loadProfile()
-      } else {
-        setLoading(false)
-      }
-    })
+    let mounted = true
+    const startedAsRecovery = isRecoveryUrl()
 
-    const { data: subscription } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+    const bootstrap = async () => {
+      const { data } = await supabase.auth.getSession()
+      if (!mounted) return
+      setSession(data.session)
+
+      if (startedAsRecovery) {
+        setRecoveryMode(true)
+        setRecoveryReady(Boolean(data.session))
+        setLoading(false)
+        return
+      }
+
+      if (data.session) await loadProfile()
+      else setLoading(false)
+    }
+
+    void bootstrap()
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!mounted) return
       setSession(nextSession)
+
       if (event === 'PASSWORD_RECOVERY') {
         setRecoveryMode(true)
+        setRecoveryReady(Boolean(nextSession))
         setProfile(null)
         setLoading(false)
         return
       }
-      if (nextSession && !hasRecoveryMarker()) await loadProfile()
-      else if (!nextSession) { setProfile(null); setLoading(false) }
+
+      if (isRecoveryUrl()) {
+        setRecoveryMode(true)
+        setRecoveryReady(Boolean(nextSession))
+        setLoading(false)
+        return
+      }
+
+      if (nextSession) void loadProfile()
+      else {
+        setProfile(null)
+        setLoading(false)
+      }
     })
 
-    return () => subscription.subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.subscription.unsubscribe()
+    }
   }, [])
 
   useEffect(() => {
@@ -103,26 +135,39 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     event.preventDefault()
     if (!/^[^\s@]+@sheshi\.ai$/i.test(email.trim())) return setMessage('Enter your approved @sheshi.ai email address.')
     setBusy(true); setMessage('')
-    const redirectTo = `${window.location.origin}${window.location.pathname}`
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo })
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: recoveryRedirect(),
+    })
     setBusy(false)
-    setMessage(error ? 'Could not send the password reset email. Please try again.' : 'Password reset link sent. Check your email and open the link in this browser.')
+    if (error) {
+      if (error.status === 429 || /rate limit/i.test(error.message)) {
+        setMessage('Too many reset emails were requested. Please wait a little before requesting another link.')
+      } else {
+        setMessage('Could not send the password reset email. Please try again.')
+      }
+      return
+    }
+    setMessage('Password reset link sent. Use the newest email link only. You can request another reset whenever you need one.')
   }
 
   async function resetPassword(event: FormEvent) {
     event.preventDefault()
+    if (!recoveryReady) return setMessage('This reset link is invalid or expired. Request a fresh password reset link.')
     if (newPassword.length < 12) return setMessage('Use a password with at least 12 characters.')
     if (newPassword !== confirmPassword) return setMessage('Passwords do not match.')
     setBusy(true); setMessage('')
     const { error } = await supabase.auth.updateUser({ password: newPassword })
     setBusy(false)
-    if (error) return setMessage('Could not update your password. Please open a fresh reset link and try again.')
-    setNewPassword(''); setConfirmPassword('')
-    window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search.replace(/([?&])type=recovery(&?)/, '$1').replace(/[?&]$/, '')}`)
+    if (error) return setMessage('Could not update your password. Request a fresh reset link and try again.')
+
+    setNewPassword('')
+    setConfirmPassword('')
+    window.history.replaceState({}, document.title, window.location.pathname)
     await supabase.auth.signOut()
+    setRecoveryReady(false)
     setRecoveryMode(false)
     setMode('sign-in')
-    setMessage('Password updated. You can now sign in with your new password.')
+    setMessage('Password updated successfully. You can now sign in with your new password.')
   }
 
   async function changeInitialPassword(event: FormEvent) {
@@ -137,6 +182,15 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     } finally { setBusy(false) }
   }
 
+  const backToSignIn = async () => {
+    window.history.replaceState({}, document.title, window.location.pathname)
+    await supabase.auth.signOut()
+    setRecoveryReady(false)
+    setRecoveryMode(false)
+    setMode('sign-in')
+    setMessage('')
+  }
+
   if (loading) return <div style={{minHeight:'100vh',display:'grid',placeItems:'center',fontFamily:'Inter, sans-serif'}}>Loading Sheshi Vault…</div>
 
   if (recoveryMode) {
@@ -144,13 +198,16 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       <form onSubmit={resetPassword} style={{width:'100%',maxWidth:400,background:'#fff',padding:32,borderRadius:16,boxShadow:'0 12px 40px rgba(15,23,42,.12)'}}>
         <div style={{width:42,height:42,borderRadius:12,display:'grid',placeItems:'center',background:'#E05A1C',color:'#fff',fontWeight:800,fontSize:20}}>S</div>
         <h1 style={{margin:'20px 0 6px',fontSize:28,color:'#111827'}}>Reset your password</h1>
-        <p style={{margin:'0 0 24px',color:'#6b7280'}}>Choose a new password for your Sheshi Vault account.</p>
-        <label style={{display:'block',fontSize:13,fontWeight:600,marginBottom:6}}>New password</label>
-        <input type="password" required minLength={12} autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="At least 12 characters" style={fieldStyle} />
-        <label style={{display:'block',fontSize:13,fontWeight:600,marginBottom:6}}>Confirm new password</label>
-        <input type="password" required minLength={12} autoComplete="new-password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} style={{...fieldStyle,marginBottom:16}} />
-        <button disabled={busy} type="submit" style={buttonStyle}>{busy?'Updating…':'Update password'}</button>
-        {message && <p style={{fontSize:13,color:'#b91c1c',marginTop:12}}>{message}</p>}
+        <p style={{margin:'0 0 24px',color:'#6b7280'}}>{recoveryReady ? 'Choose a new password for your Sheshi Vault account.' : 'This reset link is no longer valid. Request a fresh link and open the newest email.'}</p>
+        {recoveryReady && <>
+          <label style={{display:'block',fontSize:13,fontWeight:600,marginBottom:6}}>New password</label>
+          <input type="password" required minLength={12} autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="At least 12 characters" style={fieldStyle} />
+          <label style={{display:'block',fontSize:13,fontWeight:600,marginBottom:6}}>Confirm new password</label>
+          <input type="password" required minLength={12} autoComplete="new-password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} style={{...fieldStyle,marginBottom:16}} />
+          <button disabled={busy} type="submit" style={buttonStyle}>{busy?'Updating…':'Update password'}</button>
+        </>}
+        {!recoveryReady && <button type="button" onClick={backToSignIn} style={buttonStyle}>Back to sign in</button>}
+        {message && <p style={{fontSize:13,color:message.includes('successfully')?'#166534':'#b91c1c',marginTop:12}}>{message}</p>}
       </form>
     </main>
   }
@@ -168,23 +225,11 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   if (session && profile?.status === 'pending') {
-    return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:24,fontFamily:'Inter, system-ui, sans-serif',background:'#f8fafc'}}>
-      <div style={{width:'100%',maxWidth:400,background:'#fff',padding:32,borderRadius:16,boxShadow:'0 12px 40px rgba(15,23,42,.12)'}}>
-        <h1 style={{margin:'0 0 8px',fontSize:28,color:'#111827'}}>Access pending</h1>
-        <p style={{margin:0,color:'#6b7280'}}>Your Sheshi Vault access request is waiting for admin approval.</p>
-        <button onClick={()=>supabase.auth.signOut()} style={{...buttonStyle,marginTop:24}}>Sign out</button>
-      </div>
-    </main>
+    return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:24,fontFamily:'Inter, system-ui, sans-serif',background:'#f8fafc'}}><div style={{width:'100%',maxWidth:400,background:'#fff',padding:32,borderRadius:16,boxShadow:'0 12px 40px rgba(15,23,42,.12)'}}><h1 style={{margin:'0 0 8px',fontSize:28,color:'#111827'}}>Access pending</h1><p style={{margin:0,color:'#6b7280'}}>Your Sheshi Vault access request is waiting for admin approval.</p><button onClick={()=>supabase.auth.signOut()} style={{...buttonStyle,marginTop:24}}>Sign out</button></div></main>
   }
 
   if (session && profile?.status === 'rejected') {
-    return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:24,fontFamily:'Inter, system-ui, sans-serif',background:'#f8fafc'}}>
-      <div style={{width:'100%',maxWidth:400,background:'#fff',padding:32,borderRadius:16,boxShadow:'0 12px 40px rgba(15,23,42,.12)'}}>
-        <h1 style={{margin:'0 0 8px',fontSize:28,color:'#111827'}}>Access unavailable</h1>
-        <p style={{margin:0,color:'#6b7280'}}>This account has not been approved for Sheshi Vault.</p>
-        <button onClick={()=>supabase.auth.signOut()} style={{...buttonStyle,marginTop:24}}>Sign out</button>
-      </div>
-    </main>
+    return <main style={{minHeight:'100vh',display:'grid',placeItems:'center',padding:24,fontFamily:'Inter, system-ui, sans-serif',background:'#f8fafc'}}><div style={{width:'100%',maxWidth:400,background:'#fff',padding:32,borderRadius:16,boxShadow:'0 12px 40px rgba(15,23,42,.12)'}}><h1 style={{margin:'0 0 8px',fontSize:28,color:'#111827'}}>Access unavailable</h1><p style={{margin:0,color:'#6b7280'}}>This account has not been approved for Sheshi Vault.</p><button onClick={()=>supabase.auth.signOut()} style={{...buttonStyle,marginTop:24}}>Sign out</button></div></main>
   }
 
   if (session && profile?.status === 'approved') return <>{children}</>
