@@ -10,8 +10,6 @@ function mountAdmin(target: HTMLElement) {
   root?.unmount()
   mounted = target
 
-  // Keep the original right-pane sizing/alignment, but make this pane itself
-  // the scroll container so content below the viewport remains reachable.
   target.classList.remove('overflow-hidden', 'overflow-visible')
   target.classList.add('flex-1', 'min-w-0', 'self-stretch', 'overflow-y-auto')
   target.style.height = ''
@@ -25,10 +23,22 @@ function mountAdmin(target: HTMLElement) {
 
 export function startAdminBridge() {
   const scan = () => {
+    // Legacy placeholder route.
     const placeholder = Array.from(document.querySelectorAll<HTMLElement>('div'))
       .find(el => el.textContent?.trim() === 'Admin Console')
+    if (placeholder) {
+      mountAdmin(placeholder)
+      return
+    }
 
-    if (placeholder) mountAdmin(placeholder)
+    // Auth has been intentionally disabled for now. If an older route guard
+    // still renders the access-denied state, replace that content pane with
+    // the admin console instead of leaving a visible but unusable Admin link.
+    const deniedHeading = Array.from(document.querySelectorAll<HTMLElement>('h1,h2,h3,div'))
+      .find(el => el.textContent?.trim() === 'Admin access required')
+    if (deniedHeading?.parentElement) {
+      mountAdmin(deniedHeading.parentElement)
+    }
   }
 
   const observer = new MutationObserver(scan)
