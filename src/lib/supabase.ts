@@ -1,24 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 
-const configuredUrl = import.meta.env.VITE_SUPABASE_URL
-const configuredAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+// These are public Supabase client credentials. Keeping them here makes the
+// GitHub Pages build independent of missing Actions environment variables.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ikkyziyugrnkolqnrxfo.supabase.co'
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_NrOOus1ftpRgAajRyecIvA_b3_tKRXv'
 
-// Never crash the whole application when GitHub Pages is deployed without
-// the public Supabase build variables. The UI can still render and surface
-// a controlled configuration error instead of a blank page.
-export const isSupabaseConfigured = Boolean(configuredUrl && configuredAnonKey)
-
-const supabaseUrl = configuredUrl || 'https://vault-config-missing.invalid'
-const supabaseAnonKey = configuredAnonKey || 'public-config-missing'
-
-export const supabaseConfigError = isSupabaseConfigured
-  ? null
-  : 'Vault authentication is not configured. Ask an administrator to add the required public Supabase build variables.'
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+export const supabaseConfigError = null
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
   },
 })
