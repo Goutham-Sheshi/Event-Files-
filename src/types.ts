@@ -14,7 +14,7 @@ export type Resource = {
 
 export type EventItem = { id: string; title: string; description?: string; date: string; location?: string; productId?: string; banner?: string };
 
-// `standard` remains supported for existing accounts; new assignments use `user`.
-export type UserRole = 'admin' | 'teammate' | 'user' | 'standard';
+// Canonical roles are admin, advanced and standard. teammate/user remain only for legacy records.
+export type UserRole = 'admin' | 'advanced' | 'standard' | 'teammate' | 'user';
 
 export type AppUser = { id: string; name: string; email: string; role: UserRole; status: 'active' | 'invited'; lastActive?: string };
