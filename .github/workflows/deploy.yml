@@ -21,12 +21,24 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+      - name: Verify public Supabase configuration
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL || 'https://ikkyziyugrnkolqnrxfo.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlra3l6aXl1Z3Jua29scW5yeGZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5NTQ4MjUsImV4cCI6MjEwMjUzMDgyNX0.ISewj3DuJNmZrrWqByDwGMk9iys8kXYlTDuYCSYr-j4' }}
+        run: |
+          test -n "$VITE_SUPABASE_URL" || (echo "Missing VITE_SUPABASE_URL repository variable or secret" && exit 1)
+          test -n "$VITE_SUPABASE_ANON_KEY" || (echo "Missing VITE_SUPABASE_ANON_KEY repository variable or secret" && exit 1)
       - name: Build
-        run: npx vite build --base=/Event-Files-/
-      - uses: actions/upload-pages-artifact@v3
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL || 'https://ikkyziyugrnkolqnrxfo.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlra3l6aXl1Z3Jua29scW5yeGZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5NTQ4MjUsImV4cCI6MjEwMjUzMDgyNX0.ISewj3DuJNmZrrWqByDwGMk9iys8kXYlTDuYCSYr-j4' }}
+        run: npm run build -- --base=/Event-Files-/
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
         with:
           path: dist
 

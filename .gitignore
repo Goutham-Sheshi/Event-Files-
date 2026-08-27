@@ -6,3 +6,13 @@ dist
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Local environment files and secrets
+.env
+.env.*
+!.env.example
+!.env.production
+*.local
+
+# Supabase local development secrets
+supabase/.temp/
