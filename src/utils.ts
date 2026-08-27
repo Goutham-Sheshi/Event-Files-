@@ -32,3 +32,46 @@ export function searchEvents(events: EventItem[], query: string): EventItem[] {
   if (!q) return [];
   return events.filter(e => e.title.toLowerCase().includes(q) || e.description?.toLowerCase().includes(q));
 }
+
+export async function triggerDirectDownload(url: string, filename: string): Promise<void> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Network response was not ok');
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    
+    let finalName = filename;
+    const hasExt = /\.[a-zA-Z0-9]{2,5}$/.test(filename);
+    if (!hasExt) {
+      try {
+        const ext = new URL(url).pathname.split('.').pop();
+        if (ext && ext.length <= 5 && !ext.includes('/')) {
+          finalName = `${filename}.${ext}`;
+        }
+      } catch { /* ignore */ }
+    }
+
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = finalName;
+    document.body.appendChild(link);
+    link.click();
+
+    // Delay element removal and URL revocation to ensure Chrome/Safari download manager finishes saving the file
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    }, 1000);
+  } catch (error) {
+    console.warn('Direct blob download failed, falling back to new tab:', error);
+    window.open(url, '_blank', 'noreferrer');
+  }
+}
+
+export function fileNameFromUrl(url: string): string {
+  try {
+    return decodeURIComponent(new URL(url).pathname.split('/').pop() || 'File');
+  } catch {
+    return 'File';
+  }
+}

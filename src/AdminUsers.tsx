@@ -1,16 +1,25 @@
 import React, { useEffect, useState } from 'react'
-import { getMyProfile, type VaultProfile } from './authApi'
+import { getMyProfile, getRegisteredAccounts, type VaultProfile } from './authApi'
 import ResetUserPasswordModal from './components/ResetUserPasswordModal'
 import { deleteUserProfile, getAllProfiles, updateUserStatus } from './userManagementApi'
 
 export default function AdminUsers() {
   const [users, setUsers] = useState<VaultProfile[]>([])
   const [currentUser, setCurrentUser] = useState<VaultProfile | null>(null)
+  const [registeredAccounts, setRegisteredAccounts] = useState<Record<string, any>>({})
+  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedUserForReset, setSelectedUserForReset] = useState<VaultProfile | null>(null)
+
+  const togglePasswordReveal = (userId: string) => {
+    setRevealedPasswords(prev => ({
+      ...prev,
+      [userId]: !prev[userId]
+    }))
+  }
 
   const loadUsers = async () => {
     setLoading(true)
@@ -18,6 +27,8 @@ export default function AdminUsers() {
     try {
       const data = await getAllProfiles()
       setUsers(data)
+      const accounts = getRegisteredAccounts()
+      setRegisteredAccounts(accounts)
     } catch (err: any) {
       setError(err?.message || 'Failed to load user list')
     } finally {
@@ -34,7 +45,7 @@ export default function AdminUsers() {
     setBusyId(user.id)
     setError(null)
     try {
-      await updateUserStatus(user.id, 'approved')
+      await updateUserStatus(user.id, 'approved', user.email)
       setNotice(`User "${user.full_name || user.email}" has been approved.`)
       await loadUsers()
     } catch (err: any) {
@@ -48,7 +59,7 @@ export default function AdminUsers() {
     setBusyId(user.id)
     setError(null)
     try {
-      await updateUserStatus(user.id, 'rejected')
+      await updateUserStatus(user.id, 'rejected', user.email)
       setNotice(`User "${user.full_name || user.email}" status changed to rejected.`)
       await loadUsers()
     } catch (err: any) {
@@ -59,13 +70,10 @@ export default function AdminUsers() {
   }
 
   const handleDelete = async (user: VaultProfile) => {
-    if (!window.confirm(`Are you sure you want to delete user "${user.full_name || user.email}"? This action cannot be undone.`)) {
-      return
-    }
     setBusyId(user.id)
     setError(null)
     try {
-      await deleteUserProfile(user.id)
+      await deleteUserProfile(user.id, user.email)
       setNotice(`User "${user.full_name || user.email}" has been deleted.`)
       await loadUsers()
     } catch (err: any) {
@@ -128,6 +136,7 @@ export default function AdminUsers() {
                 <tr>
                   <th className="px-5 py-3.5">User Name</th>
                   <th className="px-5 py-3.5">Email Address</th>
+                  <th className="px-5 py-3.5">Password</th>
                   <th className="px-5 py-3.5">Role</th>
                   <th className="px-5 py-3.5">Status</th>
                   <th className="px-5 py-3.5 text-right">Actions</th>
@@ -162,6 +171,28 @@ export default function AdminUsers() {
                       </td>
                       <td className="px-5 py-4 text-[var(--ink-70)] font-mono text-[12px]">
                         {u.email}
+                      </td>
+                      <td className="px-5 py-4 font-mono text-[12.5px]">
+                        {(() => {
+                          const accountData = registeredAccounts[u.email.toLowerCase()]
+                          const plainPassword = accountData?.password
+                          if (!plainPassword) {
+                            return <span className="text-[var(--ink-45)] italic">N/A (DB Auth)</span>
+                          }
+                          const isRevealed = !!revealedPasswords[u.id]
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              <span>{isRevealed ? plainPassword : '••••••••'}</span>
+                              <button
+                                onClick={() => togglePasswordReveal(u.id)}
+                                className="text-[var(--ink-45)] hover:text-[var(--ink-70)] focus:outline-none p-1 cursor-pointer text-[14px]"
+                                title={isRevealed ? "Hide password" : "Show password"}
+                              >
+                                {isRevealed ? '🙈' : '👁️'}
+                              </button>
+                            </div>
+                          )
+                        })()}
                       </td>
                       <td className="px-5 py-4">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${u.role === 'admin' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}`}>

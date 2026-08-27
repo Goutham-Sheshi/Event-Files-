@@ -36,6 +36,10 @@ ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
 -- Add flexible role check allowing admin, standard, or user
 ALTER TABLE public.profiles ADD CONSTRAINT profiles_role_check CHECK (role IN ('admin', 'standard', 'user'));
 
+-- Ensure email has a unique constraint for ON CONFLICT (email) trigger resolution
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_email_key;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_email_key UNIQUE (email);
+
 -- 4. Table Privileges & Row Level Security (RLS)
 GRANT ALL PRIVILEGES ON public.profiles TO anon, authenticated;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;

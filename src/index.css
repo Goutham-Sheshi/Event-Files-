@@ -3,31 +3,31 @@
 
 /* Visual system adapted from Branding 2.0 Design Catalog */
 :root {
-  --primary: #E05A1C;
-  --primary-hover: #C44D16;
-  --primary-soft: rgba(224, 90, 28, 0.10);
+  --primary: #ff5500;
+  --primary-hover: #e04b00;
+  --primary-soft: rgba(255, 85, 0, 0.15);
 
-  --ink: #1A140C;
-  --ink-70: #6B5F4E;
-  --ink-45: #A89B88;
+  --ink: #f8fafc;
+  --ink-70: #94a3b8;
+  --ink-45: #64748b;
 
-  --line: #DDD8CE;
-  --line-soft: #E8E2D9;
+  --line: #222c3a;
+  --line-soft: #1d2633;
 
-  --canvas: #F5F0E8;
-  --canvas-deep: #EDE8DF;
-  --paper: #FDFAF5;
+  --canvas: #0f1319;
+  --canvas-deep: #080b0f;
+  --paper: #161c24;
 
-  --surface: #FDFAF5;
-  --surface-2: #F7F2EA;
-  --border: #DDD8CE;
-  --border-2: #C8C2B6;
-  --text: #1A140C;
-  --text-2: #6B5F4E;
-  --text-3: #A89B88;
-  --accent: #E05A1C;
-  --accent-hover: #C44D16;
-  --accent-dim: rgba(224, 90, 28, 0.10);
+  --surface: #161c24;
+  --surface-2: #1c2530;
+  --border: #222c3a;
+  --border-2: #2d3b4f;
+  --text: #f8fafc;
+  --text-2: #94a3b8;
+  --text-3: #64748b;
+  --accent: #ff5500;
+  --accent-hover: #e04b00;
+  --accent-dim: rgba(255, 85, 0, 0.15);
 }
 
 html, body, #root {
@@ -178,7 +178,88 @@ a[class*="bg-blue"]:hover {
 
 .section-heading{display:flex;align-items:center;gap:12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);}
 .section-heading:after{content:'';height:1px;flex:1;background:var(--line);}
-.resource-tag{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:var(--primary-soft);color:var(--primary);border:1px solid rgba(224,90,28,.16);font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:.02em;line-height:1.1;}
+.resource-tag{display:inline-flex;align-items:center;padding:3.5px 7.5px !important;border-radius:999px;background:var(--line) !important;color:var(--ink-70) !important;border:1px solid var(--border-2) !important;font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:.02em;line-height:1.1;}
 
 .resource-preview img{object-position:left top!important;}
 .resource-card-title{font-size:20px;line-height:1.15;font-weight:600;}
+
+/* Dark Theme Utility Class Overrides for Tailwind */
+.bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+}
+.text-amber-800 {
+  color: #fbbf24 !important;
+}
+.bg-slate-100, .bg-gray-100 {
+  background-color: rgba(148, 163, 184, 0.15) !important;
+}
+.text-slate-700, .text-gray-700 {
+  color: #cbd5e1 !important;
+}
+.bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+.text-emerald-800 {
+  color: #34d399 !important;
+}
+.bg-red-100 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+}
+.text-red-800 {
+  color: #f87171 !important;
+}
+.bg-yellow-100 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+}
+.text-yellow-800 {
+  color: #fbbf24 !important;
+}
+.bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+.text-emerald-700 {
+  color: #34d399 !important;
+}
+.border-emerald-200 {
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+.bg-yellow-50 {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}
+.border-yellow-200 {
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+.bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+.border-red-200 {
+  border-color: rgba(239, 68, 68, 0.25) !important;
+}
+.bg-gray-50, .bg-slate-50, .bg-slate-900\/5 {
+  background-color: var(--canvas-deep) !important;
+}
+.text-slate-900, .text-gray-900 {
+  color: var(--ink) !important;
+}
+.text-slate-500, .text-gray-500 {
+  color: var(--ink-45) !important;
+}
+.hover\:bg-gray-50:hover, .hover\:bg-slate-50:hover {
+  background-color: var(--canvas-deep) !important;
+}
+.hover\:bg-red-50:hover {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+.hover\:bg-emerald-100:hover {
+  background-color: rgba(16, 185, 129, 0.25) !important;
+}
+.hover\:bg-yellow-100:hover {
+  background-color: rgba(245, 158, 11, 0.25) !important;
+}
+.hover\:bg-red-100:hover {
+  background-color: rgba(239, 68, 68, 0.25) !important;
+}
+.shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4) !important;
+}
+
