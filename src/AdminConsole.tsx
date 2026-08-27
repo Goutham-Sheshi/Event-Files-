@@ -3,50 +3,6 @@ import AdminEvents from './AdminEvents'
 import AdminResources from './AdminResources'
 import AdminUsers from './AdminUsers'
 
-type IconName = 'user' | 'calendar' | 'folder'
-
-function NavIcon({ name }: { name: IconName }) {
-  const paths: Record<IconName, ReactNode> = {
-    user: <><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></>,
-    calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></>,
-    folder: <><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></>,
-  }
-  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">{paths[name]}</svg>
-}
-
-export default function AdminConsole() {
-  const [tab, setTab] = useState<'users' | 'events' | 'resources'>('users')
-  const notifyEventsChanged = () => window.dispatchEvent(new Event('vault-events-changed'))
-
-  const tabs: { id: 'users' | 'events' | 'resources'; label: string; icon: IconName }[] = [
-    { id: 'users', label: 'User Info & Access', icon: 'user' },
-    { id: 'events', label: 'Events', icon: 'calendar' },
-    { id: 'resources', label: 'Related Products & Files', icon: 'folder' },
-  ]
-
-  return (
-    <div data-admin-console="true" className="flex-1 self-stretch w-full min-w-0 min-h-0 flex flex-col">
-      <div className="px-8 pt-5 border-b border-[var(--line-soft)] bg-white sticky top-0 z-10">
-        <div className="flex items-center gap-1">
-          {tabs.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setTab(item.id)}
-              className={`inline-flex items-center gap-2 px-4 py-2.5 text-[12px] font-semibold border-b-2 transition-colors ${tab === item.id ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-transparent text-[var(--ink-45)] hover:text-[var(--ink)]'}`}
-            >
-              <NavIcon name={item.icon} />
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      {tab === 'users' ? (
-        <AdminUsers />
-      ) : tab === 'events' ? (
-        <AdminEvents onChanged={notifyEventsChanged} />
-      ) : (
-        <AdminResources />
-      )}
-    </div>
-  )
-}
+type IconName = 'user' | 'calendar' | 'folder' | 'link'
+function NavIcon({ name }: { name: IconName }) { const paths: Record<IconName, ReactNode> = { user: <><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></>, calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></>, folder: <><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></>, link: <><path d="M10 13a5 5 0 0 0 7.1.1l2.8-2.8a5 5 0 0 0-7.1-7.1l-1.6 1.6"/><path d="M14 11a5 5 0 0 0-7.1-.1l-2.8 2.8a5 5 0 0 0 7.1 7.1l1.6-1.6"/></> }; return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">{paths[name]}</svg> }
+export default function AdminConsole() { const [tab, setTab] = useState<'users' | 'events' | 'resources'>('users'); const [copied,setCopied]=useState(false); const notifyEventsChanged = () => window.dispatchEvent(new Event('vault-events-changed')); const registrationLink=()=>`${window.location.origin}${window.location.pathname}?register=1`; const copyRegistrationLink=async()=>{const link=registrationLink();try{await navigator.clipboard.writeText(link)}catch{const input=document.createElement('textarea');input.value=link;document.body.appendChild(input);input.select();document.execCommand('copy');input.remove()}setCopied(true);window.setTimeout(()=>setCopied(false),2000)}; const tabs: { id: 'users' | 'events' | 'resources'; label: string; icon: IconName }[] = [{ id: 'users', label: 'User Info & Access', icon: 'user' },{ id: 'events', label: 'Events', icon: 'calendar' },{ id: 'resources', label: 'Related Products & Files', icon: 'folder' }]; return <div data-admin-console="true" className="flex-1 self-stretch w-full min-w-0 min-h-0 flex flex-col"><div className="px-8 pt-5 border-b border-[var(--line-soft)] bg-white sticky top-0 z-10"><div className="flex items-center justify-between gap-4"><div className="flex items-center gap-1">{tabs.map(item=><button key={item.id} onClick={()=>setTab(item.id)} className={`inline-flex items-center gap-2 px-4 py-2.5 text-[12px] font-semibold border-b-2 transition-colors ${tab===item.id?'border-[var(--primary)] text-[var(--primary)]':'border-transparent text-[var(--ink-45)] hover:text-[var(--ink)]'}`}><NavIcon name={item.icon}/>{item.label}</button>)}</div><button onClick={copyRegistrationLink} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--primary)] text-[var(--primary)] text-[12px] font-semibold hover:bg-orange-50 transition-colors" title={registrationLink()}><NavIcon name="link"/>{copied?'Link Copied':'Copy Registration Link'}</button></div></div>{tab==='users'?<AdminUsers/>:tab==='events'?<AdminEvents onChanged={notifyEventsChanged}/>:<AdminResources/>}</div> }
