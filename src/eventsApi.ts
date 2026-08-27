@@ -1,4 +1,5 @@
 import { supabase } from './lib/supabase'
+import { getMyProfile } from './authApi'
 
 export type ManagedEvent = {
   id: string
@@ -59,8 +60,11 @@ export async function deleteEvent(id: string): Promise<void> {
   if (error) throw error
 }
 
+// Keep Events authorization aligned with the Admin Console. The previous
+// implementation queried profiles without identifying the current user,
+// which could return no row or the wrong row even when the active session
+// was an approved administrator.
 export async function isCurrentUserAdmin(): Promise<boolean> {
-  const { data, error } = await supabase.from('profiles').select('role,status').maybeSingle()
-  if (error || !data) return false
-  return data.role === 'admin' && data.status === 'approved'
+  const profile = await getMyProfile()
+  return profile?.role === 'admin' && profile.status === 'approved'
 }
