@@ -1,15 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600;1,700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
 @import 'tailwindcss';
 
+/* Visual system adapted from Branding 2.0 Design Catalog */
 :root {
-  --ink: #1a1d21;
-  --ink-70: #4b5259;
-  --ink-45: #7c848c;
-  --line: #e3e6e9;
-  --line-soft: #edeff1;
-  --canvas: #f7f8f9;
-  --canvas-deep: #eef0f2;
-  --paper: #ffffff;
+  --primary: #E05A1C;
+  --primary-hover: #C44D16;
+  --primary-soft: rgba(224, 90, 28, 0.10);
+
+  --ink: #1A140C;
+  --ink-70: #6B5F4E;
+  --ink-45: #A89B88;
+
+  --line: #DDD8CE;
+  --line-soft: #E8E2D9;
+
+  --canvas: #F5F0E8;
+  --canvas-deep: #EDE8DF;
+  --paper: #FDFAF5;
+
+  --surface: #FDFAF5;
+  --surface-2: #F7F2EA;
+  --border: #DDD8CE;
+  --border-2: #C8C2B6;
+  --text: #1A140C;
+  --text-2: #6B5F4E;
+  --text-3: #A89B88;
+  --accent: #E05A1C;
+  --accent-hover: #C44D16;
+  --accent-dim: rgba(224, 90, 28, 0.10);
 }
 
 html, body, #root {
@@ -17,38 +35,150 @@ html, body, #root {
   overflow: hidden;
 }
 
+html {
+  background: var(--canvas);
+  color: var(--ink);
+}
+
 body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
-.font-display { font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; }
-.font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.font-display {
+  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+}
 
-/* Sheshi Vault sidebar branding */
-aside > div:first-child > div > div:first-child > span {
-  font-size: 0;
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
-aside > div:first-child > div > div:first-child > span::after {
-  content: 'S';
-  font-size: 13px;
+
+/* Warm the existing component system without changing its layout */
+.bg-white {
+  background-color: var(--paper) !important;
 }
-aside > div:first-child > div > span {
-  font-size: 0;
+
+.bg-\[var\(--canvas\)\] {
+  background-color: var(--canvas) !important;
 }
-aside > div:first-child > div > span::after {
-  content: 'Sheshi Vault';
-  font-size: 16px;
+
+.bg-\[var\(--canvas-deep\)\] {
+  background-color: var(--canvas-deep) !important;
+}
+
+.border-\[var\(--line\)\],
+.border-\[var\(--line-soft\)\] {
+  border-color: var(--line) !important;
+}
+
+.text-\[var\(--ink\)\] {
+  color: var(--ink) !important;
+}
+
+.text-\[var\(--ink-70\)\] {
+  color: var(--ink-70) !important;
+}
+
+.text-\[var\(--ink-45\)\] {
+  color: var(--ink-45) !important;
+}
+
+/* Native form controls used by admin */
+input, select, textarea {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--ink) !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-3) !important;
+}
+
+/* Existing primary actions now inherit the catalog's burnt-orange accent */
+button[class*="bg-blue"],
+a[class*="bg-blue"] {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+button[class*="bg-blue"]:hover,
+a[class*="bg-blue"]:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+}
+
+/* Replace blue utility accents that are used for active states and links */
+.text-blue-600,
+.text-blue-700,
+.text-\[\#2563EB\],
+.text-\[var\(--primary\)\] {
+  color: var(--primary) !important;
+}
+
+.border-blue-600,
+.border-blue-700 {
+  border-color: var(--primary) !important;
+}
+
+.bg-blue-50 {
+  background-color: var(--primary-soft) !important;
+}
+
+::selection {
+  background: rgba(224, 90, 28, 0.20);
+  color: var(--ink);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.14) transparent;
+  scrollbar-color: var(--border-2) transparent;
 }
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.14); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.26); }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-45);
+}
+
+/* Preserve the current shell: sidebar stays fixed, main pane owns scrolling. */
+#root > .h-screen > .flex-1.flex.flex-col.min-w-0.overflow-hidden {
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+
+/* Layout ownership: exactly one vertical scroll container per pane. */
+#root, #root > div { min-height: 0; }
+#root > .h-screen { height: 100dvh; }
+#root main, [data-admin-console="true"] { min-width: 0; min-height: 0; }
+[data-admin-console="true"] { display:flex; flex-direction:column; overflow:hidden; }
+[data-admin-console="true"] > :last-child { flex:1 1 auto; min-height:0; overflow-y:auto; }
+.welcome-title { font-family:'Playfair Display', Georgia, serif; font-size:clamp(48px,6.4vw,104px); line-height:.92; letter-spacing:-.055em; font-weight:800; }
+.welcome-title em { color:var(--primary); font-weight:500; font-style:italic; }
+@media (max-width: 700px) { .welcome-title { font-size:clamp(42px,14vw,68px); } }
+
+
+.section-heading{display:flex;align-items:center;gap:12px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);}
+.section-heading:after{content:'';height:1px;flex:1;background:var(--line);}
+.resource-tag{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:var(--primary-soft);color:var(--primary);border:1px solid rgba(224,90,28,.16);font-family:'DM Sans',sans-serif;font-size:9px;font-weight:700;letter-spacing:.02em;line-height:1.1;}
+
+.resource-preview img{object-position:left top!important;}
+.resource-card-title{font-size:20px;line-height:1.15;font-weight:600;}

@@ -1,0 +1,49 @@
+const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif)(?:[?#].*)?$/i;
+const VIDEO_EXT = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i;
+const PDF_EXT = /\.pdf(?:[?#].*)?$/i;
+import { updateManagedResourceTags, updateManagedResourceType } from './resourcesApi';
+import type { ResourceType } from './types';
+
+const FILE_TYPES: { value: ResourceType; label: string }[] = [
+  { value: 'logo', label: 'Brand Asset' },
+  { value: 'brochure', label: 'Brochure' },
+  { value: 'video', label: 'Video' },
+  { value: 'document', label: 'Document' },
+  { value: 'other', label: 'Other' },
+];
+
+function fileNameFromUrl(url: string) { try { return decodeURIComponent(new URL(url).pathname.split('/').pop() || 'File'); } catch { return 'File'; } }
+function closeViewer() { document.getElementById('vault-file-viewer')?.remove(); document.body.style.overflow = ''; }
+function openViewer(url: string, title: string, resourceId?: string, initialTags: string[] = [], initialType: ResourceType = 'other') {
+  closeViewer(); document.body.style.overflow='hidden';
+  const modal=document.createElement('div'); modal.id='vault-file-viewer'; modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true'); modal.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(15,18,24,.72);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:24px;';
+  const panel=document.createElement('div'); panel.style.cssText='width:min(1100px,96vw);height:min(820px,92vh);background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 28px 80px rgba(0,0,0,.35);display:flex;flex-direction:column;';
+  const header=document.createElement('div'); header.style.cssText='height:64px;flex:none;padding:0 20px;border-bottom:1px solid #e8ebef;display:flex;align-items:center;justify-content:space-between;gap:16px;font-family:Inter,system-ui,sans-serif;';
+  const name=document.createElement('div'); name.textContent=title||fileNameFromUrl(url); name.style.cssText='font-size:14px;font-weight:650;color:#1d232c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+  const actions=document.createElement('div'); actions.style.cssText='display:flex;align-items:center;gap:8px;flex:none;';
+  const download=document.createElement('a'); download.href=url; download.download=''; download.target='_blank'; download.rel='noreferrer'; download.textContent='Download'; download.style.cssText='text-decoration:none;background:#315fb5;color:#fff;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:650;';
+  const close=document.createElement('button'); close.type='button'; close.textContent='×'; close.setAttribute('aria-label','Close viewer'); close.style.cssText='border:0;background:#f1f3f5;color:#30353c;border-radius:8px;width:34px;height:34px;font-size:24px;line-height:1;cursor:pointer;'; close.onclick=closeViewer; actions.append(download,close); header.append(name,actions);
+  const tagBar=document.createElement('div'); tagBar.style.cssText='flex:none;padding:10px 20px;border-bottom:1px solid #e8ebef;background:#fafafa;display:flex;align-items:center;gap:10px;font-family:Inter,system-ui,sans-serif;';
+  const typeLabel=document.createElement('span'); typeLabel.textContent='File Type'; typeLabel.style.cssText='font-size:11px;font-weight:700;color:#606874;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;';
+  const typeSelect=document.createElement('select'); typeSelect.disabled=!resourceId; typeSelect.style.cssText='width:150px;border:1px solid #d8dde5;border-radius:7px;padding:7px 10px;font-size:12px;color:#1d232c;outline:none;background:#fff;';
+  FILE_TYPES.forEach(option=>{const el=document.createElement('option');el.value=option.value;el.textContent=option.label;el.selected=option.value===initialType;typeSelect.appendChild(el)});
+  const typeStatus=document.createElement('span'); typeStatus.style.cssText='font-size:11px;color:#7a838f;white-space:nowrap;';
+  const tagLabel=document.createElement('span'); tagLabel.textContent='Tags'; tagLabel.style.cssText='font-size:11px;font-weight:700;color:#606874;text-transform:uppercase;letter-spacing:.08em;';
+  const tagInput=document.createElement('input'); tagInput.value=initialTags.join(', '); tagInput.placeholder='logo, brand assets, CEO…'; tagInput.disabled=!resourceId; tagInput.style.cssText='flex:1;min-width:0;border:1px solid #d8dde5;border-radius:7px;padding:7px 10px;font-size:12px;color:#1d232c;outline:none;background:#fff;';
+  const tagStatus=document.createElement('span'); tagStatus.style.cssText='font-size:11px;color:#7a838f;white-space:nowrap;'; tagStatus.textContent=resourceId?'Auto-save':'';
+  let lastSaved=tagInput.value; let savingTimer:number|undefined;
+  const saveTags=async()=>{if(!resourceId)return;const next=tagInput.value.trim();if(next===lastSaved)return;tagStatus.textContent='Saving…';try{await updateManagedResourceTags(resourceId,next.split(',').map(tag=>tag.trim()).filter(Boolean));lastSaved=next;tagStatus.textContent='Saved';window.dispatchEvent(new CustomEvent('vault-resources-changed',{detail:{id:resourceId,tags:next.split(',').map(tag=>tag.trim()).filter(Boolean)}}));setTimeout(()=>{if(tagStatus.textContent==='Saved')tagStatus.textContent='Auto-save'},1200)}catch(error){console.error(error);tagStatus.textContent='Could not save'}};
+  tagInput.addEventListener('input',()=>{if(savingTimer)window.clearTimeout(savingTimer);savingTimer=window.setTimeout(saveTags,700)});
+  tagInput.addEventListener('blur',()=>{if(savingTimer)window.clearTimeout(savingTimer);saveTags()});
+  tagInput.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();if(savingTimer)window.clearTimeout(savingTimer);saveTags()}});
+  const saveType=async()=>{if(!resourceId)return;typeStatus.textContent='Saving…';try{await updateManagedResourceType(resourceId,typeSelect.value as ResourceType);typeStatus.textContent='Saved';window.dispatchEvent(new CustomEvent('vault-resources-changed',{detail:{id:resourceId,type:typeSelect.value}}));setTimeout(()=>{if(typeStatus.textContent==='Saved')typeStatus.textContent=''},1200)}catch(error){console.error(error);typeStatus.textContent='Could not save'}};
+  typeSelect.addEventListener('change',saveType);
+  tagBar.append(typeLabel,typeSelect,typeStatus,tagLabel,tagInput,tagStatus);
+  const content=document.createElement('div'); content.style.cssText='flex:1;min-height:0;background:#f5f6f8;display:flex;align-items:center;justify-content:center;padding:18px;';
+  if(IMAGE_EXT.test(url)){const image=document.createElement('img');image.src=url;image.alt=title;image.style.cssText='max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 8px 28px rgba(0,0,0,.12);';content.appendChild(image)}
+  else if(VIDEO_EXT.test(url)){const video=document.createElement('video');video.src=url;video.controls=true;video.style.cssText='max-width:100%;max-height:100%;width:100%;height:auto;background:#111;border-radius:10px;';content.appendChild(video)}
+  else if(PDF_EXT.test(url)){const frame=document.createElement('iframe');frame.src=url;frame.title=title;frame.style.cssText='width:100%;height:100%;border:0;background:#fff;border-radius:8px;';content.style.padding='0';content.appendChild(frame)}
+  else {const message=document.createElement('div');message.style.cssText='text-align:center;font-family:Inter,system-ui,sans-serif;color:#606874;';message.innerHTML='<div style="font-size:16px;font-weight:650;color:#242a32;margin-bottom:8px">Preview unavailable</div><div style="font-size:13px">This file type cannot be previewed in the browser. Use Download to open it.</div>';content.appendChild(message)}
+  panel.append(header,tagBar,content);modal.appendChild(panel);modal.addEventListener('click',e=>{if(e.target===modal)closeViewer()});document.body.appendChild(modal);
+}
+export function startFileViewerBridge(){document.addEventListener('click',event=>{const target=event.target as HTMLElement|null;if(!target||target.closest('#vault-file-viewer'))return;const card=target.closest<HTMLElement>('.group');if(!card)return;const link=card.querySelector<HTMLAnchorElement>('a[href]');if(!link?.href||!/^https?:/i.test(link.href))return;const label=(link.textContent||'').toLowerCase();const isFigma=label.includes('figma')||/figma\.com/i.test(link.href);if(isFigma)return;const looksLikeResource=!!card.querySelector('img,svg');if(!looksLikeResource)return;event.preventDefault();event.stopPropagation();const title=card.querySelector('.line-clamp-2')?.textContent?.trim()||link.textContent?.trim()||fileNameFromUrl(link.href);openViewer(link.href,title,card.getAttribute('data-resource-id')||undefined,JSON.parse(card.getAttribute('data-resource-tags')||'[]'),(card.getAttribute('data-resource-type')||'other') as ResourceType)},true);document.addEventListener('keydown',event=>{if(event.key==='Escape')closeViewer()})}
