@@ -8,7 +8,7 @@ const roleLabel = (role: UserRole) => role === 'admin' ? 'Admin' : role === 'adv
 const isAdvanced = (role: UserRole) => role === 'advanced' || role === 'teammate'
 
 function AdvancedBadge() {
-  return <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-800">ADVANCED</span>
+  return <span className="inline-flex shrink-0 items-center rounded-full border border-[#f6c453] bg-[#2a2112] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[#f6c453] shadow-[0_0_0_1px_rgba(246,196,83,0.08)]">ADVANCED</span>
 }
 
 export default function AdminUsers() {
