@@ -1,7 +1,8 @@
-// Temporary single-admin mode.
-// Authentication and user-based permissions are intentionally bypassed until
-// the final access system is implemented by the development team.
-// Every app load resolves to this administrator profile.
+import { supabase } from './lib/supabase'
+import type { UserRole } from './types'
+import { backendLogin, backendRegister } from './apiClient'
+
+export type UserStatus = 'approved' | 'pending' | 'rejected'
 
 export type VaultProfile = {
   id: string
@@ -11,16 +12,85 @@ export type VaultProfile = {
   status: UserStatus
 }
 
-export const DEFAULT_ADMIN: VaultProfile = {
-  id: 'local-admin',
-  email: 'goutham.ra@sheshi.ai',
-  role: 'admin',
-  status: 'approved',
-  full_name: 'Goutham',
+export const CURRENT_SESSION_KEY = 'sheshi_vault_session'
+export const REGISTERED_ACCOUNTS_KEY = 'sheshi_registered_accounts'
+
+export interface RegisteredUserAccount {
+  id: string
+  email: string
+  full_name: string
+  password?: string
+  role?: UserRole
+  status?: UserStatus
+  created_at?: string
 }
 
-export async function getMyProfile(): Promise<VaultProfile> {
-  return DEFAULT_ADMIN
+export const ADMIN_EMAIL = import.meta.env.VITE_DEFAULT_ADMIN_EMAIL || 'goutham.ra@sheshi.ai'
+export const ADMIN_PASSWORD = import.meta.env.VITE_DEFAULT_ADMIN_PASSWORD || ''
+export const ADMIN_NAME = import.meta.env.VITE_DEFAULT_ADMIN_NAME || 'Goutham'
+
+export const DEFAULT_ADMIN: VaultProfile = {
+  id: 'local-admin',
+  email: ADMIN_EMAIL,
+  role: 'admin',
+  status: 'approved',
+  full_name: ADMIN_NAME,
+}
+
+// Temporary single-admin mode.
+// Authentication and user-based permissions are intentionally bypassed until
+// the final access system is implemented by the development team.
+// Every app load resolves to this administrator profile.
+const TEMPORARY_SINGLE_ADMIN_MODE = false
+
+export function getRegisteredAccounts(): Record<string, RegisteredUserAccount> {
+  try {
+    const data = localStorage.getItem(REGISTERED_ACCOUNTS_KEY)
+    const accounts = data ? JSON.parse(data) : {}
+    
+    if (!accounts[ADMIN_EMAIL]) {
+      accounts[ADMIN_EMAIL] = {
+        id: 'admin-goutham',
+        email: ADMIN_EMAIL,
+        full_name: ADMIN_NAME,
+        password: ADMIN_PASSWORD,
+        role: 'admin',
+        status: 'approved',
+        created_at: new Date().toISOString(),
+      }
+    }
+    return accounts
+  } catch {
+    return {
+      [ADMIN_EMAIL]: {
+        id: 'admin-goutham',
+        email: ADMIN_EMAIL,
+        full_name: ADMIN_NAME,
+        password: ADMIN_PASSWORD,
+        role: 'admin',
+        status: 'approved',
+        created_at: new Date().toISOString(),
+      }
+    }
+  }
+}
+
+export function saveRegisteredAccount(account: RegisteredUserAccount) {
+  try {
+    const accounts = getRegisteredAccounts()
+    accounts[account.email.toLowerCase()] = account
+    localStorage.setItem(REGISTERED_ACCOUNTS_KEY, JSON.stringify(accounts))
+  } catch (e) {
+    console.error('Failed to save registered account', e)
+  }
+}
+
+export function validateSheshiEmail(email: string): string {
+  const clean = (email || '').trim().toLowerCase()
+  if (!clean.endsWith('@sheshi.ai')) {
+    throw new Error('Access Restricted: Only @sheshi.ai corporate email addresses are permitted.')
+  }
+  return clean
 }
 
 // Explicit capability helpers so screens do not fall back to a non-admin user.
@@ -108,7 +178,11 @@ export async function signIn(email: string, password: string) {
 
   // Verify Password MATCH
   if (account.password && account.password !== password) {
-    throw new Error('Invalid Credentials: The password you entered is incorrect. Please check your credentials or use Forgot Password.')
+    if (cleanEmail === ADMIN_EMAIL && (ADMIN_PASSWORD && password === ADMIN_PASSWORD)) {
+      // Valid admin credentials - permit sign in
+    } else {
+      throw new Error('Invalid Credentials: The password you entered is incorrect. Please check your credentials or use Forgot Password.')
+    }
   }
 
   // Check Account Approval Status
@@ -125,7 +199,7 @@ export async function signIn(email: string, password: string) {
     id: account.id,
     email: cleanEmail,
     full_name: account.full_name || splitEmailName(cleanEmail),
-    role: account.role || (cleanEmail === 'goutham.ra@sheshi.ai' ? 'admin' : 'standard'),
+    role: account.role || (cleanEmail === ADMIN_EMAIL ? 'admin' : 'standard'),
     status: account.status || 'approved',
   }
   
@@ -141,7 +215,7 @@ export async function signUp(email: string, password: string, fullName?: string)
   validateSheshiEmail(cleanEmail)
 
   const name = fullName?.trim() || splitEmailName(cleanEmail)
-  const isAdmin = cleanEmail === 'goutham.ra@sheshi.ai'
+  const isAdmin = cleanEmail === ADMIN_EMAIL
   const initialStatus: UserStatus = isAdmin ? 'approved' : 'pending'
 
   let assignedId = isAdmin ? 'admin-goutham' : `user-${cleanEmail.replace(/[^a-z0-9]/g, '-')}`
@@ -297,33 +371,66 @@ export async function signOut() {
  * Fetch Current Authenticated User Profile
  */
 export async function getMyProfile(): Promise<VaultProfile | null> {
+  if (TEMPORARY_SINGLE_ADMIN_MODE) {
+    return DEFAULT_ADMIN
+  }
+
   try {
+    let profile: VaultProfile | null = null
+
+    // 1. Check local session storage first
     const local = localStorage.getItem(CURRENT_SESSION_KEY)
     if (local) {
-      try { return JSON.parse(local) as VaultProfile } catch { /* ignore */ }
+      try { 
+        profile = JSON.parse(local) as VaultProfile 
+      } catch { /* ignore */ }
     }
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) return null
+    // 2. If no local session, check Supabase Auth session
+    if (!profile) {
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (user && !userError) {
+        // Try to load profile from database
+        const { data, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle()
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    if (profileError || !profile) {
-      const isAdmin = user.email?.toLowerCase() === 'goutham.ra@sheshi.ai'
-      return {
-        id: user.id,
-        email: user.email || '',
-        full_name: user.user_metadata?.full_name || splitEmailName(user.email || ''),
-        role: isAdmin ? 'admin' : 'standard',
-        status: 'approved',
+        if (!profileError && data) {
+          profile = data as VaultProfile
+        } else {
+          // If not in database, check local fallback registry
+          const accounts = getRegisteredAccounts()
+          const cleanEmail = user.email?.toLowerCase() || ''
+          const localAcc = accounts[cleanEmail]
+          
+          const isAdmin = cleanEmail === ADMIN_EMAIL.toLowerCase()
+          profile = {
+            id: user.id,
+            email: user.email || '',
+            full_name: localAcc?.full_name || user.user_metadata?.full_name || splitEmailName(user.email || ''),
+            role: localAcc?.role || (isAdmin ? 'admin' : 'standard'),
+            status: localAcc?.status || (isAdmin ? 'approved' : 'pending'),
+          }
+        }
       }
     }
 
-    return profile as VaultProfile
+    // 3. Enforce approval status check
+    if (profile) {
+      if (profile.status !== 'approved') {
+        // Clean session and sign out if not approved
+        localStorage.removeItem(CURRENT_SESSION_KEY)
+        try {
+          await supabase.auth.signOut()
+        } catch { /* ignore */ }
+        return null
+      }
+      return profile
+    }
+
+    return null
   } catch (error) {
     console.warn('Could not fetch user profile', error)
     return null

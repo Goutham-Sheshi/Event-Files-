@@ -15,6 +15,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'sheshi_vault_super_secret_jwt_key_
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://ikkyziyugrnkolqnrxfo.supabase.co'
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlra3l6aXl1Z3Jua29scW5yeGZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5NTQ4MjUsImV4cCI6MjEwMjUzMDgyNX0.ISewj3DuJNmZrrWqByDwGMk9iys8kXYlTDuYCSYr-j4'
 
+const ADMIN_EMAIL = process.env.VITE_DEFAULT_ADMIN_EMAIL || 'goutham.ra@sheshi.ai'
+const ADMIN_NAME = process.env.VITE_DEFAULT_ADMIN_NAME || 'Goutham'
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false },
 })
@@ -73,13 +76,13 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ error: 'Password is required' })
     }
 
-    const isAdmin = cleanEmail === 'goutham.ra@sheshi.ai'
+    const isAdmin = cleanEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()
     const initialStatus = isAdmin ? 'approved' : 'pending'
 
     let userProfile = {
       id: isAdmin ? 'admin-goutham' : `user-${cleanEmail.replace(/[^a-z0-9]/g, '-')}`,
       email: cleanEmail,
-      full_name: isAdmin ? 'Goutham' : cleanEmail.split('@')[0],
+      full_name: isAdmin ? ADMIN_NAME : cleanEmail.split('@')[0],
       role: isAdmin ? 'admin' : 'standard',
       status: initialStatus,
     }
@@ -136,7 +139,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     const name = fullName?.trim() || cleanEmail.split('@')[0]
-    const isAdmin = cleanEmail === 'goutham.ra@sheshi.ai'
+    const isAdmin = cleanEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()
     const initialStatus = isAdmin ? 'approved' : 'pending'
 
     let assignedId = isAdmin ? 'admin-goutham' : `user-${cleanEmail.replace(/[^a-z0-9]/g, '-')}`
@@ -240,7 +243,7 @@ app.get('/api/users', authenticateToken, requireAdmin, async (_req, res) => {
 
   return res.json({
     users: [
-      { id: 'admin-goutham', email: 'goutham.ra@sheshi.ai', full_name: 'Goutham', role: 'admin', status: 'approved' },
+      { id: 'admin-goutham', email: ADMIN_EMAIL, full_name: ADMIN_NAME, role: 'admin', status: 'approved' },
       { id: 'user-muralidharan-m-sheshi-ai', email: 'muralidharan.m@sheshi.ai', full_name: 'Muralidharan', role: 'standard', status: 'approved' },
     ],
   })

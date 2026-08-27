@@ -1,13 +1,13 @@
 import type { Product, Resource, EventItem } from './types';
 
 export const products: Product[] = [
-  { id: 'p-quanta', name: 'Quanta', slug: 'quanta', color: '#2563eb', light: '#dbeafe',
+  { id: 'p-quanta', name: 'Quanta', slug: 'quanta', color: '#60a5fa', light: '#1d2d44',
     description: 'Analytics and reporting platform for enterprise data teams.' },
-  { id: 'p-catalyx', name: 'Catalyx', slug: 'catalyx', color: '#7c3aed', light: '#ede9fe',
+  { id: 'p-catalyx', name: 'Catalyx', slug: 'catalyx', color: '#c084fc', light: '#2e1f47',
     description: 'Workflow automation suite connecting sales and operations.' },
-  { id: 'p-fr', name: 'FR', slug: 'fr', color: '#e2703a', light: '#fde3d3',
+  { id: 'p-fr', name: 'FR', slug: 'fr', color: '#fb923c', light: '#3a2214',
     description: 'Financial reconciliation and reporting toolkit.' },
-  { id: 'p-consultease', name: 'Consultease', slug: 'consultease', color: '#15803d', light: '#dcfce7',
+  { id: 'p-consultease', name: 'Consultease', slug: 'consultease', color: '#4ade80', light: '#1b3224',
     description: 'Client engagement and advisory management platform.' },
 ];
 
