@@ -5,21 +5,48 @@ import { startFileViewerBridge } from './fileViewerBridge'
 import { startAdminBridge } from './adminBridge'
 import './index.css'
 
-// Keep the legacy welcome-name key in sync with the current persisted session.
-// LiveApp currently reads this key for the welcome heading, while the rest of
-// the application reads sheshi_vault_session. Always overwrite it on startup
-// so a previous user's name can never leak into the current user's welcome.
-try {
-  const session = localStorage.getItem('sheshi_vault_session')
-  if (session) {
-    const profile = JSON.parse(session)
-    const fullName = typeof profile?.full_name === 'string' ? profile.full_name.trim() : ''
-    if (fullName) localStorage.setItem('sheshi-vault-user-name', fullName)
-    else localStorage.removeItem('sheshi-vault-user-name')
-  } else {
-    localStorage.removeItem('sheshi-vault-user-name')
+// LiveApp still reads this legacy key for the welcome heading. Resolve the
+// current user's name from either the app session or the persisted Supabase
+// session before React renders, so an older user's name can never be reused.
+function resolveCurrentUserName(): string {
+  try {
+    const appSession = localStorage.getItem('sheshi_vault_session')
+    if (appSession) {
+      const profile = JSON.parse(appSession)
+      if (typeof profile?.full_name === 'string' && profile.full_name.trim()) {
+        return profile.full_name.trim()
+      }
+    }
+
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i)
+      if (!key || !key.startsWith('sb-')) continue
+
+      const raw = localStorage.getItem(key)
+      if (!raw) continue
+
+      try {
+        const data = JSON.parse(raw)
+        const user = data?.currentSession?.user || data?.user
+        const fullName = user?.user_metadata?.full_name
+        if (typeof fullName === 'string' && fullName.trim()) {
+          return fullName.trim()
+        }
+      } catch {
+        // Ignore unrelated Supabase/local storage values.
+      }
+    }
+  } catch {
+    // Fall through and clear any stale legacy value below.
   }
-} catch {
+
+  return ''
+}
+
+const currentUserName = resolveCurrentUserName()
+if (currentUserName) {
+  localStorage.setItem('sheshi-vault-user-name', currentUserName)
+} else {
   localStorage.removeItem('sheshi-vault-user-name')
 }
 
