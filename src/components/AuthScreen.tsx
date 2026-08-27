@@ -17,10 +17,10 @@ function AuthLayout({mode, children}:{mode:AuthMode; children:React.ReactNode}) 
 }
 
 export default function AuthScreen({ onSuccess, initialMode='login' }: AuthScreenProps) {
-  const [mode,setMode]=useState<AuthMode>(initialMode); const [busy,setBusy]=useState(false); const [error,setError]=useState<string|null>(null); const [notice,setNotice]=useState<string|null>(null)
+  const [mode,setMode]=useState<AuthMode>(()=>new URLSearchParams(window.location.search).get('register')==='1'?'register':initialMode); const [busy,setBusy]=useState(false); const [error,setError]=useState<string|null>(null); const [notice,setNotice]=useState<string|null>(null)
   const login=useForm<LoginFormData>({resolver:yupResolver(loginSchema),defaultValues:{email:'',password:''}})
   const register=useForm<RegisterFormData>({resolver:yupResolver(registerSchema),defaultValues:{fullName:'',email:'',password:''}})
-  const forgot=useForm<ForgotFormData>({resolver:yupResolver(forgotSchema),defaultValues:{email:''}})
+  const forgot=useForm<ForgotFormData>({resolver:yupResolver(forgotSchema),defaultValues:{email:'',password:''}})
   const reset=useForm<ResetFormData>({resolver:yupResolver(resetSchema),defaultValues:{password:''}})
   const run=async(fn:()=>Promise<void>)=>{setBusy(true);setError(null);setNotice(null);try{await fn()}catch(e:any){setError(e?.message||'Something went wrong')}finally{setBusy(false)}}
   const switchMode=(m:AuthMode)=>{setMode(m);setError(null);setNotice(null)}
