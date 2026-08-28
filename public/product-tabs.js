@@ -1,5 +1,6 @@
 (()=>{
-  const productNames=new Set(['Quanta','Catalyx','FR','Consultease']);
+  // Apply the same category tabs to every product library, including Sheshi.
+  const productNames=new Set(['Quanta','Catalyx','FR','Consultease','Sheshi']);
   const selectedByProduct=new Map();
 
   function styleButton(button,active){
@@ -36,17 +37,20 @@
       tabBar.style.marginBottom='28px';
       tabBar.style.padding='0 2px';
 
-      const tabs=[{key:'all',label:'All Files',sections}].concat(sections.map((section,index)=>({key:String(index),label:(section.querySelector('h2')?.textContent||'Files').trim(),sections:[section]})));
-      const initial=selectedByProduct.get(product)||'all';
+      // Category tabs only. Deliberately no "All Files" tab to avoid a long combined list.
+      const tabs=sections.map((section,index)=>({
+        key:String(index),
+        label:(section.querySelector('h2')?.textContent||'Files').trim(),
+        section
+      }));
+      const initial=selectedByProduct.get(product)||tabs[0].key;
 
       const select=key=>{
         selectedByProduct.set(product,key);
         tabs.forEach(tab=>{
           const active=tab.key===key;
           tab.button&&styleButton(tab.button,active);
-        });
-        sections.forEach(section=>{
-          section.style.display=key==='all'||section===tabs.find(tab=>tab.key===key)?.sections[0]?'':'none';
+          tab.section.style.display=active?'':'none';
         });
       };
 
