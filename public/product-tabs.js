@@ -15,18 +15,45 @@
     button.style.whiteSpace='nowrap';
   }
 
+  function buildGroups(main){
+    // Product pages render category headings reliably, but not every category is
+    // necessarily wrapped in its own <section>. Group each heading with everything
+    // that follows it until the next category heading.
+    const headings=[...main.querySelectorAll('h2.section-heading')].filter(h=>h.textContent.trim());
+    const groups=[];
+
+    headings.forEach((heading,index)=>{
+      const label=heading.textContent.trim();
+      const nextHeading=headings[index+1];
+      const parent=heading.parentElement;
+      const nodes=[];
+
+      if(parent&&nextHeading&&nextHeading.parentElement===parent){
+        let node=heading;
+        while(node&&node!==nextHeading){nodes.push(node);node=node.nextElementSibling;}
+      }else if(parent&&!nextHeading){
+        let node=heading;
+        while(node){nodes.push(node);node=node.nextElementSibling;}
+      }else{
+        const section=heading.closest('section');
+        if(section)nodes.push(section);
+        else if(parent)nodes.push(parent);
+      }
+
+      if(nodes.length)groups.push({key:String(groups.length),label,nodes,anchor:heading});
+    });
+
+    // Remove accidental duplicates when a page uses nested markup.
+    return groups.filter((group,index,self)=>self.findIndex(x=>x.anchor===group.anchor)===index);
+  }
+
   function install(){
     document.querySelectorAll('main').forEach(main=>{
       const title=[...main.querySelectorAll('h1')].find(h=>productNames.has(h.textContent.trim()));
-      if(!title)return;
+      if(!title||main.dataset.productTabsReady==='true')return;
 
-      // Sheshi's page structure differs from the other product pages, so do not
-      // rely on the title/header sibling structure. Use every top-level file section.
-      const sections=[...main.querySelectorAll('section')].filter(section=>{
-        const heading=section.querySelector('h2');
-        return heading&&heading.textContent.trim();
-      });
-      if(!sections.length||main.dataset.productTabsReady==='true')return;
+      const tabs=buildGroups(main);
+      if(!tabs.length)return;
 
       main.dataset.productTabsReady='true';
       const product=title.textContent.trim();
@@ -39,20 +66,14 @@
       tabBar.style.marginBottom='28px';
       tabBar.style.padding='0 2px';
 
-      const tabs=sections.map((section,index)=>({
-        key:String(index),
-        label:(section.querySelector('h2')?.textContent||'Files').trim(),
-        section
-      }));
       const initial=selectedByProduct.get(product)||tabs[0].key;
-
       const select=key=>{
         selectedByProduct.set(product,key);
         tabs.forEach(tab=>{
           const active=tab.key===key;
           styleButton(tab.button,active);
           tab.button.setAttribute('aria-selected',String(active));
-          tab.section.style.display=active?'':'none';
+          tab.nodes.forEach(node=>node.style.display=active?'':'none');
         });
       };
 
@@ -66,18 +87,13 @@
         tabBar.appendChild(button);
       });
 
-      // Put the tabs immediately before the first category, regardless of page layout.
-      sections[0].parentElement?.insertBefore(tabBar,sections[0]);
+      tabs[0].anchor.parentElement?.insertBefore(tabBar,tabs[0].anchor);
       select(initial);
     });
   }
 
   let queued=false;
-  const queue=()=>{
-    if(queued)return;
-    queued=true;
-    requestAnimationFrame(()=>{queued=false;install();});
-  };
+  const queue=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;install();});};
   new MutationObserver(queue).observe(document.documentElement,{childList:true,subtree:true});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',queue);else queue();
 })();
