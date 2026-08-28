@@ -2,6 +2,16 @@
   const productNames=new Set(['Quanta','Catalyx','FR','Consultease','Sheshi']);
   const selectedByProduct=new Map();
 
+  // Keep the visible tab category tied to the actual resource type. This is
+  // intentionally strict: a brochure never appears in Documents and a video
+  // never appears in Brochures, even if the surrounding page markup is mixed.
+  const typeForLabel={
+    'Brand Assets':'logo',
+    'Brochures':'brochure',
+    'Videos':'video',
+    'Documents':'document'
+  };
+
   function styleButton(button,active){
     button.style.border='0';
     button.style.borderBottom=active?'2px solid var(--primary)':'2px solid transparent';
@@ -16,9 +26,6 @@
   }
 
   function buildGroups(main){
-    // Product pages render category headings reliably, but not every category is
-    // necessarily wrapped in its own <section>. Group each heading with everything
-    // that follows it until the next category heading.
     const headings=[...main.querySelectorAll('h2.section-heading')].filter(h=>h.textContent.trim());
     const groups=[];
 
@@ -43,8 +50,18 @@
       if(nodes.length)groups.push({key:String(groups.length),label,nodes,anchor:heading});
     });
 
-    // Remove accidental duplicates when a page uses nested markup.
     return groups.filter((group,index,self)=>self.findIndex(x=>x.anchor===group.anchor)===index);
+  }
+
+  function applyStrictTypeFilter(tab,active){
+    const expected=typeForLabel[tab.label];
+    if(!expected)return;
+    tab.nodes.forEach(node=>{
+      node.querySelectorAll?.('[data-resource-id][data-resource-type]').forEach(card=>{
+        const matches=card.dataset.resourceType===expected;
+        card.style.display=active&&matches?'':'none';
+      });
+    });
   }
 
   function install(){
@@ -74,6 +91,7 @@
           styleButton(tab.button,active);
           tab.button.setAttribute('aria-selected',String(active));
           tab.nodes.forEach(node=>node.style.display=active?'':'none');
+          applyStrictTypeFilter(tab,active);
         });
       };
 
@@ -93,7 +111,11 @@
   }
 
   let queued=false;
-  const queue=()=>{if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;install();});};
+  const queue=()=>{
+    if(queued)return;
+    queued=true;
+    requestAnimationFrame(()=>{queued=false;install();});
+  };
   new MutationObserver(queue).observe(document.documentElement,{childList:true,subtree:true});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',queue);else queue();
 })();
