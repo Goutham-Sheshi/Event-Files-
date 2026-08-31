@@ -22,11 +22,20 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = ''
 as $$
   select exists (
-    select 1 from public.user_roles
-    where user_id = auth.uid() and role = 'admin'
+    select 1
+    from public.profiles
+    where id = (select auth.uid())
+      and status = 'approved'
+      and role = 'admin'
+  )
+  or exists (
+    select 1
+    from public.user_roles
+    where user_id = (select auth.uid())
+      and role = 'admin'
   );
 $$;
 

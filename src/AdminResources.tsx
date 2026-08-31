@@ -3,7 +3,7 @@ import { products } from './data'
 import type { ResourceType } from './types'
 import { getMyProfile } from './authApi'
 import { supabase } from './lib/supabase'
-import { deleteManagedResource, getErrorMessage, getManagedResources, uploadResource, type ManagedResource } from './resourcesApi'
+import { deleteManagedResource, restoreManagedResource, getErrorMessage, getManagedResources, uploadResource, type ManagedResource } from './resourcesApi'
 
 const TYPES: ResourceType[] = ['logo', 'brochure', 'video', 'document', 'other']
 const PPT_VALUE = '__powerpoint_link__'
@@ -20,13 +20,20 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [showDeleted, setShowDeleted] = useState(false)
 
   const load = async () => {
     try { setItems(await getManagedResources()) }
     catch (e) { setError(getErrorMessage(e, 'Failed to load files')) }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    getMyProfile().then(p => {
+      setIsAdmin(p?.role === 'admin' && p?.status === 'approved')
+    })
+    load()
+  }, [])
 
   const pick = (e: ChangeEvent<HTMLInputElement>) => setFiles(Array.from(e.target.files || []))
 
@@ -74,6 +81,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
       resetForm()
       setNotice('PowerPoint link added successfully.')
       await load()
+      window.dispatchEvent(new Event('vault-resources-changed'))
     } catch (e) {
       setError(getErrorMessage(e, 'Could not add the PowerPoint link'))
     } finally {
@@ -101,6 +109,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
       resetForm()
       setNotice(`${count} file${count === 1 ? '' : 's'} uploaded successfully.`)
       await load()
+      window.dispatchEvent(new Event('vault-resources-changed'))
     } catch (e) {
       setError(getErrorMessage(e, 'Upload failed'))
     } finally {
@@ -109,17 +118,34 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   }
 
   const remove = async (item: ManagedResource) => {
-    if (!canDelete || busy || !window.confirm(`Delete "${item.title}"?`)) return
+    if (!canDelete || busy) return
     setBusy(true)
     setError('')
     setNotice('')
     try {
       await deleteManagedResource(item)
-      // Reload from the database so the UI cannot keep a stale deleted row.
       await load()
       setNotice(`"${item.title}" was deleted.`)
+      window.dispatchEvent(new Event('vault-resources-changed'))
     } catch (e) {
       setError(getErrorMessage(e, 'Delete failed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const restore = async (item: ManagedResource) => {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      await restoreManagedResource(item)
+      await load()
+      setNotice(`"${item.title}" was restored.`)
+      window.dispatchEvent(new Event('vault-resources-changed'))
+    } catch (e) {
+      setError(getErrorMessage(e, 'Restore failed'))
     } finally {
       setBusy(false)
     }
@@ -204,21 +230,50 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
         </div>
 
         <div className="bg-white border border-[var(--line-soft)] rounded-2xl divide-y">
-          <div className="px-5 py-4 font-semibold text-[14px]">Shared Library</div>
-          {items.length === 0 ? <div className="px-5 py-10 text-[12px] text-[var(--ink-45)]">No files yet.</div> : items.map(item => {
-            const label = item.fileFormat === 'PPT LINK' ? 'PowerPoint' : item.type
-            return <div key={item.id} className="px-5 py-3.5 flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="text-[12.5px] font-semibold truncate">{item.title}</div>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <span className="text-[11px] text-[var(--ink-45)]">{label} · {item.fileSize || '—'}</span>
-                  {canDelete && <span className="inline-flex items-center rounded-full border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--primary)]">Uploaded by: {item.uploadedByName || 'Existing library'}</span>}
-                </div>
+          <div className="px-5 py-4 flex items-center justify-between gap-4 font-semibold text-[14px]">
+            <span>Shared Library {showDeleted && <span className="text-[12px] font-normal text-red-600">(Trash)</span>}</span>
+            {isAdmin && (
+              <label className="flex items-center gap-2 text-[12px] font-normal text-[var(--ink-45)] cursor-pointer select-none">
+                <input type="checkbox" checked={showDeleted} onChange={e => setShowDeleted(e.target.checked)} className="rounded text-[var(--primary)]" />
+                Show Deleted Files
+              </label>
+            )}
+          </div>
+          {(() => {
+            const filtered = items.filter(item => {
+              if (showDeleted) {
+                return item.deletedAt !== undefined
+              } else {
+                return item.deletedAt === undefined
+              }
+            })
+            if (filtered.length === 0) {
+              return <div className="px-5 py-10 text-[12px] text-[var(--ink-45)]">
+                {showDeleted ? 'No deleted files found.' : 'No files yet.'}
               </div>
-              <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[var(--primary)]">Open</a>
-              {canDelete && <button disabled={busy} onClick={() => remove(item)} className="text-[11px] font-semibold text-red-600">Delete</button>}
-            </div>
-          })}
+            }
+            return filtered.map(item => {
+              const label = item.fileFormat === 'PPT LINK' ? 'PowerPoint' : item.type
+              return <div key={item.id} className={`px-5 py-3.5 flex items-center gap-3 ${item.deletedAt ? 'opacity-60 bg-red-50/10' : ''}`}>
+                <div className="min-w-0 flex-1">
+                  <div className={`text-[12.5px] font-semibold truncate ${item.deletedAt ? 'line-through text-slate-400' : ''}`}>{item.title}</div>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <span className="text-[11px] text-[var(--ink-45)]">{label} · {item.fileSize || '—'}</span>
+                    {canDelete && <span className="inline-flex items-center rounded-full border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--primary)]">Uploaded by: {item.uploadedByName || 'Existing library'}</span>}
+                    {item.deletedAt && <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">Deleted</span>}
+                  </div>
+                </div>
+                {!item.deletedAt && (
+                  <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[var(--primary)]">Open</a>
+                )}
+                {item.deletedAt ? (
+                  isAdmin && <button disabled={busy} onClick={() => restore(item)} className="text-[11px] font-semibold text-emerald-600 hover:underline">Restore</button>
+                ) : (
+                  canDelete && <button disabled={busy} onClick={() => remove(item)} className="text-[11px] font-semibold text-red-600 hover:underline">Delete</button>
+                )}
+              </div>
+            })
+          })()}
         </div>
       </div>
     </div>
