@@ -1,7 +1,7 @@
 import { supabase } from './lib/supabase'
 import { getMyProfile } from './authApi'
 import type { Resource, ResourceType } from './types'
-export type ManagedResource = Resource & { storagePath?:string; created_at?:string; updated_at?:string; uploadedBy?:string; uploadedByName?:string }
+export type ManagedResource = Resource & { storagePath?:string; created_at?:string; updated_at?:string; uploadedBy?:string; uploadedByName?:string; deletedAt?:string }
 export type ResourceInput={title:string;description?:string|null;type:ResourceType;productId:string;tags?:string[];featured?:boolean}
 const STORAGE_BUCKET='event-assets',SIGNED_URL_TTL=60*30,IMAGE_EXT=/\.(png|jpe?g|gif|webp|svg|avif)(?:[?#].*)?$/i,PDF_EXT=/\.pdf(?:[?#].*)?$/i,PDFJS_VERSION='4.10.38';let pdfjsPromise:Promise<any>|null=null
 const safeName=(n:string)=>n.toLowerCase().replace(/[^a-z0-9._-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')
@@ -12,7 +12,7 @@ async function renderPdfPreview(b:Blob){try{const p=await getPdfJs(),pdf=await p
 async function uploadPdfPreview(b:Blob,p:string){const q=`${p}.preview.png`,{error}=await supabase.storage.from(STORAGE_BUCKET).upload(q,b,{cacheControl:'31536000',upsert:true,contentType:'image/png'});return error?null:q}
 async function signedUrl(p:string|null|undefined){if(!p||/^https?:\/\//i.test(p))return p||undefined;const{data,error}=await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(p,SIGNED_URL_TTL);return error?undefined:data.signedUrl}
 export function getErrorMessage(e:unknown,f='Something went wrong'){if(e instanceof Error&&e.message)return e.message;if(e&&typeof e==='object'){const v=e as Record<string,unknown>;for(const k of['message','error_description','error','details','hint'])if(typeof v[k]==='string'&&v[k])return v[k] as string;try{return JSON.stringify(e)}catch{}}return f}
-const mapRow=(r:any,u:string,t?:string):ManagedResource=>({id:r.id,title:r.title,description:r.description||undefined,type:r.type as ResourceType,productId:r.product_id,thumbnail:t,sourceUrl:u,storagePath:r.storage_path||undefined,fileFormat:r.file_format||undefined,fileSize:r.file_size||undefined,tags:r.tags||[],viewCount:r.view_count||0,downloadCount:r.download_count||0,featured:r.featured||false,createdAt:r.created_at,updatedAt:r.updated_at,uploadedBy:r.uploaded_by||undefined,uploadedByName:r.uploaded_by_name||undefined})
+const mapRow=(r:any,u:string,t?:string):ManagedResource=>({id:r.id,title:r.title,description:r.description||undefined,type:r.type as ResourceType,productId:r.product_id,thumbnail:t,sourceUrl:u,storagePath:r.storage_path||undefined,fileFormat:r.file_format||undefined,fileSize:r.file_size||undefined,tags:r.tags||[],viewCount:r.view_count||0,downloadCount:r.download_count||0,featured:r.featured||false,createdAt:r.created_at,updatedAt:r.updated_at,uploadedBy:r.uploaded_by||undefined,uploadedByName:r.uploaded_by_name||undefined,deletedAt:r.deleted_at||undefined})
 async function hydrateRow(r:any){if(r.storage_path){const u=(await signedUrl(r.storage_path))||'',p=isImageFile(r)?r.storage_path:isPdfFile(r)?`${r.storage_path}.preview.png`:undefined;return mapRow(r,u,p?await signedUrl(p):undefined)}return mapRow(r,r.source_url||'',r.thumbnail||(isImageFile(r)?r.source_url||undefined:undefined))}
 async function ensurePdfPreview(r:any){if(!isPdfFile(r)||r.thumbnail||!r.storage_path)return r;try{const{data:f,error}=await supabase.storage.from(STORAGE_BUCKET).download(r.storage_path);if(error||!f)return r;const p=await renderPdfPreview(f);if(!p)return r;const t=await uploadPdfPreview(p,r.storage_path);if(!t)return r;const{error:e}=await supabase.from('vault_resources').update({thumbnail:t}).eq('id',r.id);return e?r:{...r,thumbnail:t}}catch{return r}}
 export async function getManagedResources(){const{data,error}=await supabase.from('vault_resources').select('*').order('created_at',{ascending:false});if(error)throw new Error(`Could not load files: ${getErrorMessage(error)}`);return Promise.all((await Promise.all((data||[]).map(ensurePdfPreview))).map(hydrateRow))}
@@ -22,16 +22,13 @@ export async function uploadResource(i:ResourceInput,f:File){const ext=f.name.in
 export async function updateManagedResourceType(id:string,type:ResourceType){const{error}=await supabase.from('vault_resources').update({type}).eq('id',id);if(error)throw new Error(`Could not update file type: ${getErrorMessage(error)}`)}
 export async function updateManagedResourceTags(id:string,tags:string[]){const{error}=await supabase.from('vault_resources').update({tags:tags.map(t=>t.trim()).filter(Boolean)}).eq('id',id);if(error)throw new Error(`Could not update tags: ${getErrorMessage(error)}`)}
 export async function deleteManagedResource(r:ManagedResource){
-  const{data,error}=await supabase.from('vault_resources').delete().eq('id',r.id).select('id').maybeSingle()
+  const{data,error}=await supabase.from('vault_resources').update({deleted_at:new Date().toISOString()}).eq('id',r.id).select('id').maybeSingle()
   if(error)throw new Error(`Could not delete file record: ${getErrorMessage(error)}`)
   if(!data)throw new Error('The file could not be deleted. You may not have permission to remove it, or it may already be gone.')
-
-  // The library record is the source of truth for the UI. Clean up the Storage
-  // object afterwards, but do not make a successful library deletion look like
-  // a failure if Storage cleanup has a transient/problematic response.
-  if(r.storagePath){
-    const{error:e}=await supabase.storage.from(STORAGE_BUCKET).remove([r.storagePath,`${r.storagePath}.preview.png`])
-    if(e)console.warn('Resource record deleted, but Storage cleanup failed:',e)
-  }
+}
+export async function restoreManagedResource(r:ManagedResource){
+  const{data,error}=await supabase.from('vault_resources').update({deleted_at:null}).eq('id',r.id).select('id').maybeSingle()
+  if(error)throw new Error(`Could not restore file record: ${getErrorMessage(error)}`)
+  if(!data)throw new Error('The file could not be restored. You may not have permission, or it may already be gone.')
 }
 function formatFileSize(b:number){if(b<1024)return `${b} B`;const u=['KB','MB','GB'];let v=b/1024,n=0;while(v>=1024&&n<u.length-1){v/=1024;n++}return `${v.toFixed(v>=10?0:1)} ${u[n]}`}
