@@ -18,6 +18,7 @@ insert into auth.identities (
   user_id,
   identity_data,
   provider,
+  provider_id,
   last_sign_in_at,
   created_at,
   updated_at
@@ -27,9 +28,10 @@ select
   id,
   jsonb_build_object('sub', id, 'email', email),
   'email',
+  id,
   now(),
   now(),
   now()
 from auth.users
 where email = 'goutham.ra@sheshi.ai'
-on conflict do nothing;
+on conflict (provider, provider_id) do nothing;
