@@ -21,5 +21,17 @@ export async function createLinkedVideo(i:ResourceInput,url:string){url=url.trim
 export async function uploadResource(i:ResourceInput,f:File){const ext=f.name.includes('.')?f.name.split('.').pop()?.toUpperCase():'FILE',m=new Date().toISOString().slice(0,7),id=i.productId==='sheshi'?'sheshi':i.productId,path=`${id}/${i.type}/${m}/${crypto.randomUUID()}-${safeName(f.name)}`;const{error:ue}=await supabase.storage.from(STORAGE_BUCKET).upload(path,f,{cacheControl:'3600',upsert:false,contentType:f.type||undefined});if(ue)throw new Error(`Storage upload failed: ${getErrorMessage(ue)}`);let thumbnail:string|null=isImageFile({source_url:f.name,file_format:f.type})?path:null;if(!thumbnail&&(PDF_EXT.test(f.name)||f.type==='application/pdf')){const p=await renderPdfPreview(f);if(p)thumbnail=await uploadPdfPreview(p,path)}const{data,error}=await supabase.from('vault_resources').insert({title:i.title||f.name,description:i.description||null,type:i.type,product_id:i.productId,source_url:path,thumbnail,storage_path:path,file_format:ext,file_size:formatFileSize(f.size),tags:i.tags||[],featured:i.featured||false,...await uploader()}).select().single();if(error){await supabase.storage.from(STORAGE_BUCKET).remove([path]);throw new Error(`Database record failed: ${getErrorMessage(error)}`)}return hydrateRow(data)}
 export async function updateManagedResourceType(id:string,type:ResourceType){const{error}=await supabase.from('vault_resources').update({type}).eq('id',id);if(error)throw new Error(`Could not update file type: ${getErrorMessage(error)}`)}
 export async function updateManagedResourceTags(id:string,tags:string[]){const{error}=await supabase.from('vault_resources').update({tags:tags.map(t=>t.trim()).filter(Boolean)}).eq('id',id);if(error)throw new Error(`Could not update tags: ${getErrorMessage(error)}`)}
-export async function deleteManagedResource(r:ManagedResource){const{error}=await supabase.from('vault_resources').delete().eq('id',r.id);if(error)throw new Error(`Could not delete file record: ${getErrorMessage(error)}`);if(r.storagePath){const{error:e}=await supabase.storage.from(STORAGE_BUCKET).remove([r.storagePath,`${r.storagePath}.preview.png`]);if(e)throw new Error(`Could not delete stored file: ${getErrorMessage(e)}`)}}
+export async function deleteManagedResource(r:ManagedResource){
+  const{data,error}=await supabase.from('vault_resources').delete().eq('id',r.id).select('id').maybeSingle()
+  if(error)throw new Error(`Could not delete file record: ${getErrorMessage(error)}`)
+  if(!data)throw new Error('The file could not be deleted. You may not have permission to remove it, or it may already be gone.')
+
+  // The library record is the source of truth for the UI. Clean up the Storage
+  // object afterwards, but do not make a successful library deletion look like
+  // a failure if Storage cleanup has a transient/problematic response.
+  if(r.storagePath){
+    const{error:e}=await supabase.storage.from(STORAGE_BUCKET).remove([r.storagePath,`${r.storagePath}.preview.png`])
+    if(e)console.warn('Resource record deleted, but Storage cleanup failed:',e)
+  }
+}
 function formatFileSize(b:number){if(b<1024)return `${b} B`;const u=['KB','MB','GB'];let v=b/1024,n=0;while(v>=1024&&n<u.length-1){v/=1024;n++}return `${v.toFixed(v>=10?0:1)} ${u[n]}`}
