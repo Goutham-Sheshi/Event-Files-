@@ -109,11 +109,15 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   }
 
   const remove = async (item: ManagedResource) => {
-    if (!canDelete || !window.confirm(`Delete "${item.title}"?`)) return
+    if (!canDelete || busy || !window.confirm(`Delete "${item.title}"?`)) return
     setBusy(true)
+    setError('')
+    setNotice('')
     try {
       await deleteManagedResource(item)
+      // Reload from the database so the UI cannot keep a stale deleted row.
       await load()
+      setNotice(`"${item.title}" was deleted.`)
     } catch (e) {
       setError(getErrorMessage(e, 'Delete failed'))
     } finally {
