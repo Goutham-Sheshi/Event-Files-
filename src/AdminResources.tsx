@@ -3,18 +3,24 @@ import { products } from './data'
 import type { ResourceType } from './types'
 import { getMyProfile } from './authApi'
 import { supabase } from './lib/supabase'
-import { deleteManagedResource, restoreManagedResource, getErrorMessage, getManagedResources, uploadResource, type ManagedResource } from './resourcesApi'
+import { createLinkedVideo, deleteManagedResource, restoreManagedResource, getErrorMessage, getManagedResources, uploadResource, type ManagedResource } from './resourcesApi'
 
 const TYPES: ResourceType[] = ['logo', 'brochure', 'video', 'document', 'other']
 const PPT_VALUE = '__powerpoint_link__'
+const VIDEO_LINK_VALUE = '__video_link__'
+
+type LinkMode = 'upload' | 'link'
 
 export default function AdminResources({ canDelete = true }: { canDelete?: boolean }) {
   const [items, setItems] = useState<ManagedResource[]>([])
   const [files, setFiles] = useState<File[]>([])
   const [productId, setProductId] = useState('sheshi')
   const [type, setType] = useState<ResourceType>('document')
+  const [linkMode, setLinkMode] = useState<LinkMode>('upload')
   const [pptMode, setPptMode] = useState(false)
   const [pptUrl, setPptUrl] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
+  const [videoTitle, setVideoTitle] = useState('')
   const [description, setDescription] = useState('')
   const [tagsInput, setTagsInput] = useState('')
   const [busy, setBusy] = useState(false)
@@ -42,7 +48,10 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
     setDescription('')
     setTagsInput('')
     setPptUrl('')
+    setVideoUrl('')
+    setVideoTitle('')
     setPptMode(false)
+    setLinkMode('upload')
     setType('document')
   }
 
@@ -84,6 +93,34 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
       window.dispatchEvent(new Event('vault-resources-changed'))
     } catch (e) {
       setError(getErrorMessage(e, 'Could not add the PowerPoint link'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const addVideoLink = async () => {
+    const url = videoUrl.trim()
+    if (!url) { setError('Paste a video link first.'); return }
+    try { new URL(url) } catch { setError('Please enter a valid video URL.'); return }
+
+    setBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean)
+      await createLinkedVideo({
+        title: videoTitle.trim() || 'Video',
+        description: description.trim() || null,
+        type: 'video',
+        productId,
+        tags,
+      }, url)
+      resetForm()
+      setNotice('Video link added successfully.')
+      await load()
+      window.dispatchEvent(new Event('vault-resources-changed'))
+    } catch (e) {
+      setError(getErrorMessage(e, 'Could not add the video link'))
     } finally {
       setBusy(false)
     }
@@ -151,6 +188,8 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
     }
   }
 
+  const isVideoLink = type === 'video' && linkMode === 'link'
+
   return (
     <div className="px-8 py-6 max-w-[1400px] min-h-full">
       <div className="mb-6">
@@ -171,29 +210,57 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
 
             <label className="block text-[12px] font-medium">File Type
               <select
-                value={pptMode ? PPT_VALUE : type}
+                value={pptMode ? PPT_VALUE : isVideoLink ? VIDEO_LINK_VALUE : type}
                 onChange={e => {
                   const value = e.target.value
                   if (value === PPT_VALUE) {
                     setPptMode(true)
+                    setLinkMode('upload')
+                    setFiles([])
+                  } else if (value === VIDEO_LINK_VALUE) {
+                    setPptMode(false)
+                    setType('video')
+                    setLinkMode('link')
                     setFiles([])
                   } else {
                     setPptMode(false)
                     setPptUrl('')
+                    setVideoUrl('')
+                    setVideoTitle('')
+                    setLinkMode('upload')
                     setType(value as ResourceType)
                   }
                 }}
                 className="mt-1.5 w-full px-3 py-2.5 rounded-lg border"
               >
                 {TYPES.map(t => <option key={t} value={t}>{t[0].toUpperCase() + t.slice(1)}</option>)}
+                <option value={VIDEO_LINK_VALUE}>Video Link</option>
                 <option value={PPT_VALUE}>PowerPoint (PPT)</option>
               </select>
             </label>
+
+            {type === 'video' && !pptMode && (
+              <div className="flex rounded-lg border border-[var(--line-soft)] p-1 bg-[var(--canvas)]">
+                <button type="button" onClick={() => { setLinkMode('upload'); setVideoUrl('') }} className={`flex-1 rounded-md px-3 py-2 text-[11px] font-semibold ${linkMode === 'upload' ? 'bg-[var(--primary)] text-white' : 'text-[var(--ink-45)]'}`}>Upload Video</button>
+                <button type="button" onClick={() => { setLinkMode('link'); setFiles([]) }} className={`flex-1 rounded-md px-3 py-2 text-[11px] font-semibold ${linkMode === 'link' ? 'bg-[var(--primary)] text-white' : 'text-[var(--ink-45)]'}`}>Paste Video Link</button>
+              </div>
+            )}
 
             {pptMode && (
               <label className="block text-[12px] font-medium">PowerPoint Link
                 <input value={pptUrl} onChange={e => setPptUrl(e.target.value)} type="url" placeholder="Paste the PowerPoint / OneDrive / SharePoint link" className="mt-1.5 w-full px-3 py-2.5 rounded-lg border" />
               </label>
+            )}
+
+            {isVideoLink && (
+              <>
+                <label className="block text-[12px] font-medium">Video Title
+                  <input value={videoTitle} onChange={e => setVideoTitle(e.target.value)} placeholder="e.g. Quanta Product Walkthrough" className="mt-1.5 w-full px-3 py-2.5 rounded-lg border" />
+                </label>
+                <label className="block text-[12px] font-medium">Video Link
+                  <input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} type="url" placeholder="Paste YouTube, Vimeo, Drive or video URL" className="mt-1.5 w-full px-3 py-2.5 rounded-lg border" />
+                </label>
+              </>
             )}
 
             <label className="block text-[12px] font-medium">Tags
@@ -205,7 +272,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
               <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Add a short description for these files" rows={3} className="mt-1.5 w-full px-3 py-2.5 rounded-lg border resize-y" />
             </label>
 
-            {!pptMode && (
+            {!pptMode && !isVideoLink && (
               <>
                 <label className="block rounded-xl border-2 border-dashed p-5 text-center cursor-pointer">
                   <input type="file" multiple onChange={pick} className="hidden" />
@@ -220,11 +287,11 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
             {notice && <div className="text-[12px] text-green-700">{notice}</div>}
 
             <button
-              disabled={busy || (pptMode ? !pptUrl.trim() : !files.length)}
-              onClick={pptMode ? addPowerPoint : upload}
+              disabled={busy || (pptMode ? !pptUrl.trim() : isVideoLink ? !videoUrl.trim() : !files.length)}
+              onClick={pptMode ? addPowerPoint : isVideoLink ? addVideoLink : upload}
               className="w-full px-4 py-2.5 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold disabled:opacity-40"
             >
-              {busy ? (pptMode ? 'Adding…' : 'Uploading…') : (pptMode ? 'Add PowerPoint' : `Upload ${files.length || ''} File${files.length === 1 ? '' : 's'}`)}
+              {busy ? (pptMode || isVideoLink ? 'Adding…' : 'Uploading…') : (pptMode ? 'Add PowerPoint' : isVideoLink ? 'Add Video Link' : `Upload ${files.length || ''} File${files.length === 1 ? '' : 's'}`)}
             </button>
           </div>
         </div>
@@ -240,18 +307,8 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
             )}
           </div>
           {(() => {
-            const filtered = items.filter(item => {
-              if (showDeleted) {
-                return item.deletedAt !== undefined
-              } else {
-                return item.deletedAt === undefined
-              }
-            })
-            if (filtered.length === 0) {
-              return <div className="px-5 py-10 text-[12px] text-[var(--ink-45)]">
-                {showDeleted ? 'No deleted files found.' : 'No files yet.'}
-              </div>
-            }
+            const filtered = items.filter(item => showDeleted ? item.deletedAt !== undefined : item.deletedAt === undefined)
+            if (filtered.length === 0) return <div className="px-5 py-10 text-[12px] text-[var(--ink-45)]">{showDeleted ? 'No deleted files found.' : 'No files yet.'}</div>
             return filtered.map(item => {
               const label = item.fileFormat === 'PPT LINK' ? 'PowerPoint' : item.type
               return <div key={item.id} className={`px-5 py-3.5 flex items-center gap-3 ${item.deletedAt ? 'opacity-60 bg-red-50/10' : ''}`}>
@@ -263,14 +320,8 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                     {item.deletedAt && <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">Deleted</span>}
                   </div>
                 </div>
-                {!item.deletedAt && (
-                  <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[var(--primary)]">Open</a>
-                )}
-                {item.deletedAt ? (
-                  isAdmin && <button disabled={busy} onClick={() => restore(item)} className="text-[11px] font-semibold text-emerald-600 hover:underline">Restore</button>
-                ) : (
-                  canDelete && <button disabled={busy} onClick={() => remove(item)} className="text-[11px] font-semibold text-red-600 hover:underline">Delete</button>
-                )}
+                {!item.deletedAt && <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[var(--primary)]">Open</a>}
+                {item.deletedAt ? (isAdmin && <button disabled={busy} onClick={() => restore(item)} className="text-[11px] font-semibold text-emerald-600 hover:underline">Restore</button>) : (canDelete && <button disabled={busy} onClick={() => remove(item)} className="text-[11px] font-semibold text-red-600 hover:underline">Delete</button>)}
               </div>
             })
           })()}
