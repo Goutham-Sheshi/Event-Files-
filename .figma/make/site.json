@@ -2,5 +2,6 @@
   "title": "Sheshi Vault - Marketing Resource Platform",
   "description": "Centralized library for Figma designs, brand assets, brochures, videos, and events across Quanta, Catalyx, FR, and Consultease.",
   "language": "en",
-  "robots": { "index": true }
+  "robots": { "index": true },
+  "openGraph": { "image": "https://goutham-sheshi.github.io/Event-Files-/icon-512.png" }
 }
