@@ -36,7 +36,82 @@ function eventFallback(event:ManagedEvent,product?:Product){const a=product?.col
 function EventCard({event,hero}:{event:ManagedEvent;hero?:boolean}){const p=productOf(event.product_id||'');const meta=[event.location,event.event_type].filter(Boolean).join(' · ');const[fallback,setFallback]=useState(!event.banner);const src=fallback?eventFallback(event,p):event.banner||eventFallback(event,p);if(hero)return <div className="relative min-h-[240px] rounded-2xl overflow-hidden text-white shadow-sm"><img src={src} className="absolute inset-0 w-full h-full object-cover" alt="" onError={()=>setFallback(true)}/><div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5"/><div className="relative h-full min-h-[240px] p-6 flex flex-col justify-between"><ProductBadge product={p}/><div><div className="font-display text-[clamp(22px,2.2vw,34px)] font-bold leading-tight">{event.title}</div><div className="text-[12px] text-white/75 mt-2">{dateText(event.event_date)}{meta?` · ${meta}`:''}</div></div></div></div>;return <div className="bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden h-full flex flex-col"><img src={src} className="w-full h-36 object-cover" alt="" onError={()=>setFallback(true)}/><div className="p-4 flex-1"><ProductBadge product={p}/><div className="font-semibold text-[14px] mt-2">{event.title}</div><div className="text-[11px] text-[var(--ink-45)] mt-1">{dateText(event.event_date)}{meta?` · ${meta}`:''}</div></div></div>}
 function Home({resources,events,onProduct,onSheshi}:{resources:Resource[];events:ManagedEvent[];onProduct:(s:string)=>void;onSheshi:()=>void}){const[name,setName]=useState('');useEffect(()=>setName(localStorage.getItem('sheshi-vault-user-name')||''),[]);const next=events.filter(upcoming).sort((a,b)=>localDate(a.event_date).getTime()-localDate(b.event_date).getTime());const sheshiResources=resources.filter(r=>r.productId===SHESHI_ID);const latest=[...resources].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,5);return <main className="flex-1 overflow-y-auto"><div className="px-8 py-6 max-w-[1400px] space-y-9"><div><div className="text-[11px] font-mono text-[var(--ink-45)] uppercase tracking-wider">{new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}</div><h1 className="font-display welcome-title mt-2">Welcome back{ name&&<> <em>{name}</em></>}</h1></div><section><h2 className="section-heading mb-4">Upcoming</h2>{next.length?<div className="grid grid-cols-1 lg:grid-cols-3 gap-4"><div className="lg:col-span-2"><EventCard event={next[0]} hero/></div><div className="flex flex-col gap-3">{next.slice(1,3).map(e=><EventCard key={e.id} event={e}/>)}</div></div>:<div className="text-[13px] text-[var(--ink-45)] py-6">No upcoming events.</div>}</section><section><div className="flex items-end justify-between gap-4 mb-4"><h2 className="section-heading flex-1">Sheshi</h2>{sheshiResources.length>0&&<button onClick={onSheshi} className="text-[11px] font-semibold text-[var(--primary)] whitespace-nowrap">View all</button>}</div>{sheshiResources.length?<ResourceGrid items={sheshiResources.slice(0,5)}/>:<button onClick={onSheshi} className="w-full text-left rounded-xl border border-[var(--line-soft)] bg-white p-5 text-[13px] text-[var(--ink-45)] hover:shadow-sm">Company files, CEO material, Sheshi information and other shared resources.</button>}</section><section><h2 className="section-heading mb-4">Products</h2><div className="grid grid-cols-2 sm:grid-cols-4 gap-3">{products.map(p=><button key={p.id} onClick={()=>onProduct(p.slug)} className="text-left rounded-xl border border-[var(--line-soft)] p-4 transition-all hover:shadow-md hover:-translate-y-0.5" style={{background:`linear-gradient(135deg,${p.light} 0%,${p.light} 62%,${p.color}18 100%)`,borderColor:`${p.color}35`}}><div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold mb-2" style={{background:p.light,color:p.color,boxShadow:`0 0 0 1px ${p.color}18`}}>{p.name[0]}</div><div className="font-semibold text-[13px]">{p.name}</div><div className="text-[11px] text-[var(--ink-45)] mt-1">{resources.filter(r=>r.productId===p.id||r.productId===p.slug).length} files</div></button>)}</div></section><section className="pb-8"><h2 className="section-heading mb-4">Latest Resources</h2><ResourceGrid items={latest}/></section></div></main>}
 function SheshiPage({resources}:{resources:Resource[]}){const items=resources.filter(r=>r.productId===SHESHI_ID||r.productId==='sheshi');const sections=[['brand','Brand Assets'],['document','Documents'],['photo','Photography'],['other','Other Resources']] as const;const sectionOf=(r:Resource)=>{if(r.type==='logo')return'brand';if(r.type==='document'||r.type==='brochure')return'document';const words=(r.tags||[]).join(' ').toLowerCase();if(/photo|photograph|portrait|image|headshot/.test(words))return'photo';if(/brand|identity|guideline|asset/.test(words))return'brand';if(/document|message|company|presentation|profile|about|ceo/.test(words))return'document';return'other'};return <main className="flex-1 overflow-y-auto"><div className="px-8 py-6 max-w-[1400px]"><div className="mb-8 pb-6 border-b border-[var(--line-soft)]"><div className="text-[11px] font-mono text-[var(--ink-45)] uppercase tracking-wider">Company Library</div><h1 className="font-display text-[clamp(36px,5vw,72px)] font-bold leading-none mt-2">Sheshi</h1><p className="text-[13px] text-[var(--ink-45)] mt-3">CEO materials, company information, photography, messages and shared Sheshi resources.</p></div><div className="space-y-9 pb-8">{sections.map(([key,label])=>{const group=items.filter(r=>sectionOf(r)===key);return group.length?<section key={key}><h2 className="section-heading mb-4">{label}</h2><ResourceGrid items={group}/></section>:null})}{!items.length&&<div className="py-14 text-center text-[13px] text-[var(--ink-45)]">No Sheshi resources have been added yet.</div>}</div></div></main>}
-function ProductPage({product,resources}:{product:Product;resources:Resource[]}){const items=resources.filter(r=>r.productId===product.id||r.productId===product.slug);const groups:[ResourceType,string][]=[['logo','Brand Assets'],['brochure','Brochures'],['video','Videos'],['document','Documents'],['other','Other Files']];return <main className="flex-1 overflow-y-auto"><div className="px-8 py-6 max-w-[1400px]"><div className="flex gap-4 items-center mb-8 pb-6 border-b border-[var(--line-soft)]"><div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold" style={{background:product.light,color:product.color}}>{product.name[0]}</div><div><h1 className="font-display text-[24px] font-bold">{product.name}</h1><p className="text-[13px] text-[var(--ink-45)]">{product.description}</p></div></div><div className="space-y-9 pb-8">{groups.map(([type,label])=>{const group=items.filter(x=>x.type===type);return group.length?<section key={type}><h2 className="section-heading mb-4">{label}</h2><ResourceGrid items={group}/></section>:null})}{!items.length&&<div className="text-[13px] text-[var(--ink-45)] py-10">No files have been added for this product.</div>}</div></div></main>}
+function ProductPage({product,resources}:{product:Product;resources:Resource[]}){
+  const [activeTab, setActiveTab] = useState<'all' | ResourceType>('all')
+  const items = resources.filter(r => r.productId === product.id || r.productId === product.slug);
+  const groups: [ResourceType | 'all', string][] = [
+    ['all', 'All Files'],
+    ['logo', 'Brand Assets'],
+    ['brochure', 'Brochures'],
+    ['video', 'Videos'],
+    ['document', 'Documents'],
+    ['other', 'Other Files']
+  ];
+
+  const availableTabs = groups.filter(([type]) => {
+    if (type === 'all') return true;
+    return items.some(x => x.type === type);
+  });
+
+  return <main className="flex-1 overflow-y-auto">
+    <div className="px-8 py-6 max-w-[1400px]">
+      <div className="flex gap-4 items-center mb-8 pb-6 border-b border-[var(--line-soft)]">
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold" style={{background:product.light,color:product.color}}>{product.name[0]}</div>
+        <div>
+          <h1 className="font-display text-[24px] font-bold">{product.name}</h1>
+          <p className="text-[13px] text-[var(--ink-45)]">{product.description}</p>
+        </div>
+      </div>
+
+      {items.length > 0 && availableTabs.length > 2 && (
+        <div className="flex gap-2 flex-wrap mb-6">
+          {availableTabs.map(([type, label]) => (
+            <button
+              key={type}
+              onClick={() => setActiveTab(type)}
+              className={`px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all cursor-pointer ${
+                activeTab === type
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'bg-white border border-[var(--line-soft)] text-[var(--ink-70)] hover:bg-slate-50'
+              }`}
+            >
+              {label} ({type === 'all' ? items.length : items.filter(x => x.type === type).length})
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="space-y-9 pb-8">
+        {(() => {
+          if (!items.length) {
+            return <div className="text-[13px] text-[var(--ink-45)] py-10">No files have been added for this product.</div>
+          }
+
+          const groupsToRender: [ResourceType, string][] = [
+            ['logo', 'Brand Assets'],
+            ['brochure', 'Brochures'],
+            ['video', 'Videos'],
+            ['document', 'Documents'],
+            ['other', 'Other Files']
+          ];
+
+          const filteredGroups = groupsToRender.filter(([type]) => {
+            if (activeTab !== 'all' && activeTab !== type) return false;
+            return items.some(x => x.type === type);
+          });
+
+          return filteredGroups.map(([type, label]) => {
+            const group = items.filter(x => x.type === type);
+            return <section key={type}>
+              <h2 className="section-heading mb-4">{label}</h2>
+              <ResourceGrid items={group} />
+            </section>
+          });
+        })()}
+      </div>
+    </div>
+  </main>
+}
 function AllResources({resources}:{resources:Resource[]}){const [product,setProduct]=useState('');const items=product?resources.filter(r=>r.productId===product||productOf(r.productId)?.slug===product||productOf(r.productId)?.id===product):resources;return <main className="flex-1 overflow-y-auto"><div className="px-8 py-6 max-w-[1400px]"><h1 className="font-display text-[22px] font-bold mb-5">All Resources</h1><div className="flex gap-2 flex-wrap mb-5"><button onClick={()=>setProduct('')} className={`px-3 py-1.5 rounded-full text-[12px] ${!product?'bg-[var(--primary)] text-white':'bg-white border border-[var(--line-soft)]'}`}>All Products</button>{products.map(p=><button key={p.id} onClick={()=>setProduct(p.id)} className={`px-3 py-1.5 rounded-full text-[12px] ${product===p.id?'text-white':'bg-white border border-[var(--line-soft)]'}`} style={product===p.id?{background:p.color}:undefined}>{p.name}</button>)}</div><ResourceGrid items={items}/></div></main>}
 function Events({events}:{events:ManagedEvent[]}){const future=events.filter(upcoming).sort((a,b)=>localDate(a.event_date).getTime()-localDate(b.event_date).getTime());const past=events.filter(e=>!upcoming(e)).sort((a,b)=>localDate(b.event_date).getTime()-localDate(a.event_date).getTime());return <main className="flex-1 overflow-y-auto"><div className="px-8 py-6 max-w-[1400px] space-y-8"><h1 className="font-display text-[22px] font-bold">Events</h1><section><h2 className="section-heading mb-4">Upcoming</h2>{future.length?<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{future.map(e=><EventCard key={e.id} event={e}/>)}</div>:<div className="py-10 text-[13px] text-[var(--ink-45)]">No upcoming events.</div>}</section>{past.length>0&&<section><h2 className="section-heading mb-4">Past</h2><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 opacity-70">{past.map(e=><EventCard key={e.id} event={e}/>)}</div></section>}</div></main>}
 function Sidebar({view,onView,isAdmin,profile,onSignOut,onOpenAuth}:{view:View;onView:(v:View)=>void;isAdmin:boolean;profile:VaultProfile|null;onSignOut:()=>void;onOpenAuth:(mode:AuthMode)=>void}){const[open,setOpen]=useState(true);const[collapsed,setCollapsed]=useState(false);const nav=(active:boolean)=>'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] '+(active?'bg-[var(--primary)] text-white':'text-[var(--ink-70)]');const label=(text:string)=>!collapsed&&<span>{text}</span>;const isAdvanced = profile ? (profile.role === 'advanced' || profile.role === 'teammate') && profile.status === 'approved' : false;return <aside className={(collapsed?'w-[64px]':'w-[236px]')+' flex-shrink-0 flex flex-col bg-white border-r border-[var(--line)] transition-all duration-200'}><div className={'h-16 flex items-center '+(collapsed?'justify-center px-2':'justify-between px-4')+' border-b border-[var(--line-soft)]'}><span className={'font-display '+(collapsed?'hidden':'text-[19px]')+' font-bold tracking-[-.02em]'}>Sheshi Vault</span><button onClick={()=>setCollapsed(!collapsed)} aria-label={collapsed?'Expand sidebar':'Collapse sidebar'} title={collapsed?'Expand sidebar':'Collapse sidebar'} className="w-8 h-8 rounded-md flex items-center justify-center text-[var(--ink-45)] hover:bg-[var(--canvas-deep)]"><PanelIcon collapsed={collapsed}/></button></div><nav className={'flex-1 overflow-y-auto '+(collapsed?'px-2':'px-2.5')+' py-3'}><button title="Home" onClick={()=>onView({kind:'home'})} className={nav(view.kind==='home')}><HomeIcon/>{label('Home')}</button><button title="Sheshi" onClick={()=>onView({kind:'sheshi'})} className={nav(view.kind==='sheshi')}><CompanyIcon/>{label('Sheshi')}</button><button title="Products" onClick={()=>{if(collapsed)setCollapsed(false);setOpen(!open)}} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] text-[var(--ink-70)]"><GridIcon/>{!collapsed&&<><span className="flex-1 text-left">Products</span><Chevron open={open}/></>}</button>{open&&!collapsed&&<div className="ml-3 pl-3 border-l border-[var(--line-soft)]">{products.map(p=><button key={p.id} onClick={()=>onView({kind:'product',slug:p.slug})} className={'w-full flex gap-2 px-2.5 py-1.5 text-left rounded-md text-[12.5px] '+(view.kind==='product'&&view.slug===p.slug?'font-semibold':'text-[var(--ink-45)]')}><span className="w-1.5 h-1.5 rounded-full mt-1.5" style={{background:p.color}}/>{p.name}</button>)}</div>}<button title="Events" onClick={()=>onView({kind:'events'})} className={nav(view.kind==='events')}><CalIcon/>{label('Events')}</button><button title="All Resources" onClick={()=>onView({kind:'all'})} className={nav(view.kind==='all')}><DownloadIcon/>{label('All Resources')}</button>{isAdmin&&<div className="mt-2 pt-2 border-t border-[var(--line-soft)]"><button title="Admin" onClick={()=>onView({kind:'admin'})} className={nav(view.kind==='admin')}><ShieldIcon/>{label('Admin')}</button></div>}{isAdvanced&&!isAdmin&&<div className="mt-2 pt-2 border-t border-[var(--line-soft)]"><button title="Upload Files" onClick={()=>onView({kind:'admin'})} className={nav(view.kind==='admin')}><ShieldIcon/>{label('Upload Files')}</button></div>}</nav><div className="p-3 border-t border-[var(--line-soft)]">{profile?<div className="flex flex-col gap-2">{!collapsed&&<div className="px-1"><div className="text-[12.5px] font-semibold text-[var(--ink)] truncate">{profile.full_name||profile.email}</div><div className="text-[11px] text-[var(--ink-45)] truncate flex items-center justify-between mt-0.5"><span>{profile.email}</span>{profile.role!=='teammate'&&<span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold uppercase ${profile.role==='admin'?'bg-amber-100 text-amber-800':'bg-gray-100 text-gray-700'}`}>{profile.role}</span>}</div></div>}<button onClick={onSignOut} className="w-full py-1.5 px-3 rounded-lg border border-[var(--line-soft)] text-[12px] font-semibold text-red-600 hover:bg-red-50 transition-colors">Sign Out</button></div>:<div className="flex flex-col gap-2">{!collapsed&&<div className="text-[11px] text-[var(--ink-45)] px-1">Sign in to access admin features and private resources.</div>}<button onClick={()=>onOpenAuth('login')} className="w-full py-2 px-3 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold hover:opacity-90 transition-opacity">Sign In / Register</button></div>}</div></aside>}
