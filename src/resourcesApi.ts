@@ -31,6 +31,16 @@ export function getVideoThumbnailUrl(url: string | null | undefined): string | n
   if (driveMatch && driveMatch[1]) {
     return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w800`;
   }
+  const oneDriveResIdMatch = cleanUrl.match(/[?&]resid=([a-zA-Z0-9!_-]+)/i);
+  const oneDriveAuthKeyMatch = cleanUrl.match(/[?&]authkey=([a-zA-Z0-9!_-]+)/i);
+  if (oneDriveResIdMatch && oneDriveResIdMatch[1]) {
+    const resid = oneDriveResIdMatch[1];
+    const authkey = oneDriveAuthKeyMatch ? `&authkey=${encodeURIComponent(oneDriveAuthKeyMatch[1])}` : '';
+    return `https://onedrive.live.com/tile?resid=${resid}${authkey}&width=800`;
+  }
+  if (/1drv\.ms|onedrive\.live\.com|sharepoint\.com/i.test(cleanUrl)) {
+    return 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80';
+  }
   return null;
 }
 
