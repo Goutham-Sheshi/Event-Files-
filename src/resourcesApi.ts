@@ -13,44 +13,41 @@ async function uploadPdfPreview(b:Blob,p:string){const q=`${p}.preview.png`,{err
 async function signedUrl(p:string|null|undefined){if(!p||/^https?:\/\//i.test(p))return p||undefined;const{data,error}=await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(p,SIGNED_URL_TTL);return error?undefined:data.signedUrl}
 export function getErrorMessage(e:unknown,f='Something went wrong'){if(e instanceof Error&&e.message)return e.message;if(e&&typeof e==='object'){const v=e as Record<string,unknown>;for(const k of['message','error_description','error','details','hint'])if(typeof v[k]==='string'&&v[k])return v[k] as string;try{return JSON.stringify(e)}catch{}}return f}
 export function generateSharePointVideoThumbnail(title: string, isFolder: boolean = false): string {
-  const cleanTitle = (title || 'SharePoint Video').replace(/"/g, '&quot;');
+  const cleanTitle = (title || 'SharePoint Video').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const badgeText = isFolder ? 'SHAREPOINT FOLDER' : 'SHAREPOINT VIDEO';
-  const bgGradA = isFolder ? '#1e293b' : '#0f172a';
-  const bgGradB = isFolder ? '#0f172a' : '#1e1b4b';
-  const accent = isFolder ? '#38bdf8' : '#6366f1';
+  const bgGradA = isFolder ? '#0f172a' : '#090d16';
+  const bgGradB = isFolder ? '#1e293b' : '#1e1b4b';
+  const accent = isFolder ? '#0284c7' : '#4f46e5';
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  const displayTitle = cleanTitle.length > 40 ? cleanTitle.slice(0, 40) + '…' : cleanTitle;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
     <defs>
       <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0%" stop-color="${bgGradA}"/>
         <stop offset="100%" stop-color="${bgGradB}"/>
       </linearGradient>
-      <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stop-color="${accent}" stop-opacity="0.6"/>
-        <stop offset="100%" stop-color="#ec4899" stop-opacity="0.3"/>
+      <linearGradient id="glow" x1="0.8" y1="0.2" x2="0.2" y2="0.8">
+        <stop offset="0%" stop-color="${accent}" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="#ec4899" stop-opacity="0.15"/>
       </linearGradient>
-      <filter id="blur">
-        <feGaussianBlur stdDeviation="60"/>
+      <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="50"/>
       </filter>
     </defs>
-    <rect width="800" height="500" fill="url(#bg)"/>
-    <circle cx="650" cy="120" r="180" fill="url(#glow)" filter="url(#blur)"/>
-    <circle cx="150" cy="380" r="150" fill="${accent}" opacity="0.15" filter="url(#blur)"/>
-    
-    <path d="M-100 400 C 200 300, 400 500, 900 350" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="3"/>
-    <path d="M-100 350 C 300 450, 500 250, 900 400" fill="none" stroke="${accent}" stroke-opacity="0.2" stroke-width="2"/>
 
-    <rect x="40" y="40" width="${badgeText.length * 8 + 24}" height="26" rx="6" fill="#ffffff" fill-opacity="0.15"/>
-    <text x="52" y="57" fill="#ffffff" fill-opacity="0.9" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" letter-spacing="1.5">${badgeText}</text>
+    <rect width="800" height="400" fill="url(#bg)"/>
+    <circle cx="680" cy="80" r="220" fill="url(#glow)" filter="url(#blur)"/>
+    <circle cx="100" cy="350" r="180" fill="${accent}" opacity="0.2" filter="url(#blur)"/>
 
-    <circle cx="400" cy="210" r="44" fill="#ffffff" fill-opacity="0.95"/>
-    ${isFolder ? `
-      <path d="M388 198 h8 l3 3 h13 a2 2 0 0 1 2 2 v14 a2 2 0 0 1 -2 2 h-24 a2 2 0 0 1 -2 -2 v-17 a2 2 0 0 1 2 -2 z" fill="${accent}"/>
-    ` : `
-      <path d="M395 198 L413 210 L395 222 Z" fill="#0f172a"/>
-    `}
+    <path d="M-50 280 Q 250 180 850 320" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/>
+    <path d="M-50 220 Q 350 340 850 180" fill="none" stroke="${accent}" stroke-opacity="0.25" stroke-width="2.5"/>
 
-    <text x="400" y="340" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" text-anchor="middle">${cleanTitle.length > 38 ? cleanTitle.slice(0, 38) + '…' : cleanTitle}</text>
+    <rect x="36" y="32" width="${badgeText.length * 8.5 + 20}" height="26" rx="6" fill="#ffffff" fill-opacity="0.1"/>
+    <rect x="36" y="32" width="${badgeText.length * 8.5 + 20}" height="26" rx="6" fill="none" stroke="#ffffff" stroke-opacity="0.15" stroke-width="1"/>
+    <text x="46" y="49" fill="#ffffff" fill-opacity="0.9" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" letter-spacing="1.2">${badgeText}</text>
+
+    <text x="400" y="225" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" text-anchor="middle" opacity="0.95">${displayTitle}</text>
   </svg>`;
 
   return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
