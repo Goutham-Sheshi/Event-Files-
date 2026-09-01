@@ -1,4 +1,4 @@
--- Create Default Admin User (goutham.ra@sheshi.ai / GTG@1995/25) directly in Supabase DB
+-- Create Default Admin User directly in Supabase DB
 -- Run this in Supabase SQL Editor: https://supabase.com/dashboard/project/ikkyziyugrnkolqnrxfo/sql/new
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -23,7 +23,7 @@ VALUES (
   'authenticated',
   'authenticated',
   'goutham.ra@sheshi.ai',
-  crypt('GTG@1995/25', gen_salt('bf')),
+  crypt('YOUR_ADMIN_PASSWORD', gen_salt('bf')),
   now(),
   '{"provider": "email", "providers": ["email"]}',
   '{"full_name": "Goutham"}',
@@ -31,7 +31,7 @@ VALUES (
   now()
 )
 ON CONFLICT (email) DO UPDATE SET
-  encrypted_password = crypt('GTG@1995/25', gen_salt('bf')),
+  encrypted_password = crypt('YOUR_ADMIN_PASSWORD', gen_salt('bf')),
   email_confirmed_at = coalesce(auth.users.email_confirmed_at, now()),
   updated_at = now();
 
