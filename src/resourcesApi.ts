@@ -12,12 +12,34 @@ async function renderPdfPreview(b:Blob){try{const p=await getPdfJs(),pdf=await p
 async function uploadPdfPreview(b:Blob,p:string){const q=`${p}.preview.png`,{error}=await supabase.storage.from(STORAGE_BUCKET).upload(q,b,{cacheControl:'31536000',upsert:true,contentType:'image/png'});return error?null:q}
 async function signedUrl(p:string|null|undefined){if(!p||/^https?:\/\//i.test(p))return p||undefined;const{data,error}=await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(p,SIGNED_URL_TTL);return error?undefined:data.signedUrl}
 export function getErrorMessage(e:unknown,f='Something went wrong'){if(e instanceof Error&&e.message)return e.message;if(e&&typeof e==='object'){const v=e as Record<string,unknown>;for(const k of['message','error_description','error','details','hint'])if(typeof v[k]==='string'&&v[k])return v[k] as string;try{return JSON.stringify(e)}catch{}}return f}
+export function getVideoThumbnailUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const cleanUrl = url.trim();
+  const ytMatch = cleanUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/i);
+  if (ytMatch && ytMatch[1]) {
+    return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+  }
+  const vimeoMatch = cleanUrl.match(/(?:vimeo\.com\/(?:video\/)?|player\.vimeo\.com\/video\/)(\d+)/i);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return `https://vumbnail.com/${vimeoMatch[1]}.jpg`;
+  }
+  const loomMatch = cleanUrl.match(/loom\.com\/(?:share|embed)\/([a-f0-9]{32})/i);
+  if (loomMatch && loomMatch[1]) {
+    return `https://cdn.loom.com/sessions/thumbnails/${loomMatch[1]}-with-play.gif`;
+  }
+  const driveMatch = cleanUrl.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/i);
+  if (driveMatch && driveMatch[1]) {
+    return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w800`;
+  }
+  return null;
+}
+
 const mapRow=(r:any,u:string,t?:string):ManagedResource=>({id:r.id,title:r.title,description:r.description||undefined,type:r.type as ResourceType,productId:r.product_id,thumbnail:t,sourceUrl:u,storagePath:r.storage_path||undefined,fileFormat:r.file_format||undefined,fileSize:r.file_size||undefined,tags:r.tags||[],viewCount:r.view_count||0,downloadCount:r.download_count||0,featured:r.featured||false,createdAt:r.created_at,updatedAt:r.updated_at,uploadedBy:r.uploaded_by||undefined,uploadedByName:r.uploaded_by_name||undefined,deletedAt:r.deleted_at||undefined})
-async function hydrateRow(r:any){if(r.storage_path){const u=(await signedUrl(r.storage_path))||'',p=isImageFile(r)?r.storage_path:isPdfFile(r)?`${r.storage_path}.preview.png`:undefined;return mapRow(r,u,p?await signedUrl(p):undefined)}return mapRow(r,r.source_url||'',r.thumbnail||(isImageFile(r)?r.source_url||undefined:undefined))}
+async function hydrateRow(r:any){if(r.storage_path){const u=(await signedUrl(r.storage_path))||'',p=isImageFile(r)?r.storage_path:isPdfFile(r)?`${r.storage_path}.preview.png`:undefined;return mapRow(r,u,p?await signedUrl(p):undefined)}const autoThumb=r.thumbnail||(r.type==='video'?getVideoThumbnailUrl(r.source_url):isImageFile(r)?r.source_url||undefined:undefined);return mapRow(r,r.source_url||'',autoThumb||undefined)}
 async function ensurePdfPreview(r:any){if(!isPdfFile(r)||r.thumbnail||!r.storage_path)return r;try{const{data:f,error}=await supabase.storage.from(STORAGE_BUCKET).download(r.storage_path);if(error||!f)return r;const p=await renderPdfPreview(f);if(!p)return r;const t=await uploadPdfPreview(p,r.storage_path);if(!t)return r;const{error:e}=await supabase.from('vault_resources').update({thumbnail:t}).eq('id',r.id);return e?r:{...r,thumbnail:t}}catch{return r}}
 export async function getManagedResources(){const{data,error}=await supabase.from('vault_resources').select('*').order('created_at',{ascending:false});if(error)throw new Error(`Could not load files: ${getErrorMessage(error)}`);return Promise.all((await Promise.all((data||[]).map(ensurePdfPreview))).map(hydrateRow))}
 async function uploader(){const p=await getMyProfile();return{uploaded_by:p?.id||null,uploaded_by_name:p?.full_name||null}}
-export async function createLinkedVideo(i:ResourceInput,url:string){url=url.trim();if(!url)throw new Error('Please enter a video link');try{new URL(url)}catch{throw new Error('Please enter a valid video URL')}const{data,error}=await supabase.from('vault_resources').insert({title:i.title.trim()||'Video',description:i.description||null,type:'video',product_id:i.productId,source_url:url,thumbnail:null,storage_path:null,file_format:'LINK',file_size:null,tags:i.tags||[],featured:i.featured||false,...await uploader()}).select().single();if(error)throw new Error(`Video link failed: ${getErrorMessage(error)}`);return hydrateRow(data)}
+export async function createLinkedVideo(i:ResourceInput,url:string){url=url.trim();if(!url)throw new Error('Please enter a video link');try{new URL(url)}catch{throw new Error('Please enter a valid video URL')}const autoThumb=getVideoThumbnailUrl(url);const{data,error}=await supabase.from('vault_resources').insert({title:i.title.trim()||'Video',description:i.description||null,type:'video',product_id:i.productId,source_url:url,thumbnail:autoThumb||null,storage_path:null,file_format:'LINK',file_size:null,tags:i.tags||[],featured:i.featured||false,...await uploader()}).select().single();if(error)throw new Error(`Video link failed: ${getErrorMessage(error)}`);return hydrateRow(data)}
 export async function uploadResource(i:ResourceInput,f:File){const ext=f.name.includes('.')?f.name.split('.').pop()?.toUpperCase():'FILE',m=new Date().toISOString().slice(0,7),id=i.productId==='sheshi'?'sheshi':i.productId,path=`${id}/${i.type}/${m}/${crypto.randomUUID()}-${safeName(f.name)}`;const{error:ue}=await supabase.storage.from(STORAGE_BUCKET).upload(path,f,{cacheControl:'3600',upsert:false,contentType:f.type||undefined});if(ue)throw new Error(`Storage upload failed: ${getErrorMessage(ue)}`);let thumbnail:string|null=isImageFile({source_url:f.name,file_format:f.type})?path:null;if(!thumbnail&&(PDF_EXT.test(f.name)||f.type==='application/pdf')){const p=await renderPdfPreview(f);if(p)thumbnail=await uploadPdfPreview(p,path)}const{data,error}=await supabase.from('vault_resources').insert({title:i.title||f.name,description:i.description||null,type:i.type,product_id:i.productId,source_url:path,thumbnail,storage_path:path,file_format:ext,file_size:formatFileSize(f.size),tags:i.tags||[],featured:i.featured||false,...await uploader()}).select().single();if(error){await supabase.storage.from(STORAGE_BUCKET).remove([path]);throw new Error(`Database record failed: ${getErrorMessage(error)}`)}return hydrateRow(data)}
 export async function updateManagedResourceType(id:string,type:ResourceType){const{error}=await supabase.from('vault_resources').update({type}).eq('id',id);if(error)throw new Error(`Could not update file type: ${getErrorMessage(error)}`)}
 export async function updateManagedResourceTags(id:string,tags:string[]){const{error}=await supabase.from('vault_resources').update({tags:tags.map(t=>t.trim()).filter(Boolean)}).eq('id',id);if(error)throw new Error(`Could not update tags: ${getErrorMessage(error)}`)}
