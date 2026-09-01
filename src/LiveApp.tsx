@@ -36,30 +36,7 @@ function eventFallback(event:ManagedEvent,product?:Product){const a=product?.col
 function EventCard({event,hero}:{event:ManagedEvent;hero?:boolean}){const p=productOf(event.product_id||'');const meta=[event.location,event.event_type].filter(Boolean).join(' · ');const[fallback,setFallback]=useState(!event.banner);const src=fallback?eventFallback(event,p):event.banner||eventFallback(event,p);if(hero)return <div className="relative min-h-[240px] rounded-2xl overflow-hidden text-white shadow-sm"><img src={src} className="absolute inset-0 w-full h-full object-cover" alt="" onError={()=>setFallback(true)}/><div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5"/><div className="relative h-full min-h-[240px] p-6 flex flex-col justify-between"><ProductBadge product={p}/><div><div className="font-display text-[clamp(22px,2.2vw,34px)] font-bold leading-tight">{event.title}</div><div className="text-[12px] text-white/75 mt-2">{dateText(event.event_date)}{meta?` · ${meta}`:''}</div></div></div></div>;return <div className="bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden h-full flex flex-col"><img src={src} className="w-full h-36 object-cover" alt="" onError={()=>setFallback(true)}/><div className="p-4 flex-1"><ProductBadge product={p}/><div className="font-semibold text-[14px] mt-2">{event.title}</div><div className="text-[11px] text-[var(--ink-45)] mt-1">{dateText(event.event_date)}{meta?` · ${meta}`:''}</div></div></div>}
 function Home({resources,events,onProduct,onSheshi}:{resources:Resource[];events:ManagedEvent[];onProduct:(s:string)=>void;onSheshi:()=>void}){const[name,setName]=useState('');useEffect(()=>setName(localStorage.getItem('sheshi-vault-user-name')||''),[]);const next=events.filter(upcoming).sort((a,b)=>localDate(a.event_date).getTime()-localDate(b.event_date).getTime());const sheshiResources=resources.filter(r=>r.productId===SHESHI_ID);const latest=[...resources].sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,5);return <main className="flex-1 overflow-y-auto"><div className="px-8 py-6 max-w-[1400px] space-y-9"><div><div className="text-[11px] font-mono text-[var(--ink-45)] uppercase tracking-wider">{new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}</div><h1 className="font-display welcome-title mt-2">Welcome back{ name&&<> <em>{name}</em></>}</h1></div><section><h2 className="section-heading mb-4">Upcoming</h2>{next.length?<div className="grid grid-cols-1 lg:grid-cols-3 gap-4"><div className="lg:col-span-2"><EventCard event={next[0]} hero/></div><div className="flex flex-col gap-3">{next.slice(1,3).map(e=><EventCard key={e.id} event={e}/>)}</div></div>:<div className="text-[13px] text-[var(--ink-45)] py-6">No upcoming events.</div>}</section><section><div className="flex items-end justify-between gap-4 mb-4"><h2 className="section-heading flex-1">Sheshi</h2>{sheshiResources.length>0&&<button onClick={onSheshi} className="text-[11px] font-semibold text-[var(--primary)] whitespace-nowrap">View all</button>}</div>{sheshiResources.length?<ResourceGrid items={sheshiResources.slice(0,5)}/>:<button onClick={onSheshi} className="w-full text-left rounded-xl border border-[var(--line-soft)] bg-white p-5 text-[13px] text-[var(--ink-45)] hover:shadow-sm">Company files, CEO material, Sheshi information and other shared resources.</button>}</section><section><h2 className="section-heading mb-4">Products</h2><div className="grid grid-cols-2 sm:grid-cols-4 gap-3">{products.map(p=><button key={p.id} onClick={()=>onProduct(p.slug)} className="text-left rounded-xl border border-[var(--line-soft)] p-4 transition-all hover:shadow-md hover:-translate-y-0.5" style={{background:`linear-gradient(135deg,${p.light} 0%,${p.light} 62%,${p.color}18 100%)`,borderColor:`${p.color}35`}}><div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold mb-2" style={{background:p.light,color:p.color,boxShadow:`0 0 0 1px ${p.color}18`}}>{p.name[0]}</div><div className="font-semibold text-[13px]">{p.name}</div><div className="text-[11px] text-[var(--ink-45)] mt-1">{resources.filter(r=>r.productId===p.id||r.productId===p.slug).length} files</div></button>)}</div></section><section className="pb-8"><h2 className="section-heading mb-4">Latest Resources</h2><ResourceGrid items={latest}/></section></div></main>}
 function SheshiPage({resources}:{resources:Resource[]}){
-  const [activeTab, setActiveTab] = useState<'all' | 'brand' | 'document' | 'photo' | 'other'>('all')
   const items=resources.filter(r=>r.productId===SHESHI_ID||r.productId==='sheshi');
-  const sections=[
-    ['all','All Files'],
-    ['brand','Brand Assets'],
-    ['document','Documents'],
-    ['photo','Photography'],
-    ['other','Other Resources']
-  ] as const;
-  const sectionOf=(r:Resource)=>{
-    if(r.type==='logo')return'brand';
-    if(r.type==='document'||r.type==='brochure')return'document';
-    const words=(r.tags||[]).join(' ').toLowerCase();
-    if(/photo|photograph|portrait|image|headshot/.test(words))return'photo';
-    if(/brand|identity|guideline|asset/.test(words))return'brand';
-    if(/document|message|company|presentation|profile|about|ceo/.test(words))return'document';
-    return'other'
-  };
-
-  const availableTabs = sections.filter(([key]) => {
-    if (key === 'all') return true;
-    return items.some(r => sectionOf(r) === key);
-  });
-
   return <main className="flex-1 overflow-y-auto">
     <div className="px-8 py-6 max-w-[1400px]">
       <div className="mb-8 pb-6 border-b border-[var(--line-soft)]">
@@ -67,66 +44,14 @@ function SheshiPage({resources}:{resources:Resource[]}){
         <h1 className="font-display text-[clamp(36px,5vw,72px)] font-bold leading-none mt-2">Sheshi</h1>
         <p className="text-[13px] text-[var(--ink-45)] mt-3">CEO materials, company information, photography, messages and shared Sheshi resources.</p>
       </div>
-
-      {items.length > 0 && availableTabs.length > 1 && (
-        <div className="flex gap-2 flex-wrap mb-6">
-          {availableTabs.map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all cursor-pointer ${
-                activeTab === key
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-white border border-[var(--line-soft)] text-[var(--ink-70)] hover:bg-slate-50'
-              }`}
-            >
-              {label} ({key === 'all' ? items.length : items.filter(r => sectionOf(r) === key).length})
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="space-y-9 pb-8">
-        {(() => {
-          if (!items.length) {
-            return <div className="py-14 text-center text-[13px] text-[var(--ink-45)]">No Sheshi resources have been added yet.</div>
-          }
-
-          const filteredSections = sections.filter(([key]) => {
-            if (key === 'all') return false;
-            if (activeTab !== 'all' && activeTab !== key) return false;
-            return items.some(r => sectionOf(r) === key);
-          });
-
-          return filteredSections.map(([key, label]) => {
-            const group = items.filter(r => sectionOf(r) === key);
-            return <section key={key}>
-              <h2 className="section-heading mb-4">{label}</h2>
-              <ResourceGrid items={group} />
-            </section>
-          });
-        })()}
+      <div className="pb-8">
+        <ResourceGrid items={items}/>
       </div>
     </div>
   </main>
 }
 function ProductPage({product,resources}:{product:Product;resources:Resource[]}){
-  const [activeTab, setActiveTab] = useState<'all' | ResourceType>('all')
   const items = resources.filter(r => r.productId === product.id || r.productId === product.slug);
-  const groups: [ResourceType | 'all', string][] = [
-    ['all', 'All Files'],
-    ['logo', 'Brand Assets'],
-    ['brochure', 'Brochures'],
-    ['video', 'Videos'],
-    ['document', 'Documents'],
-    ['other', 'Other Files']
-  ];
-
-  const availableTabs = groups.filter(([type]) => {
-    if (type === 'all') return true;
-    return items.some(x => x.type === type);
-  });
-
   return <main className="flex-1 overflow-y-auto">
     <div className="px-8 py-6 max-w-[1400px]">
       <div className="flex gap-4 items-center mb-8 pb-6 border-b border-[var(--line-soft)]">
@@ -136,52 +61,8 @@ function ProductPage({product,resources}:{product:Product;resources:Resource[]})
           <p className="text-[13px] text-[var(--ink-45)]">{product.description}</p>
         </div>
       </div>
-
-      {items.length > 0 && availableTabs.length > 1 && (
-        <div className="flex gap-2 flex-wrap mb-6">
-          {availableTabs.map(([type, label]) => (
-            <button
-              key={type}
-              onClick={() => setActiveTab(type)}
-              className={`px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all cursor-pointer ${
-                activeTab === type
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-white border border-[var(--line-soft)] text-[var(--ink-70)] hover:bg-slate-50'
-              }`}
-            >
-              {label} ({type === 'all' ? items.length : items.filter(x => x.type === type).length})
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="space-y-9 pb-8">
-        {(() => {
-          if (!items.length) {
-            return <div className="text-[13px] text-[var(--ink-45)] py-10">No files have been added for this product.</div>
-          }
-
-          const groupsToRender: [ResourceType, string][] = [
-            ['logo', 'Brand Assets'],
-            ['brochure', 'Brochures'],
-            ['video', 'Videos'],
-            ['document', 'Documents'],
-            ['other', 'Other Files']
-          ];
-
-          const filteredGroups = groupsToRender.filter(([type]) => {
-            if (activeTab !== 'all' && activeTab !== type) return false;
-            return items.some(x => x.type === type);
-          });
-
-          return filteredGroups.map(([type, label]) => {
-            const group = items.filter(x => x.type === type);
-            return <section key={type}>
-              <h2 className="section-heading mb-4">{label}</h2>
-              <ResourceGrid items={group} />
-            </section>
-          });
-        })()}
+      <div className="pb-8">
+        <ResourceGrid items={items}/>
       </div>
     </div>
   </main>
