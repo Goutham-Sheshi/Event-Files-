@@ -12,7 +12,51 @@ async function renderPdfPreview(b:Blob){try{const p=await getPdfJs(),pdf=await p
 async function uploadPdfPreview(b:Blob,p:string){const q=`${p}.preview.png`,{error}=await supabase.storage.from(STORAGE_BUCKET).upload(q,b,{cacheControl:'31536000',upsert:true,contentType:'image/png'});return error?null:q}
 async function signedUrl(p:string|null|undefined){if(!p||/^https?:\/\//i.test(p))return p||undefined;const{data,error}=await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(p,SIGNED_URL_TTL);return error?undefined:data.signedUrl}
 export function getErrorMessage(e:unknown,f='Something went wrong'){if(e instanceof Error&&e.message)return e.message;if(e&&typeof e==='object'){const v=e as Record<string,unknown>;for(const k of['message','error_description','error','details','hint'])if(typeof v[k]==='string'&&v[k])return v[k] as string;try{return JSON.stringify(e)}catch{}}return f}
-export function getVideoThumbnailUrl(url: string | null | undefined): string | null {
+export function generateSharePointVideoThumbnail(title: string, isFolder: boolean = false): string {
+  const cleanTitle = (title || 'SharePoint Video').replace(/"/g, '&quot;');
+  const badgeText = isFolder ? 'SHAREPOINT FOLDER' : 'SHAREPOINT VIDEO';
+  const bgGradA = isFolder ? '#1e293b' : '#0f172a';
+  const bgGradB = isFolder ? '#0f172a' : '#1e1b4b';
+  const accent = isFolder ? '#38bdf8' : '#6366f1';
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${bgGradA}"/>
+        <stop offset="100%" stop-color="${bgGradB}"/>
+      </linearGradient>
+      <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="${accent}" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#ec4899" stop-opacity="0.3"/>
+      </linearGradient>
+      <filter id="blur">
+        <feGaussianBlur stdDeviation="60"/>
+      </filter>
+    </defs>
+    <rect width="800" height="500" fill="url(#bg)"/>
+    <circle cx="650" cy="120" r="180" fill="url(#glow)" filter="url(#blur)"/>
+    <circle cx="150" cy="380" r="150" fill="${accent}" opacity="0.15" filter="url(#blur)"/>
+    
+    <path d="M-100 400 C 200 300, 400 500, 900 350" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="3"/>
+    <path d="M-100 350 C 300 450, 500 250, 900 400" fill="none" stroke="${accent}" stroke-opacity="0.2" stroke-width="2"/>
+
+    <rect x="40" y="40" width="${badgeText.length * 8 + 24}" height="26" rx="6" fill="#ffffff" fill-opacity="0.15"/>
+    <text x="52" y="57" fill="#ffffff" fill-opacity="0.9" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" letter-spacing="1.5">${badgeText}</text>
+
+    <circle cx="400" cy="210" r="44" fill="#ffffff" fill-opacity="0.95"/>
+    ${isFolder ? `
+      <path d="M388 198 h8 l3 3 h13 a2 2 0 0 1 2 2 v14 a2 2 0 0 1 -2 2 h-24 a2 2 0 0 1 -2 -2 v-17 a2 2 0 0 1 2 -2 z" fill="${accent}"/>
+    ` : `
+      <path d="M395 198 L413 210 L395 222 Z" fill="#0f172a"/>
+    `}
+
+    <text x="400" y="340" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="700" text-anchor="middle">${cleanTitle.length > 38 ? cleanTitle.slice(0, 38) + '…' : cleanTitle}</text>
+  </svg>`;
+
+  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+}
+
+export function getVideoThumbnailUrl(url: string | null | undefined, title?: string): string | null {
   if (!url) return null;
   const cleanUrl = url.trim();
   const ytMatch = cleanUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/i);
@@ -39,17 +83,18 @@ export function getVideoThumbnailUrl(url: string | null | undefined): string | n
     return `https://onedrive.live.com/tile?resid=${resid}${authkey}&width=800`;
   }
   if (/1drv\.ms|onedrive\.live\.com|sharepoint\.com/i.test(cleanUrl)) {
-    return 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80';
+    const isFolder = /\/:f:\//i.test(cleanUrl);
+    return generateSharePointVideoThumbnail(title || 'SharePoint Video', isFolder);
   }
   return null;
 }
 
 const mapRow=(r:any,u:string,t?:string):ManagedResource=>({id:r.id,title:r.title,description:r.description||undefined,type:r.type as ResourceType,productId:r.product_id,thumbnail:t,sourceUrl:u,storagePath:r.storage_path||undefined,fileFormat:r.file_format||undefined,fileSize:r.file_size||undefined,tags:r.tags||[],viewCount:r.view_count||0,downloadCount:r.download_count||0,featured:r.featured||false,createdAt:r.created_at,updatedAt:r.updated_at,uploadedBy:r.uploaded_by||undefined,uploadedByName:r.uploaded_by_name||undefined,deletedAt:r.deleted_at||undefined})
-async function hydrateRow(r:any){if(r.storage_path){const u=(await signedUrl(r.storage_path))||'',p=isImageFile(r)?r.storage_path:isPdfFile(r)?`${r.storage_path}.preview.png`:undefined;return mapRow(r,u,p?await signedUrl(p):undefined)}const autoThumb=r.thumbnail||(r.type==='video'?getVideoThumbnailUrl(r.source_url):isImageFile(r)?r.source_url||undefined:undefined);return mapRow(r,r.source_url||'',autoThumb||undefined)}
+async function hydrateRow(r:any){if(r.storage_path){const u=(await signedUrl(r.storage_path))||'',p=isImageFile(r)?r.storage_path:isPdfFile(r)?`${r.storage_path}.preview.png`:undefined;return mapRow(r,u,p?await signedUrl(p):undefined)}const autoThumb=r.thumbnail||(r.type==='video'?getVideoThumbnailUrl(r.source_url,r.title):isImageFile(r)?r.source_url||undefined:undefined);return mapRow(r,r.source_url||'',autoThumb||undefined)}
 async function ensurePdfPreview(r:any){if(!isPdfFile(r)||r.thumbnail||!r.storage_path)return r;try{const{data:f,error}=await supabase.storage.from(STORAGE_BUCKET).download(r.storage_path);if(error||!f)return r;const p=await renderPdfPreview(f);if(!p)return r;const t=await uploadPdfPreview(p,r.storage_path);if(!t)return r;const{error:e}=await supabase.from('vault_resources').update({thumbnail:t}).eq('id',r.id);return e?r:{...r,thumbnail:t}}catch{return r}}
 export async function getManagedResources(){const{data,error}=await supabase.from('vault_resources').select('*').order('created_at',{ascending:false});if(error)throw new Error(`Could not load files: ${getErrorMessage(error)}`);return Promise.all((await Promise.all((data||[]).map(ensurePdfPreview))).map(hydrateRow))}
 async function uploader(){const p=await getMyProfile();return{uploaded_by:p?.id||null,uploaded_by_name:p?.full_name||null}}
-export async function createLinkedVideo(i:ResourceInput,url:string){url=url.trim();if(!url)throw new Error('Please enter a video link');try{new URL(url)}catch{throw new Error('Please enter a valid video URL')}const autoThumb=getVideoThumbnailUrl(url);const{data,error}=await supabase.from('vault_resources').insert({title:i.title.trim()||'Video',description:i.description||null,type:'video',product_id:i.productId,source_url:url,thumbnail:autoThumb||null,storage_path:null,file_format:'LINK',file_size:null,tags:i.tags||[],featured:i.featured||false,...await uploader()}).select().single();if(error)throw new Error(`Video link failed: ${getErrorMessage(error)}`);return hydrateRow(data)}
+export async function createLinkedVideo(i:ResourceInput,url:string){url=url.trim();if(!url)throw new Error('Please enter a video link');try{new URL(url)}catch{throw new Error('Please enter a valid video URL')}const autoThumb=getVideoThumbnailUrl(url,i.title);const{data,error}=await supabase.from('vault_resources').insert({title:i.title.trim()||'Video',description:i.description||null,type:'video',product_id:i.productId,source_url:url,thumbnail:autoThumb||null,storage_path:null,file_format:'LINK',file_size:null,tags:i.tags||[],featured:i.featured||false,...await uploader()}).select().single();if(error)throw new Error(`Video link failed: ${getErrorMessage(error)}`);return hydrateRow(data)}
 export async function uploadResource(i:ResourceInput,f:File){const ext=f.name.includes('.')?f.name.split('.').pop()?.toUpperCase():'FILE',m=new Date().toISOString().slice(0,7),id=i.productId==='sheshi'?'sheshi':i.productId,path=`${id}/${i.type}/${m}/${crypto.randomUUID()}-${safeName(f.name)}`;const{error:ue}=await supabase.storage.from(STORAGE_BUCKET).upload(path,f,{cacheControl:'3600',upsert:false,contentType:f.type||undefined});if(ue)throw new Error(`Storage upload failed: ${getErrorMessage(ue)}`);let thumbnail:string|null=isImageFile({source_url:f.name,file_format:f.type})?path:null;if(!thumbnail&&(PDF_EXT.test(f.name)||f.type==='application/pdf')){const p=await renderPdfPreview(f);if(p)thumbnail=await uploadPdfPreview(p,path)}const{data,error}=await supabase.from('vault_resources').insert({title:i.title||f.name,description:i.description||null,type:i.type,product_id:i.productId,source_url:path,thumbnail,storage_path:path,file_format:ext,file_size:formatFileSize(f.size),tags:i.tags||[],featured:i.featured||false,...await uploader()}).select().single();if(error){await supabase.storage.from(STORAGE_BUCKET).remove([path]);throw new Error(`Database record failed: ${getErrorMessage(error)}`)}return hydrateRow(data)}
 export async function updateManagedResourceType(id:string,type:ResourceType){const{error}=await supabase.from('vault_resources').update({type}).eq('id',id);if(error)throw new Error(`Could not update file type: ${getErrorMessage(error)}`)}
 export async function updateManagedResourceTags(id:string,tags:string[]){const{error}=await supabase.from('vault_resources').update({tags:tags.map(t=>t.trim()).filter(Boolean)}).eq('id',id);if(error)throw new Error(`Could not update tags: ${getErrorMessage(error)}`)}
