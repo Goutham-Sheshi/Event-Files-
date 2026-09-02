@@ -13,7 +13,8 @@ const VIDEO_LINK_VALUE = '__video_link__'
 
 type LinkMode = 'upload' | 'link'
 
-const TOTAL_SUPABASE_STORAGE_BYTES = 5 * 1024 * 1024 * 1024 // 5 GB free tier default
+// Default storage quota (10 GB default, user-configurable via Admin UI)
+const DEFAULT_STORAGE_LIMIT_GB = 10
 
 function parseFileSizeToBytes(sizeStr?: string | null): number {
   if (!sizeStr) return 0
@@ -69,6 +70,15 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   const [selectedFormatFilter, setSelectedFormatFilter] = useState('ALL')
   const [storageSortBy, setStorageSortBy] = useState<'size_desc' | 'size_asc' | 'newest' | 'oldest'>('size_desc')
   const [activeTab, setActiveTab] = useState<'uploaders' | 'formats' | 'files'>('uploaders')
+  const [storageLimitGb, setStorageLimitGb] = useState<number>(() => {
+    const saved = localStorage.getItem('vault_storage_limit_gb')
+    return saved ? parseFloat(saved) || 10 : 10
+  })
+
+  const updateStorageLimit = (val: number) => {
+    setStorageLimitGb(val)
+    localStorage.setItem('vault_storage_limit_gb', val.toString())
+  }
 
   function detectCategoryFromTags(tags: string): VideoCategory | null {
     const t = tags.toLowerCase()
@@ -243,10 +253,11 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   const isVideoLink = type === 'video' && linkMode === 'link'
 
   // ─── Calculate Storage Statistics ──────────────────────────────────────────
+  const totalStorageLimitBytes = storageLimitGb * 1024 * 1024 * 1024
   const activeItems = items.filter(r => r.deletedAt === undefined)
   const totalUsedBytes = activeItems.reduce((acc, item) => acc + parseFileSizeToBytes(item.fileSize), 0)
-  const freeSpaceBytes = Math.max(0, TOTAL_SUPABASE_STORAGE_BYTES - totalUsedBytes)
-  const usedPercentage = Math.min(100, (totalUsedBytes / TOTAL_SUPABASE_STORAGE_BYTES) * 100)
+  const freeSpaceBytes = Math.max(0, totalStorageLimitBytes - totalUsedBytes)
+  const usedPercentage = Math.min(100, (totalUsedBytes / totalStorageLimitBytes) * 100)
 
   // Uploaders aggregation
   const uploaderStatsMap = new Map<string, { name: string; count: number; bytes: number }>()
@@ -325,7 +336,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
 
             <div className="flex items-baseline justify-between gap-2 mb-1.5">
               <span className="text-[16px] font-black text-white">
-                {formatBytes(totalUsedBytes)} <span className="text-[12px] font-normal text-slate-400">of 5 GB used</span>
+                {formatBytes(totalUsedBytes)} <span className="text-[12px] font-normal text-slate-400">of {storageLimitGb} GB used</span>
               </span>
               <span className="text-[12px] font-bold text-amber-400">
                 {usedPercentage.toFixed(1)}%
@@ -504,7 +515,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
         >
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl text-white overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between gap-4 bg-slate-900/90">
+            <div className="px-6 py-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4 bg-slate-900/90">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/20 text-[var(--primary)] flex items-center justify-center text-lg font-bold">
                   💾
@@ -521,13 +532,34 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowStorageModal(false)}
-                className="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center text-lg font-bold transition-colors"
-              >
-                ×
-              </button>
+
+              <div className="flex items-center gap-3">
+                {/* Plan Quota Selector */}
+                <div className="flex items-center gap-2 bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-1.5">
+                  <span className="text-[11px] font-semibold text-slate-300 whitespace-nowrap">Plan Quota:</span>
+                  <select
+                    value={storageLimitGb}
+                    onChange={e => updateStorageLimit(parseFloat(e.target.value) || 10)}
+                    className="bg-slate-900 border border-slate-700 text-[12px] font-bold text-white rounded px-2 py-1 outline-none cursor-pointer"
+                  >
+                    <option value={1}>1 GB (Free Tier Standard)</option>
+                    <option value={5}>5 GB (Free Tier Expanded)</option>
+                    <option value={10}>10 GB (Supabase Pro Base)</option>
+                    <option value={20}>20 GB (Pro Extra)</option>
+                    <option value={50}>50 GB (Pro Growth)</option>
+                    <option value={100}>100 GB (Pro Max)</option>
+                    <option value={500}>500 GB (Enterprise)</option>
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowStorageModal(false)}
+                  className="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center text-lg font-bold transition-colors"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
             {/* Modal Body */}
@@ -542,7 +574,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                     {formatBytes(totalUsedBytes)}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
-                    <span>Limit: 5.00 GB</span>
+                    <span>Limit: {storageLimitGb}.00 GB</span>
                     <span className="font-bold text-amber-400">{usedPercentage.toFixed(1)}%</span>
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-slate-700 mt-2 overflow-hidden">
