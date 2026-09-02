@@ -13,8 +13,48 @@ const VIDEO_LINK_VALUE = '__video_link__'
 
 type LinkMode = 'upload' | 'link'
 
-// Default storage quota (10 GB default, user-configurable via Admin UI)
-const DEFAULT_STORAGE_LIMIT_GB = 10
+function StorageCloudIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.5 19H9a7 7 0 0 1-6.9-6C1.4 8 5 4 9.5 4c1.2 0 2.3.3 3.3.9C14 2.1 16.8 0 20 0c3.9 0 7 3.1 7 7 0 .5-.1 1-.2 1.5A7 7 0 0 1 17.5 19z" />
+    </svg>
+  )
+}
+
+function UserAvatarIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  )
+}
+
+function FolderFormatIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </svg>
+  )
+}
+
+function FileItemIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
+  )
+}
+
+function CloseCrossIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
+}
 
 function parseFileSizeToBytes(sizeStr?: string | null): number {
   if (!sizeStr) return 0
@@ -70,15 +110,6 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   const [selectedFormatFilter, setSelectedFormatFilter] = useState('ALL')
   const [storageSortBy, setStorageSortBy] = useState<'size_desc' | 'size_asc' | 'newest' | 'oldest'>('size_desc')
   const [activeTab, setActiveTab] = useState<'uploaders' | 'formats' | 'files'>('uploaders')
-  const [storageLimitGb, setStorageLimitGb] = useState<number>(() => {
-    const saved = localStorage.getItem('vault_storage_limit_gb')
-    return saved ? parseFloat(saved) || 10 : 10
-  })
-
-  const updateStorageLimit = (val: number) => {
-    setStorageLimitGb(val)
-    localStorage.setItem('vault_storage_limit_gb', val.toString())
-  }
 
   function detectCategoryFromTags(tags: string): VideoCategory | null {
     const t = tags.toLowerCase()
@@ -253,11 +284,8 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   const isVideoLink = type === 'video' && linkMode === 'link'
 
   // ─── Calculate Storage Statistics ──────────────────────────────────────────
-  const totalStorageLimitBytes = storageLimitGb * 1024 * 1024 * 1024
   const activeItems = items.filter(r => r.deletedAt === undefined)
   const totalUsedBytes = activeItems.reduce((acc, item) => acc + parseFileSizeToBytes(item.fileSize), 0)
-  const freeSpaceBytes = Math.max(0, totalStorageLimitBytes - totalUsedBytes)
-  const usedPercentage = Math.min(100, (totalUsedBytes / totalStorageLimitBytes) * 100)
 
   // Uploaders aggregation
   const uploaderStatsMap = new Map<string, { name: string; count: number; bytes: number }>()
@@ -322,42 +350,32 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
           <button
             type="button"
             onClick={() => setShowStorageModal(true)}
-            className="group text-left bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/80 hover:border-[var(--primary)]/60 rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer min-w-[320px]"
+            className="group text-left bg-white border border-[var(--line-soft)] hover:border-[var(--primary)] rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer min-w-[290px]"
           >
             <div className="flex items-center justify-between gap-3 mb-2">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-[var(--primary)]/20 text-[var(--primary)] flex items-center justify-center text-[12px] font-bold">⚡</span>
-                <span className="text-[12px] font-bold tracking-wide text-white">Supabase Storage</span>
+              <div className="flex items-center gap-2 text-[var(--ink)]">
+                <span className="w-7 h-7 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center">
+                  <StorageCloudIcon />
+                </span>
+                <span className="text-[13px] font-bold tracking-tight">Storage Usage</span>
               </div>
-              <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)]">
                 Admin Only
               </span>
             </div>
 
-            <div className="flex items-baseline justify-between gap-2 mb-1.5">
-              <span className="text-[16px] font-black text-white">
-                {formatBytes(totalUsedBytes)} <span className="text-[12px] font-normal text-slate-400">of {storageLimitGb} GB used</span>
+            <div className="flex items-baseline justify-between gap-2 mb-1">
+              <span className="text-[18px] font-black text-[var(--ink)]">
+                {formatBytes(totalUsedBytes)} <span className="text-[12px] font-normal text-[var(--ink-45)]">consumed</span>
               </span>
-              <span className="text-[12px] font-bold text-amber-400">
-                {usedPercentage.toFixed(1)}%
+              <span className="text-[11px] font-bold text-[var(--ink-45)]">
+                {activeItems.length} items
               </span>
             </div>
 
-            {/* Progress Bar */}
-            <div className="w-full h-2 rounded-full bg-slate-700/70 overflow-hidden mb-2">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  usedPercentage > 90 ? 'bg-red-500' : usedPercentage > 75 ? 'bg-amber-500' : 'bg-emerald-400'
-                }`}
-                style={{ width: `${Math.max(2, usedPercentage)}%` }}
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium group-hover:text-white transition-colors">
-              <span>{formatBytes(freeSpaceBytes)} remaining</span>
-              <span className="text-[var(--primary)] font-semibold flex items-center gap-1">
-                View Details <span>→</span>
-              </span>
+            <div className="flex items-center justify-between text-[11px] text-[var(--ink-45)] font-medium group-hover:text-[var(--primary)] transition-colors mt-2">
+              <span>View storage analytics</span>
+              <span className="font-semibold flex items-center gap-1">Details →</span>
             </div>
           </button>
         )}
@@ -507,148 +525,112 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
         </div>
       </div>
 
-      {/* ── Supabase Storage Breakdown & Analytics Modal (Admin Only) ─────────────── */}
+      {/* ── Storage Breakdown & Analytics Modal ─────────────────────────────── */}
       {showStorageModal && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6"
+          className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
           onClick={e => { if (e.target === e.currentTarget) setShowStorageModal(false) }}
         >
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl text-white overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white border border-[var(--line-soft)] rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl text-[var(--ink)] overflow-hidden">
             {/* Modal Header */}
-            <div className="px-6 py-5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4 bg-slate-900/90">
+            <div className="px-6 py-5 border-b border-[var(--line-soft)] flex items-center justify-between gap-4 bg-[var(--paper)]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/20 text-[var(--primary)] flex items-center justify-center text-lg font-bold">
-                  💾
+                <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center font-bold">
+                  <StorageCloudIcon />
                 </div>
                 <div>
-                  <h2 className="text-[17px] font-bold text-white flex items-center gap-2">
-                    Supabase Storage Analytics
-                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      Live Database Sync
+                  <h2 className="text-[17px] font-bold text-[var(--ink)] flex items-center gap-2">
+                    Storage Analytics & Consumption
+                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20">
+                      Live Sync
                     </span>
                   </h2>
-                  <p className="text-[12px] text-slate-400">
-                    Real-time breakdown of capacity, uploaders, file formats, and file-level consumption.
+                  <p className="text-[12px] text-[var(--ink-45)]">
+                    Detailed breakdown of storage usage across uploaders, file formats, and items.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                {/* Plan Quota Selector */}
-                <div className="flex items-center gap-2 bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-1.5">
-                  <span className="text-[11px] font-semibold text-slate-300 whitespace-nowrap">Plan Quota:</span>
-                  <select
-                    value={storageLimitGb}
-                    onChange={e => updateStorageLimit(parseFloat(e.target.value) || 10)}
-                    className="bg-slate-900 border border-slate-700 text-[12px] font-bold text-white rounded px-2 py-1 outline-none cursor-pointer"
-                  >
-                    <option value={1}>1 GB (Free Tier Standard)</option>
-                    <option value={5}>5 GB (Free Tier Expanded)</option>
-                    <option value={10}>10 GB (Supabase Pro Base)</option>
-                    <option value={20}>20 GB (Pro Extra)</option>
-                    <option value={50}>50 GB (Pro Growth)</option>
-                    <option value={100}>100 GB (Pro Max)</option>
-                    <option value={500}>500 GB (Enterprise)</option>
-                  </select>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowStorageModal(false)}
-                  className="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center text-lg font-bold transition-colors"
-                >
-                  ×
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowStorageModal(false)}
+                className="w-8 h-8 rounded-lg bg-[var(--canvas-deep)] text-[var(--ink-70)] hover:text-[var(--ink)] flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <CloseCrossIcon />
+              </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-6 flex-1">
+            <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-[var(--canvas)]">
               {/* Overview Metrics Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-slate-800/80 border border-slate-700/70 rounded-xl p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-                    Used Storage
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white border border-[var(--line-soft)] rounded-xl p-4 shadow-sm">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-45)] mb-1">
+                    Total Storage Consumed
                   </div>
-                  <div className="text-[20px] font-black text-white">
+                  <div className="text-[22px] font-black text-[var(--ink)]">
                     {formatBytes(totalUsedBytes)}
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
-                    <span>Limit: {storageLimitGb}.00 GB</span>
-                    <span className="font-bold text-amber-400">{usedPercentage.toFixed(1)}%</span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full bg-slate-700 mt-2 overflow-hidden">
-                    <div className="h-full bg-amber-400 rounded-full" style={{ width: `${Math.max(3, usedPercentage)}%` }} />
+                  <div className="text-[11px] text-[var(--ink-45)] mt-1">
+                    Across {activeItems.length} uploaded resources
                   </div>
                 </div>
 
-                <div className="bg-slate-800/80 border border-slate-700/70 rounded-xl p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-                    Storage Remaining
+                <div className="bg-white border border-[var(--line-soft)] rounded-xl p-4 shadow-sm">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-45)] mb-1">
+                    Files vs Links
                   </div>
-                  <div className="text-[20px] font-black text-emerald-400">
-                    {formatBytes(freeSpaceBytes)}
+                  <div className="text-[22px] font-black text-[var(--ink)]">
+                    {activeItems.filter(i => i.storagePath).length} <span className="text-[13px] font-normal text-[var(--ink-45)]">files</span>
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1">
-                    {(100 - usedPercentage).toFixed(1)}% free capacity
-                  </div>
-                </div>
-
-                <div className="bg-slate-800/80 border border-slate-700/70 rounded-xl p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-                    Total Active Files
-                  </div>
-                  <div className="text-[20px] font-black text-white">
-                    {activeItems.length} <span className="text-[13px] font-normal text-slate-400">items</span>
-                  </div>
-                  <div className="text-[11px] text-slate-400 mt-1">
-                    {activeItems.filter(i => i.storagePath).length} stored files · {activeItems.filter(i => !i.storagePath).length} external links
+                  <div className="text-[11px] text-[var(--ink-45)] mt-1">
+                    {activeItems.filter(i => !i.storagePath).length} external links registered
                   </div>
                 </div>
 
-                <div className="bg-slate-800/80 border border-slate-700/70 rounded-xl p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-                    Top Contributor
+                <div className="bg-white border border-[var(--line-soft)] rounded-xl p-4 shadow-sm">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-45)] mb-1">
+                    Top Uploader
                   </div>
-                  <div className="text-[16px] font-bold text-white truncate">
+                  <div className="text-[18px] font-bold text-[var(--ink)] truncate">
                     {uploaderList[0]?.name || 'N/A'}
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-1">
-                    {uploaderList[0] ? `${uploaderList[0].count} files · ${formatBytes(uploaderList[0].bytes)}` : 'No files'}
+                  <div className="text-[11px] text-[var(--ink-45)] mt-1">
+                    {uploaderList[0] ? `${uploaderList[0].count} files · ${formatBytes(uploaderList[0].bytes)}` : 'No uploads'}
                   </div>
                 </div>
               </div>
 
               {/* Tabs Navigation */}
-              <div className="flex border-b border-slate-800 gap-6 text-[13px] font-semibold">
+              <div className="flex border-b border-[var(--line-soft)] gap-6 text-[13px] font-semibold">
                 <button
                   type="button"
                   onClick={() => setActiveTab('uploaders')}
-                  className={`pb-3 border-b-2 transition-colors ${activeTab === 'uploaders' ? 'border-[var(--primary)] text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+                  className={`pb-3 border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${activeTab === 'uploaders' ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-transparent text-[var(--ink-45)] hover:text-[var(--ink)]'}`}
                 >
-                  👤 Breakdown by Uploader ({uploaderList.length})
+                  <UserAvatarIcon /> Breakdown by Uploader ({uploaderList.length})
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('formats')}
-                  className={`pb-3 border-b-2 transition-colors ${activeTab === 'formats' ? 'border-[var(--primary)] text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+                  className={`pb-3 border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${activeTab === 'formats' ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-transparent text-[var(--ink-45)] hover:text-[var(--ink)]'}`}
                 >
-                  📁 Breakdown by File Format ({formatList.length})
+                  <FolderFormatIcon /> Breakdown by File Format ({formatList.length})
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('files')}
-                  className={`pb-3 border-b-2 transition-colors ${activeTab === 'files' ? 'border-[var(--primary)] text-white' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
+                  className={`pb-3 border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${activeTab === 'files' ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-transparent text-[var(--ink-45)] hover:text-[var(--ink)]'}`}
                 >
-                  📄 File Explorer & Filters ({filteredStorageFiles.length})
+                  <FileItemIcon /> File Explorer & Filters ({filteredStorageFiles.length})
                 </button>
               </div>
 
               {/* Tab 1: Breakdown by Uploader */}
               {activeTab === 'uploaders' && (
                 <div className="space-y-4">
-                  <div className="text-[12px] text-slate-400">
-                    Click any uploader row to filter the detailed file list below.
+                  <div className="text-[12px] text-[var(--ink-45)]">
+                    Click any uploader to filter the detailed file list.
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {uploaderList.map(u => {
@@ -660,21 +642,21 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                             setSelectedUploaderFilter(u.name)
                             setActiveTab('files')
                           }}
-                          className="bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-xl p-4 cursor-pointer transition-all flex items-center justify-between gap-4"
+                          className="bg-white hover:border-[var(--primary)] border border-[var(--line-soft)] rounded-xl p-4 cursor-pointer transition-all flex items-center justify-between gap-4 shadow-sm"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-9 h-9 rounded-full bg-[var(--primary)]/20 text-[var(--primary)] font-bold text-[13px] flex items-center justify-center flex-shrink-0">
+                            <div className="w-9 h-9 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] font-bold text-[13px] flex items-center justify-center flex-shrink-0">
                               {u.name[0].toUpperCase()}
                             </div>
                             <div className="min-w-0">
-                              <div className="font-bold text-[13.5px] text-white truncate">{u.name}</div>
-                              <div className="text-[11px] text-slate-400">{u.count} file{u.count === 1 ? '' : 's'} uploaded</div>
+                              <div className="font-bold text-[13.5px] text-[var(--ink)] truncate">{u.name}</div>
+                              <div className="text-[11px] text-[var(--ink-45)]">{u.count} file{u.count === 1 ? '' : 's'} uploaded</div>
                             </div>
                           </div>
 
                           <div className="text-right flex-shrink-0">
-                            <div className="font-black text-[14px] text-white">{formatBytes(u.bytes)}</div>
-                            <div className="text-[11px] text-amber-400 font-medium">{pct.toFixed(1)}% of used space</div>
+                            <div className="font-black text-[14px] text-[var(--ink)]">{formatBytes(u.bytes)}</div>
+                            <div className="text-[11px] text-[var(--primary)] font-medium">{pct.toFixed(1)}% of total</div>
                           </div>
                         </div>
                       )
@@ -695,16 +677,16 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                           setSelectedFormatFilter(f.format)
                           setActiveTab('files')
                         }}
-                        className="bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-xl p-4 cursor-pointer transition-all"
+                        className="bg-white hover:border-[var(--primary)] border border-[var(--line-soft)] rounded-xl p-4 cursor-pointer transition-all shadow-sm"
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="px-2 py-0.5 rounded bg-slate-700 text-white font-mono text-[10px] font-bold tracking-wider">
+                          <span className="px-2 py-0.5 rounded bg-[var(--canvas-deep)] text-[var(--ink)] font-mono text-[10px] font-bold tracking-wider">
                             {f.format}
                           </span>
-                          <span className="text-[11px] text-slate-400 font-medium">{f.count} files</span>
+                          <span className="text-[11px] text-[var(--ink-45)] font-medium">{f.count} files</span>
                         </div>
-                        <div className="text-[16px] font-black text-white">{formatBytes(f.bytes)}</div>
-                        <div className="text-[11px] text-slate-400 mt-1">{pct.toFixed(1)}% of storage</div>
+                        <div className="text-[16px] font-black text-[var(--ink)]">{formatBytes(f.bytes)}</div>
+                        <div className="text-[11px] text-[var(--ink-45)] mt-1">{pct.toFixed(1)}% of storage</div>
                       </div>
                     )
                   })}
@@ -714,20 +696,20 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
               {/* Tab 3: Detailed File Explorer & Filter Bar */}
               <div className="space-y-4">
                 {/* Filter Controls Bar */}
-                <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-3 flex flex-wrap gap-3 items-center justify-between">
+                <div className="bg-white border border-[var(--line-soft)] rounded-xl p-3 flex flex-wrap gap-3 items-center justify-between shadow-sm">
                   <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[260px]">
                     <input
                       type="text"
                       value={storageSearch}
                       onChange={e => setStorageSearch(e.target.value)}
                       placeholder="Search file name or tag..."
-                      className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-[12px] text-white placeholder-slate-500 outline-none min-w-[180px] flex-1"
+                      className="px-3 py-1.5 rounded-lg bg-[var(--canvas-deep)] border border-[var(--line-soft)] text-[12px] text-[var(--ink)] placeholder-[var(--ink-45)] outline-none min-w-[180px] flex-1"
                     />
 
                     <select
                       value={selectedUploaderFilter}
                       onChange={e => setSelectedUploaderFilter(e.target.value)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-[12px] text-white outline-none"
+                      className="px-3 py-1.5 rounded-lg bg-[var(--canvas-deep)] border border-[var(--line-soft)] text-[12px] text-[var(--ink)] outline-none"
                     >
                       <option value="ALL">All Uploaders</option>
                       {uploaderList.map(u => (
@@ -738,7 +720,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                     <select
                       value={selectedFormatFilter}
                       onChange={e => setSelectedFormatFilter(e.target.value)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-[12px] text-white outline-none"
+                      className="px-3 py-1.5 rounded-lg bg-[var(--canvas-deep)] border border-[var(--line-soft)] text-[12px] text-[var(--ink)] outline-none"
                     >
                       <option value="ALL">All Formats</option>
                       {formatList.map(f => (
@@ -748,25 +730,25 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-slate-400 font-medium">Sort:</span>
+                    <span className="text-[11px] text-[var(--ink-45)] font-medium">Sort:</span>
                     <select
                       value={storageSortBy}
                       onChange={e => setStorageSortBy(e.target.value as any)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-[12px] text-white outline-none"
+                      className="px-3 py-1.5 rounded-lg bg-[var(--canvas-deep)] border border-[var(--line-soft)] text-[12px] text-[var(--ink)] outline-none"
                     >
                       <option value="size_desc">Size: Largest First</option>
                       <option value="size_asc">Size: Smallest First</option>
                       <option value="newest">Upload: Newest First</option>
-                      <option value="oldest">Upload: Oldest First</option>
+                      <option value="oldest">Oldest First</option>
                     </select>
                   </div>
                 </div>
 
                 {/* File Explorer Table */}
-                <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden">
+                <div className="bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden shadow-sm">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-[12px]">
-                      <thead className="bg-slate-800 text-slate-400 font-semibold border-b border-slate-700 uppercase tracking-wider text-[10px]">
+                      <thead className="bg-[var(--canvas-deep)] text-[var(--ink-70)] font-semibold border-b border-[var(--line-soft)] uppercase tracking-wider text-[10px]">
                         <tr>
                           <th className="px-4 py-3">File Name</th>
                           <th className="px-4 py-3">Format</th>
@@ -775,10 +757,10 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                           <th className="px-4 py-3 text-right">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800">
+                      <tbody className="divide-y divide-[var(--line-soft)]">
                         {filteredStorageFiles.length === 0 ? (
                           <tr>
-                            <td colSpan={5} className="px-4 py-8 text-center text-slate-400 text-[12px]">
+                            <td colSpan={5} className="px-4 py-8 text-center text-[var(--ink-45)] text-[12px]">
                               No files match your selected filters.
                             </td>
                           </tr>
@@ -786,19 +768,19 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                           filteredStorageFiles.map(item => {
                             const bytes = parseFileSizeToBytes(item.fileSize)
                             return (
-                              <tr key={item.id} className="hover:bg-slate-800/70 transition-colors">
-                                <td className="px-4 py-3 font-semibold text-white max-w-[260px] truncate">
+                              <tr key={item.id} className="hover:bg-[var(--canvas-deep)] transition-colors">
+                                <td className="px-4 py-3 font-semibold text-[var(--ink)] max-w-[260px] truncate">
                                   {item.title}
                                 </td>
-                                <td className="px-4 py-3 font-mono text-[11px] text-slate-300">
-                                  <span className="px-2 py-0.5 rounded bg-slate-700/60 font-bold">
+                                <td className="px-4 py-3 font-mono text-[11px] text-[var(--ink-70)]">
+                                  <span className="px-2 py-0.5 rounded bg-[var(--canvas-deep)] font-bold border border-[var(--line-soft)]">
                                     {item.fileFormat || item.type || '—'}
                                   </span>
                                 </td>
-                                <td className="px-4 py-3 text-slate-300">
+                                <td className="px-4 py-3 text-[var(--ink-70)]">
                                   {item.uploadedByName || 'Existing library'}
                                 </td>
-                                <td className="px-4 py-3 font-mono text-slate-200 font-bold">
+                                <td className="px-4 py-3 font-mono text-[var(--ink)] font-bold">
                                   {item.fileSize || formatBytes(bytes)}
                                 </td>
                                 <td className="px-4 py-3 text-right space-x-3 font-semibold">
@@ -806,7 +788,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                                     <button
                                       type="button"
                                       onClick={() => openViewer(item.sourceUrl!, item.title, item.id, item.tags || [], item.type as ResourceType, item.description || '')}
-                                      className="text-emerald-400 hover:underline"
+                                      className="text-[var(--primary)] hover:underline"
                                     >
                                       Edit / View
                                     </button>
@@ -815,7 +797,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                                     <button
                                       type="button"
                                       onClick={() => remove(item)}
-                                      className="text-red-400 hover:underline"
+                                      className="text-red-600 hover:underline"
                                     >
                                       Delete
                                     </button>
