@@ -15,7 +15,17 @@ const FILE_TYPES: { value: ResourceType; label: string }[] = [
 ];
 
 function fileNameFromUrl(url: string) { try { return decodeURIComponent(new URL(url).pathname.split('/').pop() || 'File'); } catch { return 'File'; } }
-function closeViewer() { document.getElementById('vault-file-viewer')?.remove(); document.body.style.overflow = ''; }
+
+let activeFlushSave: (() => Promise<void>) | null = null;
+
+function closeViewer() {
+  if (activeFlushSave) {
+    activeFlushSave();
+    activeFlushSave = null;
+  }
+  document.getElementById('vault-file-viewer')?.remove();
+  document.body.style.overflow = '';
+}
 
 export function openViewer(
   url: string,
@@ -112,7 +122,13 @@ export function openViewer(
   saveStatus.style.cssText = 'font-size:11px;color:var(--ink-45);white-space:nowrap;min-width:60px;';
   saveStatus.textContent = resourceId ? 'Auto-save' : '';
 
-  row1.append(typeLabel, typeSelect, typeStatus, sep, tagLabel, tagInput, saveStatus);
+  const manualSaveBtn = document.createElement('button');
+  manualSaveBtn.type = 'button';
+  manualSaveBtn.textContent = 'Save Changes';
+  manualSaveBtn.disabled = !resourceId;
+  manualSaveBtn.style.cssText = 'border:1px solid var(--line-soft);background:var(--paper);color:var(--ink);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;display:none;';
+
+  row1.append(typeLabel, typeSelect, typeStatus, sep, tagLabel, tagInput, saveStatus, manualSaveBtn);
 
   // Row 2: description
   const row2 = document.createElement('div');
@@ -130,7 +146,7 @@ export function openViewer(
 
   metaBar.append(row1, row2);
 
-  // ─── Auto-save logic ─────────────────────────────────────────────────────────
+  // ─── Auto-save & Manual-save logic ─────────────────────────────────────────
   let lastSavedTags = tagInput.value;
   let lastSavedDesc = descInput.value;
   let savingTimer: number | undefined;
@@ -140,26 +156,55 @@ export function openViewer(
     const nextTags = tagInput.value.trim();
     const nextDesc = descInput.value.trim();
     if (nextTags === lastSavedTags && nextDesc === lastSavedDesc) return;
+    
     saveStatus.textContent = 'Saving…';
+    manualSaveBtn.disabled = true;
+
     try {
       const updates: { tags?: string[]; description?: string | null } = {};
-      if (nextTags !== lastSavedTags) updates.tags = nextTags.split(',').map(t => t.trim()).filter(Boolean);
+      const parsedTags = nextTags.split(',').map(t => t.trim()).filter(Boolean);
+      if (nextTags !== lastSavedTags) updates.tags = parsedTags;
       if (nextDesc !== lastSavedDesc) updates.description = nextDesc || null;
+      
       await updateManagedResourceMeta(resourceId, updates);
+      
       lastSavedTags = nextTags;
       lastSavedDesc = nextDesc;
       saveStatus.textContent = 'Saved ✓';
+      manualSaveBtn.style.display = 'none';
+
+      // Update card attributes in DOM if card exists
+      const cardEl = document.querySelector(`[data-resource-id="${resourceId}"]`);
+      if (cardEl) {
+        if (updates.description !== undefined) cardEl.setAttribute('data-resource-description', nextDesc);
+        if (updates.tags !== undefined) cardEl.setAttribute('data-resource-tags', JSON.stringify(parsedTags));
+      }
+
       window.dispatchEvent(new CustomEvent('vault-resources-changed', {
         detail: { id: resourceId, tags: updates.tags, description: updates.description }
       }));
+      
       setTimeout(() => { if (saveStatus.textContent === 'Saved ✓') saveStatus.textContent = 'Auto-save'; }, 1500);
     } catch (error) {
       console.error(error);
       saveStatus.textContent = 'Save failed';
+      manualSaveBtn.disabled = false;
     }
   };
 
-  const schedSave = () => { if (savingTimer) window.clearTimeout(savingTimer); savingTimer = window.setTimeout(saveAll, 700); };
+  activeFlushSave = saveAll;
+  manualSaveBtn.onclick = () => { saveAll(); };
+
+  const schedSave = () => {
+    const isDirty = tagInput.value.trim() !== lastSavedTags || descInput.value.trim() !== lastSavedDesc;
+    if (isDirty) {
+      manualSaveBtn.style.display = 'inline-block';
+      manualSaveBtn.disabled = false;
+    }
+    if (savingTimer) window.clearTimeout(savingTimer);
+    savingTimer = window.setTimeout(saveAll, 700);
+  };
+
   tagInput.addEventListener('input', schedSave);
   tagInput.addEventListener('blur', () => { if (savingTimer) window.clearTimeout(savingTimer); saveAll(); });
   tagInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (savingTimer) window.clearTimeout(savingTimer); saveAll(); } });

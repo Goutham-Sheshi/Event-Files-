@@ -67,6 +67,9 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
       setIsAdmin(p?.role === 'admin' && p?.status === 'approved')
     })
     load()
+    const handleChanged = () => { load() }
+    window.addEventListener('vault-resources-changed', handleChanged)
+    return () => window.removeEventListener('vault-resources-changed', handleChanged)
   }, [])
 
   const pick = (e: ChangeEvent<HTMLInputElement>) => setFiles(Array.from(e.target.files || []))
