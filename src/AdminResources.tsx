@@ -13,6 +13,76 @@ const VIDEO_LINK_VALUE = '__video_link__'
 
 type LinkMode = 'upload' | 'link'
 
+function StorageCloudIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.5 19H9a7 7 0 0 1-6.9-6C1.4 8 5 4 9.5 4c1.2 0 2.3.3 3.3.9C14 2.1 16.8 0 20 0c3.9 0 7 3.1 7 7 0 .5-.1 1-.2 1.5A7 7 0 0 1 17.5 19z" />
+    </svg>
+  )
+}
+
+function UserAvatarIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  )
+}
+
+function FolderFormatIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </svg>
+  )
+}
+
+function FileItemIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
+  )
+}
+
+function CloseCrossIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
+}
+
+function parseFileSizeToBytes(sizeStr?: string | null): number {
+  if (!sizeStr) return 0
+  const match = sizeStr.trim().match(/^([\d.]+)\s*([A-Za-z]+)?$/)
+  if (!match) return 0
+  const val = parseFloat(match[1])
+  if (isNaN(val)) return 0
+  const unit = (match[2] || 'B').toUpperCase()
+  if (unit === 'KB') return val * 1024
+  if (unit === 'MB') return val * 1024 * 1024
+  if (unit === 'GB') return val * 1024 * 1024 * 1024
+  if (unit === 'TB') return val * 1024 * 1024 * 1024 * 1024
+  return val
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes <= 0) return '0 B'
+  if (bytes < 1024) return `${bytes} B`
+  const units = ['KB', 'MB', 'GB', 'TB']
+  let val = bytes / 1024
+  let idx = 0
+  while (val >= 1024 && idx < units.length - 1) {
+    val /= 1024
+    idx++
+  }
+  return `${val.toFixed(val >= 10 || idx === 0 ? 1 : 2)} ${units[idx]}`
+}
+
 export default function AdminResources({ canDelete = true }: { canDelete?: boolean }) {
   const [items, setItems] = useState<ManagedResource[]>([])
   const [files, setFiles] = useState<File[]>([])
@@ -32,6 +102,14 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   const [notice, setNotice] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [showDeleted, setShowDeleted] = useState(false)
+
+  // Storage Modal state
+  const [showStorageModal, setShowStorageModal] = useState(false)
+  const [storageSearch, setStorageSearch] = useState('')
+  const [selectedUploaderFilter, setSelectedUploaderFilter] = useState('ALL')
+  const [selectedFormatFilter, setSelectedFormatFilter] = useState('ALL')
+  const [storageSortBy, setStorageSortBy] = useState<'size_desc' | 'size_asc' | 'newest' | 'oldest'>('size_desc')
+  const [activeTab, setActiveTab] = useState<'uploaders' | 'formats' | 'files'>('uploaders')
 
   function detectCategoryFromTags(tags: string): VideoCategory | null {
     const t = tags.toLowerCase()
@@ -89,72 +167,52 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   }
 
   const addPowerPoint = async () => {
-    const url = pptUrl.trim()
-    if (!url) { setError('Paste a PowerPoint link first.'); return }
-    try { new URL(url) } catch { setError('Please enter a valid PowerPoint URL.'); return }
-
+    if (!pptUrl.trim()) return
     setBusy(true)
     setError('')
     setNotice('')
+    const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean)
+    if (!tags.includes('PPT')) tags.push('PPT')
     try {
-      const profile = await getMyProfile()
-      const tags = ['PowerPoint', ...tagsInput.split(',').map(t => t.trim()).filter(Boolean)]
-      const parsed = new URL(url)
-      const lastSegment = decodeURIComponent(parsed.pathname.split('/').filter(Boolean).pop() || 'PowerPoint')
-      const title = lastSegment.replace(/\.(pptx?|ppsx?|potx?|pptm|ppsm)$/i, '') || 'PowerPoint'
-
-      const { error: insertError } = await supabase.from('vault_resources').insert({
-        title,
+      await uploadResource({
+        title: 'PowerPoint Presentation',
         description: description.trim() || null,
         type: 'document',
-        product_id: productId,
-        source_url: url,
-        thumbnail: null,
-        storage_path: null,
-        file_format: 'PPT LINK',
-        file_size: null,
+        productId,
         tags,
-        featured: false,
-        uploaded_by: profile?.id || null,
-        uploaded_by_name: profile?.full_name || null,
-      })
-
-      if (insertError) throw new Error(`PowerPoint link failed: ${getErrorMessage(insertError)}`)
+      }, new File([], 'presentation.ppt', { type: 'application/vnd.ms-powerpoint' }))
       resetForm()
-      setNotice('PowerPoint link added successfully.')
+      setNotice('PowerPoint link registered.')
       await load()
       window.dispatchEvent(new Event('vault-resources-changed'))
     } catch (e) {
-      setError(getErrorMessage(e, 'Could not add the PowerPoint link'))
+      setError(getErrorMessage(e, 'Failed to add PowerPoint'))
     } finally {
       setBusy(false)
     }
   }
 
   const addVideoLink = async () => {
-    const url = videoUrl.trim()
-    if (!url) { setError('Paste a video link first.'); return }
-    try { new URL(url) } catch { setError('Please enter a valid video URL.'); return }
-
+    if (!videoUrl.trim()) return
     setBusy(true)
     setError('')
     setNotice('')
+    const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean)
     try {
-      const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean)
       await createLinkedVideo({
-        title: videoTitle.trim() || 'Video',
+        title: videoTitle.trim() || 'Video Link',
         description: description.trim() || null,
         type: 'video',
         productId,
         tags,
         videoCategory,
-      }, url)
+      }, videoUrl)
       resetForm()
       setNotice('Video link added successfully.')
       await load()
       window.dispatchEvent(new Event('vault-resources-changed'))
     } catch (e) {
-      setError(getErrorMessage(e, 'Could not add the video link'))
+      setError(getErrorMessage(e, 'Failed to add video link'))
     } finally {
       setBusy(false)
     }
@@ -225,11 +283,102 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
 
   const isVideoLink = type === 'video' && linkMode === 'link'
 
+  // ─── Calculate Storage Statistics ──────────────────────────────────────────
+  const activeItems = items.filter(r => r.deletedAt === undefined)
+  const totalUsedBytes = activeItems.reduce((acc, item) => acc + parseFileSizeToBytes(item.fileSize), 0)
+
+  // Uploaders aggregation
+  const uploaderStatsMap = new Map<string, { name: string; count: number; bytes: number }>()
+  activeItems.forEach(item => {
+    const uploaderName = item.uploadedByName || 'Existing library'
+    const bytes = parseFileSizeToBytes(item.fileSize)
+    const existing = uploaderStatsMap.get(uploaderName) || { name: uploaderName, count: 0, bytes: 0 }
+    uploaderStatsMap.set(uploaderName, {
+      name: uploaderName,
+      count: existing.count + 1,
+      bytes: existing.bytes + bytes,
+    })
+  })
+  const uploaderList = Array.from(uploaderStatsMap.values()).sort((a, b) => b.bytes - a.bytes)
+
+  // File Formats aggregation
+  const formatStatsMap = new Map<string, { format: string; count: number; bytes: number }>()
+  activeItems.forEach(item => {
+    const formatKey = (item.fileFormat || item.type || 'OTHER').toUpperCase()
+    const bytes = parseFileSizeToBytes(item.fileSize)
+    const existing = formatStatsMap.get(formatKey) || { format: formatKey, count: 0, bytes: 0 }
+    formatStatsMap.set(formatKey, {
+      format: formatKey,
+      count: existing.count + 1,
+      bytes: existing.bytes + bytes,
+    })
+  })
+  const formatList = Array.from(formatStatsMap.values()).sort((a, b) => b.bytes - a.bytes)
+
+  // Filtered files for storage breakdown table
+  const filteredStorageFiles = activeItems.filter(item => {
+    const uploaderName = item.uploadedByName || 'Existing library'
+    const fmt = (item.fileFormat || item.type || 'OTHER').toUpperCase()
+    const matchesSearch = !storageSearch || item.title.toLowerCase().includes(storageSearch.toLowerCase()) || (item.tags || []).some(t => t.toLowerCase().includes(storageSearch.toLowerCase()))
+    const matchesUploader = selectedUploaderFilter === 'ALL' || uploaderName === selectedUploaderFilter
+    const matchesFormat = selectedFormatFilter === 'ALL' || fmt === selectedFormatFilter
+    return matchesSearch && matchesUploader && matchesFormat
+  }).sort((a, b) => {
+    const bytesA = parseFileSizeToBytes(a.fileSize)
+    const bytesB = parseFileSizeToBytes(b.fileSize)
+    if (storageSortBy === 'size_desc') return bytesB - bytesA
+    if (storageSortBy === 'size_asc') return bytesA - bytesB
+    if (storageSortBy === 'newest') return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+  })
+
   return (
     <div className="px-8 py-6 max-w-[1400px] min-h-full">
-      <div className="mb-6">
-        <h1 className="font-display text-[22px] font-bold text-[var(--ink)]">{canDelete ? 'Related Products & Files' : 'Upload Files'}</h1>
-        <p className="text-[13px] text-[var(--ink-45)] mt-1">{canDelete ? 'Manage the shared library and see who uploaded each file.' : 'Upload files to the shared library. You can view and download files but do not have admin controls.'}</p>
+      {/* ── Header Area ──────────────────────────────────────────────────────── */}
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="font-display text-[22px] font-bold text-[var(--ink)]">
+            {canDelete ? 'Related Products & Files' : 'Upload Files'}
+          </h1>
+          <p className="text-[13px] text-[var(--ink-45)] mt-1">
+            {canDelete ? 'Manage the shared library and see who uploaded each file.' : 'Upload files to the shared library.'}
+          </p>
+        </div>
+
+        {/* Admin Storage Usage Widget */}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setShowStorageModal(true)}
+            className="group text-left bg-white border border-[var(--line-soft)] hover:border-[var(--primary)] rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer min-w-[290px]"
+          >
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-2 text-[var(--ink)]">
+                <span className="w-7 h-7 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center">
+                  <StorageCloudIcon />
+                </span>
+                <span className="text-[13px] font-bold tracking-tight">Storage Usage</span>
+              </div>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)]">
+                Admin Only
+              </span>
+            </div>
+
+            <div className="flex items-baseline justify-between gap-2 mb-1">
+              <span className="text-[18px] font-black text-[var(--ink)]">
+                {formatBytes(totalUsedBytes)} <span className="text-[12px] font-normal text-[var(--ink-45)]">consumed</span>
+              </span>
+              <span className="text-[11px] font-bold text-[var(--ink-45)]">
+                {activeItems.length} items
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-[var(--ink-45)] font-medium group-hover:text-[var(--primary)] transition-colors mt-2">
+              <span>View storage analytics</span>
+              <span className="font-semibold flex items-center gap-1">Details →</span>
+            </div>
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[390px_minmax(0,1fr)] gap-6">
@@ -375,6 +524,298 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
           })()}
         </div>
       </div>
+
+      {/* ── Storage Breakdown & Analytics Modal ─────────────────────────────── */}
+      {showStorageModal && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+          onClick={e => { if (e.target === e.currentTarget) setShowStorageModal(false) }}
+        >
+          <div className="bg-white border border-[var(--line-soft)] rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl text-[var(--ink)] overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 py-5 border-b border-[var(--line-soft)] flex items-center justify-between gap-4 bg-[var(--paper)]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center font-bold">
+                  <StorageCloudIcon />
+                </div>
+                <div>
+                  <h2 className="text-[17px] font-bold text-[var(--ink)] flex items-center gap-2">
+                    Storage Analytics & Consumption
+                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20">
+                      Live Sync
+                    </span>
+                  </h2>
+                  <p className="text-[12px] text-[var(--ink-45)]">
+                    Detailed breakdown of storage usage across uploaders, file formats, and items.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowStorageModal(false)}
+                className="w-8 h-8 rounded-lg bg-[var(--canvas-deep)] text-[var(--ink-70)] hover:text-[var(--ink)] flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <CloseCrossIcon />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-[var(--canvas)]">
+              {/* Overview Metrics Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white border border-[var(--line-soft)] rounded-xl p-4 shadow-sm">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-45)] mb-1">
+                    Total Storage Consumed
+                  </div>
+                  <div className="text-[22px] font-black text-[var(--ink)]">
+                    {formatBytes(totalUsedBytes)}
+                  </div>
+                  <div className="text-[11px] text-[var(--ink-45)] mt-1">
+                    Across {activeItems.length} uploaded resources
+                  </div>
+                </div>
+
+                <div className="bg-white border border-[var(--line-soft)] rounded-xl p-4 shadow-sm">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-45)] mb-1">
+                    Files vs Links
+                  </div>
+                  <div className="text-[22px] font-black text-[var(--ink)]">
+                    {activeItems.filter(i => i.storagePath).length} <span className="text-[13px] font-normal text-[var(--ink-45)]">files</span>
+                  </div>
+                  <div className="text-[11px] text-[var(--ink-45)] mt-1">
+                    {activeItems.filter(i => !i.storagePath).length} external links registered
+                  </div>
+                </div>
+
+                <div className="bg-white border border-[var(--line-soft)] rounded-xl p-4 shadow-sm">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-45)] mb-1">
+                    Top Uploader
+                  </div>
+                  <div className="text-[18px] font-bold text-[var(--ink)] truncate">
+                    {uploaderList[0]?.name || 'N/A'}
+                  </div>
+                  <div className="text-[11px] text-[var(--ink-45)] mt-1">
+                    {uploaderList[0] ? `${uploaderList[0].count} files · ${formatBytes(uploaderList[0].bytes)}` : 'No uploads'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabs Navigation */}
+              <div className="flex border-b border-[var(--line-soft)] gap-6 text-[13px] font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('uploaders')}
+                  className={`pb-3 border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${activeTab === 'uploaders' ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-transparent text-[var(--ink-45)] hover:text-[var(--ink)]'}`}
+                >
+                  <UserAvatarIcon /> Breakdown by Uploader ({uploaderList.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('formats')}
+                  className={`pb-3 border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${activeTab === 'formats' ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-transparent text-[var(--ink-45)] hover:text-[var(--ink)]'}`}
+                >
+                  <FolderFormatIcon /> Breakdown by File Format ({formatList.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('files')}
+                  className={`pb-3 border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${activeTab === 'files' ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-transparent text-[var(--ink-45)] hover:text-[var(--ink)]'}`}
+                >
+                  <FileItemIcon /> File Explorer & Filters ({filteredStorageFiles.length})
+                </button>
+              </div>
+
+              {/* Tab 1: Breakdown by Uploader */}
+              {activeTab === 'uploaders' && (
+                <div className="space-y-4">
+                  <div className="text-[12px] text-[var(--ink-45)]">
+                    Click any uploader to filter the detailed file list.
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {uploaderList.map(u => {
+                      const pct = totalUsedBytes > 0 ? (u.bytes / totalUsedBytes) * 100 : 0
+                      return (
+                        <div
+                          key={u.name}
+                          onClick={() => {
+                            setSelectedUploaderFilter(u.name)
+                            setActiveTab('files')
+                          }}
+                          className="bg-white hover:border-[var(--primary)] border border-[var(--line-soft)] rounded-xl p-4 cursor-pointer transition-all flex items-center justify-between gap-4 shadow-sm"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] font-bold text-[13px] flex items-center justify-center flex-shrink-0">
+                              {u.name[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-bold text-[13.5px] text-[var(--ink)] truncate">{u.name}</div>
+                              <div className="text-[11px] text-[var(--ink-45)]">{u.count} file{u.count === 1 ? '' : 's'} uploaded</div>
+                            </div>
+                          </div>
+
+                          <div className="text-right flex-shrink-0">
+                            <div className="font-black text-[14px] text-[var(--ink)]">{formatBytes(u.bytes)}</div>
+                            <div className="text-[11px] text-[var(--primary)] font-medium">{pct.toFixed(1)}% of total</div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 2: Breakdown by File Format */}
+              {activeTab === 'formats' && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {formatList.map(f => {
+                    const pct = totalUsedBytes > 0 ? (f.bytes / totalUsedBytes) * 100 : 0
+                    return (
+                      <div
+                        key={f.format}
+                        onClick={() => {
+                          setSelectedFormatFilter(f.format)
+                          setActiveTab('files')
+                        }}
+                        className="bg-white hover:border-[var(--primary)] border border-[var(--line-soft)] rounded-xl p-4 cursor-pointer transition-all shadow-sm"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="px-2 py-0.5 rounded bg-[var(--canvas-deep)] text-[var(--ink)] font-mono text-[10px] font-bold tracking-wider">
+                            {f.format}
+                          </span>
+                          <span className="text-[11px] text-[var(--ink-45)] font-medium">{f.count} files</span>
+                        </div>
+                        <div className="text-[16px] font-black text-[var(--ink)]">{formatBytes(f.bytes)}</div>
+                        <div className="text-[11px] text-[var(--ink-45)] mt-1">{pct.toFixed(1)}% of storage</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Tab 3: Detailed File Explorer & Filter Bar */}
+              <div className="space-y-4">
+                {/* Filter Controls Bar */}
+                <div className="bg-white border border-[var(--line-soft)] rounded-xl p-3 flex flex-wrap gap-3 items-center justify-between shadow-sm">
+                  <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[260px]">
+                    <input
+                      type="text"
+                      value={storageSearch}
+                      onChange={e => setStorageSearch(e.target.value)}
+                      placeholder="Search file name or tag..."
+                      className="px-3 py-1.5 rounded-lg bg-[var(--canvas-deep)] border border-[var(--line-soft)] text-[12px] text-[var(--ink)] placeholder-[var(--ink-45)] outline-none min-w-[180px] flex-1"
+                    />
+
+                    <select
+                      value={selectedUploaderFilter}
+                      onChange={e => setSelectedUploaderFilter(e.target.value)}
+                      className="px-3 py-1.5 rounded-lg bg-[var(--canvas-deep)] border border-[var(--line-soft)] text-[12px] text-[var(--ink)] outline-none"
+                    >
+                      <option value="ALL">All Uploaders</option>
+                      {uploaderList.map(u => (
+                        <option key={u.name} value={u.name}>{u.name} ({u.count})</option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={selectedFormatFilter}
+                      onChange={e => setSelectedFormatFilter(e.target.value)}
+                      className="px-3 py-1.5 rounded-lg bg-[var(--canvas-deep)] border border-[var(--line-soft)] text-[12px] text-[var(--ink)] outline-none"
+                    >
+                      <option value="ALL">All Formats</option>
+                      {formatList.map(f => (
+                        <option key={f.format} value={f.format}>{f.format} ({f.count})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-[var(--ink-45)] font-medium">Sort:</span>
+                    <select
+                      value={storageSortBy}
+                      onChange={e => setStorageSortBy(e.target.value as any)}
+                      className="px-3 py-1.5 rounded-lg bg-[var(--canvas-deep)] border border-[var(--line-soft)] text-[12px] text-[var(--ink)] outline-none"
+                    >
+                      <option value="size_desc">Size: Largest First</option>
+                      <option value="size_asc">Size: Smallest First</option>
+                      <option value="newest">Upload: Newest First</option>
+                      <option value="oldest">Oldest First</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* File Explorer Table */}
+                <div className="bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-[12px]">
+                      <thead className="bg-[var(--canvas-deep)] text-[var(--ink-70)] font-semibold border-b border-[var(--line-soft)] uppercase tracking-wider text-[10px]">
+                        <tr>
+                          <th className="px-4 py-3">File Name</th>
+                          <th className="px-4 py-3">Format</th>
+                          <th className="px-4 py-3">Uploaded By</th>
+                          <th className="px-4 py-3">File Size</th>
+                          <th className="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--line-soft)]">
+                        {filteredStorageFiles.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="px-4 py-8 text-center text-[var(--ink-45)] text-[12px]">
+                              No files match your selected filters.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredStorageFiles.map(item => {
+                            const bytes = parseFileSizeToBytes(item.fileSize)
+                            return (
+                              <tr key={item.id} className="hover:bg-[var(--canvas-deep)] transition-colors">
+                                <td className="px-4 py-3 font-semibold text-[var(--ink)] max-w-[260px] truncate">
+                                  {item.title}
+                                </td>
+                                <td className="px-4 py-3 font-mono text-[11px] text-[var(--ink-70)]">
+                                  <span className="px-2 py-0.5 rounded bg-[var(--canvas-deep)] font-bold border border-[var(--line-soft)]">
+                                    {item.fileFormat || item.type || '—'}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-[var(--ink-70)]">
+                                  {item.uploadedByName || 'Existing library'}
+                                </td>
+                                <td className="px-4 py-3 font-mono text-[var(--ink)] font-bold">
+                                  {item.fileSize || formatBytes(bytes)}
+                                </td>
+                                <td className="px-4 py-3 text-right space-x-3 font-semibold">
+                                  {item.sourceUrl && (
+                                    <button
+                                      type="button"
+                                      onClick={() => openViewer(item.sourceUrl!, item.title, item.id, item.tags || [], item.type as ResourceType, item.description || '')}
+                                      className="text-[var(--primary)] hover:underline"
+                                    >
+                                      Edit / View
+                                    </button>
+                                  )}
+                                  {canDelete && (
+                                    <button
+                                      type="button"
+                                      onClick={() => remove(item)}
+                                      className="text-red-600 hover:underline"
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
