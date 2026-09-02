@@ -10,7 +10,7 @@ import { supabase } from './lib/supabase'
 import { triggerDirectDownload } from './utils'
 import { openViewer } from './fileViewerBridge'
 import EventPage from './components/EventPage'
-import VideosPage, { VideoCard } from './components/VideosPage'
+import { VideoCard } from './components/VideosPage'
 
 const Icon=({children}:{children:React.ReactNode})=><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
 const HomeIcon=()=> <Icon><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22v-8h6v8"/></Icon>
@@ -24,7 +24,7 @@ const PanelIcon=({collapsed}:{collapsed:boolean})=> <Icon><rect x="3" y="4" widt
 const PlayIcon=()=> <Icon><path d="m8 5 11 7-11 7z"/></Icon>
 const Chevron=({open}:{open:boolean})=><span style={{transform:open?'rotate(90deg)':'rotate(0deg)',transition:'transform .15s'}}>›</span>
 
-type View={kind:'home'}|{kind:'product';slug:string}|{kind:'sheshi'}|{kind:'all'}|{kind:'events'}|{kind:'videos'}|{kind:'admin'}|{kind:'event-detail';id:string}
+type View={kind:'home'}|{kind:'product';slug:string}|{kind:'sheshi'}|{kind:'all'}|{kind:'events'}|{kind:'admin'}|{kind:'event-detail';id:string}
 const SHESHI_ID='sheshi'
 const productOf=(id:string)=>products.find(p=>p.id===id||p.slug===id)
 const localDate=(v:string)=>{const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);return m?new Date(+m[1],+m[2]-1,+m[3]):new Date(v)}
@@ -491,7 +491,6 @@ function Sidebar({view,onView,isAdmin,profile,onSignOut,onOpenAuth}:{view:View;o
         <button title="Products" onClick={()=>{if(collapsed)setCollapsed(false);setOpen(!open)}} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] text-[var(--ink-70)]"><GridIcon/>{!collapsed&&<><span className="flex-1 text-left">Products</span><Chevron open={open}/></>}</button>
         {open&&!collapsed&&<div className="ml-3 pl-3 border-l border-[var(--line-soft)]">{products.map(p=><button key={p.id} onClick={()=>onView({kind:'product',slug:p.slug})} className={'w-full flex gap-2 px-2.5 py-1.5 text-left rounded-md text-[12.5px] '+(view.kind==='product'&&view.slug===p.slug?'font-semibold':'text-[var(--ink-45)]')}><span className="w-1.5 h-1.5 rounded-full mt-1.5" style={{background:p.color}}/>{p.name}</button>)}</div>}
         <button title="Events" onClick={()=>onView({kind:'events'})} className={nav(view.kind==='events'||view.kind==='event-detail')}><CalIcon/>{label('Events')}</button>
-        <button title="Videos" onClick={()=>onView({kind:'videos'})} className={nav(view.kind==='videos')}><PlayIcon/>{label('Videos')}</button>
         <button title="All Resources" onClick={()=>onView({kind:'all'})} className={nav(view.kind==='all')}><DownloadIcon/>{label('All Resources')}</button>
         {isAdmin&&<div className="mt-2 pt-2 border-t border-[var(--line-soft)]"><button title="Admin" onClick={()=>onView({kind:'admin'})} className={nav(view.kind==='admin')}><ShieldIcon/>{label('Admin')}</button></div>}
         {isAdvanced&&!isAdmin&&<div className="mt-2 pt-2 border-t border-[var(--line-soft)]"><button title="Upload Files" onClick={()=>onView({kind:'admin'})} className={nav(view.kind==='admin')}><ShieldIcon/>{label('Upload Files')}</button></div>}
@@ -576,8 +575,6 @@ export default function LiveApp(){
             <AllResources resources={resources}/>
           ):view.kind==='events'?(
             <Events events={events} onSelectEvent={id => setView({ kind: 'event-detail', id })}/>
-          ):view.kind==='videos'?(
-            <VideosPage resources={resources}/>
           ):view.kind==='event-detail'&&selectedEvent?(
             <EventPage
               event={selectedEvent}
