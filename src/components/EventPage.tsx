@@ -357,7 +357,7 @@ export default function EventPage({
               {tab === 'resources' ? `Resources (${resources.length})` :
                tab === 'gallery' ? `Gallery (${gallery.length})` :
                tab === 'links' ? `Links (${links.length})` :
-               tab === 'notes' ? 'Notes 📝' : 'Overview'}
+               tab === 'notes' ? 'Notes' : 'Overview'}
             </button>
           ))}
         </div>
