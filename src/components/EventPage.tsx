@@ -507,7 +507,7 @@ export default function EventPage({
                       </div>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => openViewer(item.fileUrl, item.title, item.id, [], 'document')}
+                          onClick={() => openViewer(item.fileUrl, item.title, item.id, [], 'document', item.description || '')}
                           className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200"
                         >
                           View

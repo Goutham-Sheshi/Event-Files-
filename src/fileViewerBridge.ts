@@ -15,7 +15,19 @@ const FILE_TYPES: { value: ResourceType; label: string }[] = [
 ];
 
 function fileNameFromUrl(url: string) { try { return decodeURIComponent(new URL(url).pathname.split('/').pop() || 'File'); } catch { return 'File'; } }
-function closeViewer() { document.getElementById('vault-file-viewer')?.remove(); document.body.style.overflow = ''; }
+
+const metadataCache = new Map<string, { tags?: string[]; description?: string; type?: ResourceType }>();
+
+let activeFlushSave: (() => Promise<void>) | null = null;
+
+function closeViewer() {
+  if (activeFlushSave) {
+    activeFlushSave();
+    activeFlushSave = null;
+  }
+  document.getElementById('vault-file-viewer')?.remove();
+  document.body.style.overflow = '';
+}
 
 export function openViewer(
   url: string,
@@ -27,6 +39,11 @@ export function openViewer(
 ) {
   closeViewer();
   document.body.style.overflow = 'hidden';
+
+  const cached = resourceId ? metadataCache.get(resourceId) : undefined;
+  const effectiveTags = cached?.tags ?? initialTags;
+  const effectiveType = cached?.type ?? initialType;
+  const effectiveDescription = cached?.description ?? initialDescription;
 
   const modal = document.createElement('div');
   modal.id = 'vault-file-viewer';
@@ -45,7 +62,7 @@ export function openViewer(
   name.style.cssText = 'font-size:14px;font-weight:650;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
   const actions = document.createElement('div');
   actions.style.cssText = 'display:flex;align-items:center;gap:8px;flex:none;';
-  const isVideoType = initialType === 'video' || VIDEO_EXT.test(url);
+  const isVideoType = effectiveType === 'video' || VIDEO_EXT.test(url);
   const actionText = isVideoType ? 'Watch Video' : 'Download';
   const download = document.createElement('button');
   download.type = 'button';
@@ -89,7 +106,7 @@ export function openViewer(
     const el = document.createElement('option');
     el.value = option.value;
     el.textContent = option.label;
-    el.selected = option.value === initialType;
+    el.selected = option.value === effectiveType;
     typeSelect.appendChild(el);
   });
   const typeStatus = document.createElement('span');
@@ -103,7 +120,7 @@ export function openViewer(
   tagLabel.textContent = 'Tags';
   tagLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--ink-45);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;';
   const tagInput = document.createElement('input');
-  tagInput.value = initialTags.join(', ');
+  tagInput.value = effectiveTags.join(', ');
   tagInput.placeholder = 'Story, Brand, 2026…';
   tagInput.disabled = !resourceId;
   tagInput.style.cssText = 'flex:1;min-width:160px;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--ink);outline:none;background:var(--paper);';
@@ -112,7 +129,13 @@ export function openViewer(
   saveStatus.style.cssText = 'font-size:11px;color:var(--ink-45);white-space:nowrap;min-width:60px;';
   saveStatus.textContent = resourceId ? 'Auto-save' : '';
 
-  row1.append(typeLabel, typeSelect, typeStatus, sep, tagLabel, tagInput, saveStatus);
+  const manualSaveBtn = document.createElement('button');
+  manualSaveBtn.type = 'button';
+  manualSaveBtn.textContent = 'Save Changes';
+  manualSaveBtn.disabled = !resourceId;
+  manualSaveBtn.style.cssText = 'border:1px solid var(--line-soft);background:var(--paper);color:var(--ink);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;display:none;';
+
+  row1.append(typeLabel, typeSelect, typeStatus, sep, tagLabel, tagInput, saveStatus, manualSaveBtn);
 
   // Row 2: description
   const row2 = document.createElement('div');
@@ -121,7 +144,7 @@ export function openViewer(
   descLabel.textContent = 'Description';
   descLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--ink-45);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;padding-top:7px;';
   const descInput = document.createElement('textarea');
-  descInput.value = initialDescription || '';
+  descInput.value = effectiveDescription || '';
   descInput.placeholder = 'Add a short description for this file…';
   descInput.disabled = !resourceId;
   descInput.rows = 2;
@@ -130,7 +153,7 @@ export function openViewer(
 
   metaBar.append(row1, row2);
 
-  // ─── Auto-save logic ─────────────────────────────────────────────────────────
+  // ─── Auto-save & Manual-save logic ─────────────────────────────────────────
   let lastSavedTags = tagInput.value;
   let lastSavedDesc = descInput.value;
   let savingTimer: number | undefined;
@@ -140,26 +163,63 @@ export function openViewer(
     const nextTags = tagInput.value.trim();
     const nextDesc = descInput.value.trim();
     if (nextTags === lastSavedTags && nextDesc === lastSavedDesc) return;
+    
     saveStatus.textContent = 'Saving…';
+    manualSaveBtn.disabled = true;
+
     try {
       const updates: { tags?: string[]; description?: string | null } = {};
-      if (nextTags !== lastSavedTags) updates.tags = nextTags.split(',').map(t => t.trim()).filter(Boolean);
+      const parsedTags = nextTags.split(',').map(t => t.trim()).filter(Boolean);
+      if (nextTags !== lastSavedTags) updates.tags = parsedTags;
       if (nextDesc !== lastSavedDesc) updates.description = nextDesc || null;
+      
       await updateManagedResourceMeta(resourceId, updates);
+      
       lastSavedTags = nextTags;
       lastSavedDesc = nextDesc;
       saveStatus.textContent = 'Saved ✓';
+      manualSaveBtn.style.display = 'none';
+
+      // Store in memory cache immediately so re-opening modal uses updated data
+      const prevCached = metadataCache.get(resourceId) || {};
+      metadataCache.set(resourceId, {
+        ...prevCached,
+        description: nextDesc,
+        tags: parsedTags,
+      });
+
+      // Update card attributes in DOM if card exists
+      const cardEl = document.querySelector(`[data-resource-id="${resourceId}"]`);
+      if (cardEl) {
+        if (updates.description !== undefined) cardEl.setAttribute('data-resource-description', nextDesc);
+        if (updates.tags !== undefined) cardEl.setAttribute('data-resource-tags', JSON.stringify(parsedTags));
+      }
+
       window.dispatchEvent(new CustomEvent('vault-resources-changed', {
         detail: { id: resourceId, tags: updates.tags, description: updates.description }
       }));
+      
       setTimeout(() => { if (saveStatus.textContent === 'Saved ✓') saveStatus.textContent = 'Auto-save'; }, 1500);
     } catch (error) {
       console.error(error);
       saveStatus.textContent = 'Save failed';
+      manualSaveBtn.disabled = false;
     }
   };
 
-  const schedSave = () => { if (savingTimer) window.clearTimeout(savingTimer); savingTimer = window.setTimeout(saveAll, 700); };
+  activeFlushSave = saveAll;
+  manualSaveBtn.onclick = () => { saveAll(); };
+
+  const schedSave = () => {
+    const isDirty = tagInput.value.trim() !== lastSavedTags || descInput.value.trim() !== lastSavedDesc;
+    if (isDirty) {
+      manualSaveBtn.style.display = 'inline-block';
+      manualSaveBtn.disabled = false;
+    }
+    if (savingTimer) window.clearTimeout(savingTimer);
+    savingTimer = window.setTimeout(saveAll, 700);
+  };
+
   tagInput.addEventListener('input', schedSave);
   tagInput.addEventListener('blur', () => { if (savingTimer) window.clearTimeout(savingTimer); saveAll(); });
   tagInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (savingTimer) window.clearTimeout(savingTimer); saveAll(); } });
@@ -170,9 +230,17 @@ export function openViewer(
     if (!resourceId) return;
     typeStatus.textContent = 'Saving…';
     try {
-      await updateManagedResourceType(resourceId, typeSelect.value as ResourceType);
+      const nextType = typeSelect.value as ResourceType;
+      await updateManagedResourceType(resourceId, nextType);
       typeStatus.textContent = 'Saved';
-      window.dispatchEvent(new CustomEvent('vault-resources-changed', { detail: { id: resourceId, type: typeSelect.value } }));
+
+      const prevCached = metadataCache.get(resourceId) || {};
+      metadataCache.set(resourceId, {
+        ...prevCached,
+        type: nextType,
+      });
+
+      window.dispatchEvent(new CustomEvent('vault-resources-changed', { detail: { id: resourceId, type: nextType } }));
       setTimeout(() => { if (typeStatus.textContent === 'Saved') typeStatus.textContent = ''; }, 1200);
     } catch (error) {
       console.error(error);
@@ -237,13 +305,17 @@ export function startFileViewerBridge() {
     if (!looksLikeResource) return;
     event.preventDefault();
     event.stopPropagation();
+
+    const resourceId = card.getAttribute('data-resource-id') || undefined;
+    const cached = resourceId ? metadataCache.get(resourceId) : undefined;
+
     openViewer(
       link.href,
       title,
-      card.getAttribute('data-resource-id') || undefined,
-      JSON.parse(card.getAttribute('data-resource-tags') || '[]'),
-      (card.getAttribute('data-resource-type') || 'other') as ResourceType,
-      card.getAttribute('data-resource-description') || ''
+      resourceId,
+      cached?.tags ?? JSON.parse(card.getAttribute('data-resource-tags') || '[]'),
+      cached?.type ?? ((card.getAttribute('data-resource-type') || 'other') as ResourceType),
+      cached?.description ?? (card.getAttribute('data-resource-description') || '')
     );
   }, true);
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeViewer(); });

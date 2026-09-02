@@ -54,7 +54,7 @@ export function VideoCard({ resource }: { resource: Resource }) {
       className="group bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden flex flex-col cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all"
       onClick={() => {
         if (resource.sourceUrl) {
-          openViewer(resource.sourceUrl, resource.title, resource.id, resource.tags || [], resource.type)
+          openViewer(resource.sourceUrl, resource.title, resource.id, resource.tags || [], resource.type, resource.description || '')
         }
       }}
     >

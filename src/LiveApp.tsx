@@ -187,7 +187,7 @@ function ResourceListRow({resource}:{resource:Resource}){
   return (
     <div
       className="group bg-white border border-[var(--line-soft)] rounded-xl p-3.5 flex items-center gap-4 hover:shadow-md transition-all cursor-pointer"
-      onClick={()=>{if(resource.sourceUrl){openViewer(resource.sourceUrl,resource.title,resource.id,(resource.tags||[]),resource.type)}}}
+      onClick={()=>{if(resource.sourceUrl){openViewer(resource.sourceUrl,resource.title,resource.id,(resource.tags||[]),resource.type,resource.description||'')}}}
     >
       <div className="w-12 h-12 rounded-lg bg-[var(--canvas-deep)] flex items-center justify-center overflow-hidden flex-shrink-0 relative border border-[var(--line-soft)]">
         {resource.thumbnail?(
