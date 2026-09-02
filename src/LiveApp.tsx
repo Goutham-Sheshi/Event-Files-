@@ -10,7 +10,7 @@ import { supabase } from './lib/supabase'
 import { triggerDirectDownload } from './utils'
 import { openViewer } from './fileViewerBridge'
 import EventPage from './components/EventPage'
-import { VideoCard } from './components/VideosPage'
+import VideosPage, { VideoCard } from './components/VideosPage'
 
 const Icon=({children}:{children:React.ReactNode})=><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
 const HomeIcon=()=> <Icon><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22v-8h6v8"/></Icon>
@@ -24,7 +24,7 @@ const PanelIcon=({collapsed}:{collapsed:boolean})=> <Icon><rect x="3" y="4" widt
 const PlayIcon=()=> <Icon><path d="m8 5 11 7-11 7z"/></Icon>
 const Chevron=({open}:{open:boolean})=><span style={{transform:open?'rotate(90deg)':'rotate(0deg)',transition:'transform .15s'}}>›</span>
 
-type View={kind:'home'}|{kind:'product';slug:string}|{kind:'sheshi'}|{kind:'all'}|{kind:'events'}|{kind:'admin'}|{kind:'event-detail';id:string}
+type View={kind:'home'}|{kind:'product';slug:string}|{kind:'sheshi'}|{kind:'all'}|{kind:'events'}|{kind:'videos'}|{kind:'admin'}|{kind:'event-detail';id:string}
 const SHESHI_ID='sheshi'
 const productOf=(id:string)=>products.find(p=>p.id===id||p.slug===id)
 const localDate=(v:string)=>{const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);return m?new Date(+m[1],+m[2]-1,+m[3]):new Date(v)}
@@ -38,7 +38,7 @@ function ResourceCard({resource}:{resource:Resource}){
   const p=resource.productId===SHESHI_ID?{id:SHESHI_ID,name:'Sheshi',slug:'sheshi',color:'#ff5500',light:'#3a2214',description:'Shared Sheshi resources'} as Product:productOf(resource.productId);
   const isVideo=resource.type==='video';
   const tags=(resource.tags||[]).filter(Boolean).slice(0,3);
-  return <div data-resource-id={resource.id} data-resource-tags={JSON.stringify(resource.tags||[])} data-resource-type={resource.type} className="group bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow cursor-pointer" onClick={()=>{if(resource.sourceUrl){openViewer(resource.sourceUrl,resource.title,resource.id,(resource.tags||[]),resource.type)}}}><div className="h-40 bg-[var(--canvas-deep)] flex items-center justify-center overflow-hidden relative">{resource.thumbnail?<img src={resource.thumbnail} alt={resource.title} className="w-full h-full object-cover" style={{objectPosition:'left top'}} loading="lazy" onError={e=>{e.currentTarget.style.display='none'}}/>:<FileIcon/>}{isVideo&&<div className="absolute inset-0 flex items-center justify-center bg-black/10"><span className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center"><PlayIcon/></span></div>}{resource.fileFormat&&<span className="absolute top-2 right-2 bg-black/50 text-white rounded px-2 py-1 text-[9px] font-mono font-bold uppercase">{resource.fileFormat}</span>}</div><div className="p-3.5 flex flex-col gap-2 flex-1"><div className="line-clamp-2 text-[20px] leading-[1.15] font-semibold min-h-[46px]">{resource.title}</div>{tags.length>0&&<div className="flex flex-wrap gap-1.5">{tags.map(tag=><span key={tag} className="resource-tag">{tag}</span>)}</div>}<div className="flex items-center gap-2"><ProductBadge product={p}/>{resource.fileSize&&<span className="text-[10px] text-[var(--ink-45)]">{resource.fileSize}</span>}</div><div className="mt-auto flex justify-between items-center text-[11px]"><span className="text-[var(--ink-45)]">{resource.viewCount||0} views</span>{resource.sourceUrl&&<button onClick={(e)=>{e.stopPropagation();if(isVideo){window.open(resource.sourceUrl!,'_blank','noreferrer')}else{triggerDirectDownload(resource.sourceUrl!,resource.title)}}} className="font-semibold text-[var(--ink)] hover:underline border-0 bg-transparent p-0 cursor-pointer">{isVideo?'Open Video':'Download'}</button>}</div></div></div>
+  return <div data-resource-id={resource.id} data-resource-tags={JSON.stringify(resource.tags||[])} data-resource-type={resource.type} data-resource-description={resource.description||''} className="group bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow cursor-pointer" onClick={()=>{if(resource.sourceUrl){openViewer(resource.sourceUrl,resource.title,resource.id,(resource.tags||[]),resource.type,resource.description||'')}}}><div className="h-40 bg-[var(--canvas-deep)] flex items-center justify-center overflow-hidden relative">{resource.thumbnail?<img src={resource.thumbnail} alt={resource.title} className="w-full h-full object-cover" style={{objectPosition:'left top'}} loading="lazy" onError={e=>{e.currentTarget.style.display='none'}}/>:<FileIcon/>}{isVideo&&<div className="absolute inset-0 flex items-center justify-center bg-black/10"><span className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center"><PlayIcon/></span></div>}{resource.fileFormat&&<span className="absolute top-2 right-2 bg-black/50 text-white rounded px-2 py-1 text-[9px] font-mono font-bold uppercase">{resource.fileFormat}</span>}</div><div className="p-3.5 flex flex-col gap-2 flex-1"><div className="line-clamp-2 text-[20px] leading-[1.15] font-semibold min-h-[46px]">{resource.title}</div>{tags.length>0&&<div className="flex flex-wrap gap-1.5">{tags.map(tag=><span key={tag} className="resource-tag">{tag}</span>)}</div>}<div className="flex items-center gap-2"><ProductBadge product={p}/>{resource.fileSize&&<span className="text-[10px] text-[var(--ink-45)]">{resource.fileSize}</span>}</div><div className="mt-auto flex justify-between items-center text-[11px]"><span className="text-[var(--ink-45)]">{resource.viewCount||0} views</span>{resource.sourceUrl&&<button onClick={(e)=>{e.stopPropagation();if(isVideo){window.open(resource.sourceUrl!,'_blank','noreferrer')}else{triggerDirectDownload(resource.sourceUrl!,resource.title)}}} className="font-semibold text-[var(--ink)] hover:underline border-0 bg-transparent p-0 cursor-pointer">{isVideo?'Open Video':'Download'}</button>}</div></div></div>
 }
 
 function ResourceGrid({items}:{items:Resource[]}){return items.length?<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">{items.map(x=><ResourceCard key={x.id} resource={x}/>)}</div>:<div className="py-14 text-center text-[13px] text-[var(--ink-45)]">No files here yet.</div>}
@@ -491,6 +491,7 @@ function Sidebar({view,onView,isAdmin,profile,onSignOut,onOpenAuth}:{view:View;o
         <button title="Products" onClick={()=>{if(collapsed)setCollapsed(false);setOpen(!open)}} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] text-[var(--ink-70)]"><GridIcon/>{!collapsed&&<><span className="flex-1 text-left">Products</span><Chevron open={open}/></>}</button>
         {open&&!collapsed&&<div className="ml-3 pl-3 border-l border-[var(--line-soft)]">{products.map(p=><button key={p.id} onClick={()=>onView({kind:'product',slug:p.slug})} className={'w-full flex gap-2 px-2.5 py-1.5 text-left rounded-md text-[12.5px] '+(view.kind==='product'&&view.slug===p.slug?'font-semibold':'text-[var(--ink-45)]')}><span className="w-1.5 h-1.5 rounded-full mt-1.5" style={{background:p.color}}/>{p.name}</button>)}</div>}
         <button title="Events" onClick={()=>onView({kind:'events'})} className={nav(view.kind==='events'||view.kind==='event-detail')}><CalIcon/>{label('Events')}</button>
+        <button title="Videos" onClick={()=>onView({kind:'videos'})} className={nav(view.kind==='videos')}><PlayIcon/>{label('Videos')}</button>
         <button title="All Resources" onClick={()=>onView({kind:'all'})} className={nav(view.kind==='all')}><DownloadIcon/>{label('All Resources')}</button>
         {isAdmin&&<div className="mt-2 pt-2 border-t border-[var(--line-soft)]"><button title="Admin" onClick={()=>onView({kind:'admin'})} className={nav(view.kind==='admin')}><ShieldIcon/>{label('Admin')}</button></div>}
         {isAdvanced&&!isAdmin&&<div className="mt-2 pt-2 border-t border-[var(--line-soft)]"><button title="Upload Files" onClick={()=>onView({kind:'admin'})} className={nav(view.kind==='admin')}><ShieldIcon/>{label('Upload Files')}</button></div>}
@@ -575,6 +576,8 @@ export default function LiveApp(){
             <AllResources resources={resources}/>
           ):view.kind==='events'?(
             <Events events={events} onSelectEvent={id => setView({ kind: 'event-detail', id })}/>
+          ):view.kind==='videos'?(
+            <VideosPage resources={resources}/>
           ):view.kind==='event-detail'&&selectedEvent?(
             <EventPage
               event={selectedEvent}

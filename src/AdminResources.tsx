@@ -1,4 +1,5 @@
 import { ChangeEvent, useEffect, useState } from 'react'
+import { openViewer } from './fileViewerBridge'
 import { products } from './data'
 import type { ResourceType, VideoCategory } from './types'
 import { getMyProfile } from './authApi'
@@ -364,6 +365,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                   </div>
                 </div>
                 {!item.deletedAt && <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[var(--primary)]">Open</a>}
+                {!item.deletedAt && item.sourceUrl && <button onClick={() => openViewer(item.sourceUrl!, item.title, item.id, item.tags || [], item.type as ResourceType, item.description || '')} className="text-[11px] font-semibold text-[var(--ink-45)] hover:text-[var(--ink)] hover:underline">Edit</button>}
                 {item.deletedAt ? (isAdmin && <button disabled={busy} onClick={() => restore(item)} className="text-[11px] font-semibold text-emerald-600 hover:underline">Restore</button>) : (canDelete && <button disabled={busy} onClick={() => remove(item)} className="text-[11px] font-semibold text-red-600 hover:underline">Delete</button>)}
               </div>
             })
