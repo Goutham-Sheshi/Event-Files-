@@ -8,18 +8,18 @@ export type VideoCategory = 'Story' | 'Product' | 'People' | 'Event' | 'Brand' |
 const SHESHI_ID = 'sheshi'
 
 export function getVideoCategory(resource: Resource): VideoCategory {
+  if (resource.videoCategory) return resource.videoCategory
+
   const tags = (resource.tags || []).map(t => t.toLowerCase())
   const text = `${resource.title} ${resource.description || ''} ${tags.join(' ')}`.toLowerCase()
 
-  if (tags.includes('story') || text.includes('story')) return 'Story'
-  if (tags.includes('people') || tags.includes('team') || tags.includes('culture') || text.includes('people') || text.includes('interview')) return 'People'
-  if (tags.includes('event') || tags.includes('summit') || tags.includes('webinar') || text.includes('event')) return 'Event'
-  if (tags.includes('brand') || tags.includes('identity') || tags.includes('logo') || text.includes('brand')) return 'Brand'
-  if (tags.includes('product') || tags.includes('demo') || text.includes('product') || text.includes('demo')) return 'Product'
+  if (tags.includes('story') || text.includes('story') || text.includes('podcast')) return 'Story'
+  if (tags.includes('brand') || text.includes('brand') || tags.includes('logo') || text.includes('logo')) return 'Brand'
+  if (tags.includes('event') || text.includes('event') || text.includes('conrad') || text.includes('summit')) return 'Event'
+  if (tags.includes('people') || text.includes('people') || tags.includes('fun friday') || text.includes('fun friday') || text.includes('marathon')) return 'People'
+  if (tags.includes('product') || text.includes('product') || tags.includes('demo') || text.includes('flow animation') || text.includes('module')) return 'Product'
 
-  if (resource.productId && resource.productId !== SHESHI_ID) return 'Product'
-
-  return 'Story'
+  return 'Other'
 }
 
 function productOf(id: string) {

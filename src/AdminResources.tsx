@@ -1,11 +1,12 @@
 import { ChangeEvent, useEffect, useState } from 'react'
 import { products } from './data'
-import type { ResourceType } from './types'
+import type { ResourceType, VideoCategory } from './types'
 import { getMyProfile } from './authApi'
 import { supabase } from './lib/supabase'
 import { createLinkedVideo, deleteManagedResource, restoreManagedResource, getErrorMessage, getManagedResources, uploadResource, type ManagedResource } from './resourcesApi'
 
 const TYPES: ResourceType[] = ['logo', 'brochure', 'video', 'document', 'other']
+const VIDEO_CATEGORIES: VideoCategory[] = ['Story', 'Product', 'People', 'Event', 'Brand', 'Other']
 const PPT_VALUE = '__powerpoint_link__'
 const VIDEO_LINK_VALUE = '__video_link__'
 
@@ -16,6 +17,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   const [files, setFiles] = useState<File[]>([])
   const [productId, setProductId] = useState('sheshi')
   const [type, setType] = useState<ResourceType>('document')
+  const [videoCategory, setVideoCategory] = useState<VideoCategory>('Story')
   const [linkMode, setLinkMode] = useState<LinkMode>('upload')
   const [pptMode, setPptMode] = useState(false)
   const [pptUrl, setPptUrl] = useState('')
@@ -53,6 +55,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
     setPptMode(false)
     setLinkMode('upload')
     setType('document')
+    setVideoCategory('Story')
   }
 
   const addPowerPoint = async () => {
@@ -114,6 +117,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
         type: 'video',
         productId,
         tags,
+        videoCategory,
       }, url)
       resetForm()
       setNotice('Video link added successfully.')
@@ -141,6 +145,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
           type,
           productId,
           tags,
+          videoCategory: type === 'video' ? videoCategory : undefined,
         }, file)
       }
       resetForm()
@@ -240,10 +245,17 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
             </label>
 
             {type === 'video' && !pptMode && (
-              <div className="flex rounded-lg border border-[var(--line-soft)] p-1 bg-[var(--canvas)]">
-                <button type="button" onClick={() => { setLinkMode('upload'); setVideoUrl('') }} className={`flex-1 rounded-md px-3 py-2 text-[11px] font-semibold ${linkMode === 'upload' ? 'bg-[var(--primary)] text-white' : 'text-[var(--ink-45)]'}`}>Upload Video</button>
-                <button type="button" onClick={() => { setLinkMode('link'); setFiles([]) }} className={`flex-1 rounded-md px-3 py-2 text-[11px] font-semibold ${linkMode === 'link' ? 'bg-[var(--primary)] text-white' : 'text-[var(--ink-45)]'}`}>Paste Video Link</button>
-              </div>
+              <>
+                <div className="flex rounded-lg border border-[var(--line-soft)] p-1 bg-[var(--canvas)]">
+                  <button type="button" onClick={() => { setLinkMode('upload'); setVideoUrl('') }} className={`flex-1 rounded-md px-3 py-2 text-[11px] font-semibold ${linkMode === 'upload' ? 'bg-[var(--primary)] text-white' : 'text-[var(--ink-45)]'}`}>Upload Video</button>
+                  <button type="button" onClick={() => { setLinkMode('link'); setFiles([]) }} className={`flex-1 rounded-md px-3 py-2 text-[11px] font-semibold ${linkMode === 'link' ? 'bg-[var(--primary)] text-white' : 'text-[var(--ink-45)]'}`}>Paste Video Link</button>
+                </div>
+                <label className="block text-[12px] font-medium">Video Category
+                  <select value={videoCategory} onChange={e => setVideoCategory(e.target.value as VideoCategory)} className="mt-1.5 w-full px-3 py-2.5 rounded-lg border">
+                    {VIDEO_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </label>
+              </>
             )}
 
             {pptMode && (
