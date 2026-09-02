@@ -14,6 +14,41 @@ export type Resource = {
 
 export type EventItem = { id: string; title: string; description?: string; date: string; location?: string; productId?: string; banner?: string };
 
+export type EventResourceCategory = 'documents' | 'presentations' | 'marketing' | 'design' | 'other';
+
+export type EventResourceItem = {
+  id: string;
+  eventId: string;
+  title: string;
+  fileUrl: string;
+  fileFormat?: string;
+  fileSize?: string;
+  category: EventResourceCategory;
+  uploadedBy: string;
+  createdAt: string;
+};
+
+export type EventGalleryMediaItem = {
+  id: string;
+  eventId: string;
+  mediaType: 'image' | 'video';
+  title: string;
+  fileUrl: string;
+  thumbnailUrl?: string;
+  uploadedBy: string;
+  createdAt: string;
+};
+
+export type EventLinkItem = {
+  id: string;
+  eventId: string;
+  title: string;
+  url: string;
+  description?: string;
+  addedBy: string;
+  createdAt: string;
+};
+
 // Canonical roles are admin, advanced and standard. teammate/user remain only for legacy records.
 export type UserRole = 'admin' | 'advanced' | 'standard' | 'teammate' | 'user';
 

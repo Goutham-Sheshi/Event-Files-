@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import {
+  calculateEventStatus,
   createEvent,
   deleteEvent,
   getEvents,
@@ -12,17 +13,19 @@ import {
   type ManagedEvent,
 } from "./eventsApi";
 import { products } from "./data";
+import { getErrorMessage } from "./resourcesApi";
 import { eventSchema, type EventFormData } from "./schemas/eventSchemas";
 
 const defaultEventDate = () => {
   const date = new Date();
   date.setDate(date.getDate() + 7);
-
   return date.toISOString().slice(0, 10);
 };
 
-function toDateInput(value: string) {
+function toDateInput(value?: string | null) {
+  if (!value) return "";
   const d = new Date(value);
+  if (isNaN(d.getTime())) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
@@ -49,6 +52,7 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
       title: "",
       description: "",
       event_date: defaultEventDate(),
+      end_date: "",
       location: "",
       product_id: null,
       event_type: "In-person",
@@ -81,6 +85,7 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
       title: "",
       description: "",
       event_date: defaultEventDate(),
+      end_date: "",
       location: "",
       product_id: null,
       event_type: "In-person",
@@ -95,6 +100,7 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
     setValue("title", event.title);
     setValue("description", event.description || "");
     setValue("event_date", toDateInput(event.event_date));
+    setValue("end_date", toDateInput(event.end_date));
     setValue("location", event.location || "");
     setValue("product_id", event.product_id);
     setValue("event_type", event.event_type as "In-person" | "Virtual");
@@ -115,6 +121,7 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
         title: data.title,
         description: data.description || null,
         event_date: new Date(`${data.event_date}T12:00:00`).toISOString(),
+        end_date: data.end_date ? new Date(`${data.end_date}T23:59:59`).toISOString() : null,
         location: data.location || null,
         product_id: data.product_id || null,
         event_type: data.event_type as "In-person" | "Virtual",
@@ -126,14 +133,14 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
       await load();
       onChanged?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save event");
+      setError(getErrorMessage(err, "Failed to save event"));
     } finally {
       setBusy(false);
     }
   };
 
   const remove = async (event: ManagedEvent) => {
-    if (!window.confirm(`Delete "${event.title}"? This cannot be undone.`))
+    if (!window.confirm(`Are you sure you want to delete "${event.title}"? All associated files, gallery media, and links will also be removed. This cannot be undone.`))
       return;
     try {
       setBusy(true);
@@ -141,7 +148,7 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
       await load();
       onChanged?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete event");
+      setError(getErrorMessage(err, "Failed to delete event"));
     } finally {
       setBusy(false);
     }
@@ -177,18 +184,17 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <h1 className="font-display text-[22px] font-bold text-[var(--ink)] tracking-tight">
-              Events
+              Events Management
             </h1>
             <p className="text-[13px] text-[var(--ink-45)] mt-1">
-              Manage upcoming and past events with React Hook Form + Yup
-              validation.
+              Create and manage corporate events across Sheshi product suites.
             </p>
           </div>
           <button
             onClick={startAdd}
             className="px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold hover:bg-[var(--primary-hover)]"
           >
-            + Add Event
+            + Create Event
           </button>
         </div>
 
@@ -198,14 +204,14 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
           </div>
         )}
 
-        <div className="bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden">
+        <div className="bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-[var(--canvas)] border-b border-[var(--line-soft)] text-[11px] text-[var(--ink-45)] uppercase tracking-wide">
                 <tr>
                   <th className="px-4 py-3">Event</th>
                   <th className="px-4 py-3">Product</th>
-                  <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3">Dates</th>
                   <th className="px-4 py-3">Location</th>
                   <th className="px-4 py-3">Type</th>
                   <th className="px-4 py-3">Status</th>
@@ -215,10 +221,18 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
               <tbody>
                 {events.map((event) => {
                   const product = products.find(
-                    (p) => p.id === event.product_id,
+                    (p) => p.id === event.product_id || p.slug === event.product_id,
                   );
-                  const upcoming =
-                    new Date(event.event_date).getTime() >= Date.now();
+                  const status = calculateEventStatus(event);
+                  const startDateStr = new Date(event.event_date).toLocaleDateString(
+                    undefined,
+                    { year: "numeric", month: "short", day: "numeric" }
+                  );
+                  const endDateStr = event.end_date ? new Date(event.end_date).toLocaleDateString(
+                    undefined,
+                    { year: "numeric", month: "short", day: "numeric" }
+                  ) : null;
+
                   return (
                     <tr
                       key={event.id}
@@ -228,13 +242,10 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
                         {event.title}
                       </td>
                       <td className="px-4 py-3 text-[var(--ink-70)]">
-                        {product?.name || "General"}
+                        {product?.name || "Sheshi"}
                       </td>
                       <td className="px-4 py-3 text-[var(--ink-70)]">
-                        {new Date(event.event_date).toLocaleDateString(
-                          undefined,
-                          { year: "numeric", month: "short", day: "numeric" },
-                        )}
+                        {startDateStr}{endDateStr ? ` - ${endDateStr}` : ''}
                       </td>
                       <td className="px-4 py-3 text-[var(--ink-70)]">
                         {event.location || "—"}
@@ -244,22 +255,28 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className={`px-2 py-1 rounded-full text-[10px] font-semibold ${upcoming ? "bg-blue-50 text-blue-700" : "bg-[var(--canvas-deep)] text-[var(--ink-45)]"}`}
+                          className={`px-2 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
+                            status === "ongoing"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : status === "upcoming"
+                              ? "bg-blue-50 text-blue-700 border border-blue-200"
+                              : "bg-slate-100 text-slate-600 border border-slate-200"
+                          }`}
                         >
-                          {upcoming ? "Upcoming" : "Past"}
+                          {status}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         <button
                           onClick={() => startEdit(event)}
-                          className="text-[var(--primary)] font-semibold mr-3"
+                          className="text-[var(--primary)] font-semibold mr-3 hover:underline"
                         >
                           Edit
                         </button>
                         <button
                           disabled={busy}
                           onClick={() => remove(event)}
-                          className="text-red-600 font-semibold disabled:opacity-40"
+                          className="text-red-600 font-semibold disabled:opacity-40 hover:underline"
                         >
                           Delete
                         </button>
@@ -272,13 +289,13 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
           </div>
           {events.length === 0 && (
             <div className="py-12 text-center text-[13px] text-[var(--ink-45)]">
-              No events yet.
+              No events yet. Click "+ Create Event" above to create your first event.
             </div>
           )}
         </div>
 
         {open && (
-          <div className="fixed inset-0 z-50 bg-black/35 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
             <form
               onSubmit={handleSubmit(onSubmit)}
               className="w-full max-w-xl bg-white rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto"
@@ -286,16 +303,16 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
               <div className="flex justify-between items-center mb-5">
                 <div>
                   <h2 className="font-display text-[18px] font-bold">
-                    {editing ? "Edit Event" : "Add Event"}
+                    {editing ? "Edit Event Details" : "Create New Event"}
                   </h2>
                   <p className="text-[12px] text-[var(--ink-45)] mt-1">
-                    Validated with React Hook Form & Yup schema.
+                    Fill in event information and associated product suite.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="text-[var(--ink-45)] text-xl"
+                  className="text-[var(--ink-45)] text-xl hover:text-[var(--ink)]"
                 >
                   ×
                 </button>
@@ -303,10 +320,10 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <label className="sm:col-span-2 text-[12px] font-medium">
-                  Event Name
+                  Event Name *
                   <input
                     {...register("title")}
-                    placeholder="e.g. Sheshi Tech Summit 2026"
+                    placeholder="e.g. India FinTech Summit 2026"
                     className={`mt-1.5 w-full px-3 py-2 rounded-lg border outline-none ${errors.title ? "border-red-500" : "border-[var(--line-soft)]"}`}
                   />
                   {errors.title && (
@@ -317,12 +334,12 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
                 </label>
 
                 <label className="text-[12px] font-medium">
-                  Product
+                  Associated Product *
                   <select
                     {...register("product_id")}
                     className="mt-1.5 w-full px-3 py-2 rounded-lg border border-[var(--line-soft)] bg-white"
                   >
-                    <option value="">General</option>
+                    <option value="sheshi">Sheshi</option>
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name}
@@ -332,7 +349,18 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
                 </label>
 
                 <label className="text-[12px] font-medium">
-                  Date
+                  Event Format *
+                  <select
+                    {...register("event_type")}
+                    className="mt-1.5 w-full px-3 py-2 rounded-lg border border-[var(--line-soft)] bg-white"
+                  >
+                    <option value="In-person">In-person</option>
+                    <option value="Virtual">Virtual</option>
+                  </select>
+                </label>
+
+                <label className="text-[12px] font-medium">
+                  Start Date *
                   <input
                     type="date"
                     {...register("event_date")}
@@ -346,27 +374,25 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
                 </label>
 
                 <label className="text-[12px] font-medium">
+                  End Date (Optional)
+                  <input
+                    type="date"
+                    {...register("end_date")}
+                    className="mt-1.5 w-full px-3 py-2 rounded-lg border border-[var(--line-soft)] outline-none"
+                  />
+                </label>
+
+                <label className="sm:col-span-2 text-[12px] font-medium">
                   Location
                   <input
                     {...register("location")}
-                    placeholder="Bengaluru"
+                    placeholder="e.g. Convention Centre, Mumbai"
                     className="mt-1.5 w-full px-3 py-2 rounded-lg border border-[var(--line-soft)]"
                   />
                 </label>
 
-                <label className="text-[12px] font-medium">
-                  Event Type
-                  <select
-                    {...register("event_type")}
-                    className="mt-1.5 w-full px-3 py-2 rounded-lg border border-[var(--line-soft)] bg-white"
-                  >
-                    <option value="In-person">In-person</option>
-                    <option value="Virtual">Virtual</option>
-                  </select>
-                </label>
-
                 <label className="sm:col-span-2 text-[12px] font-medium">
-                  Cover Image
+                  Event Cover / Banner Image
                   <input
                     type="file"
                     accept="image/*"
@@ -377,7 +403,7 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
                     {bannerFile
                       ? bannerFile.name
                       : editing?.banner
-                        ? "Current cover image will be kept unless replaced."
+                        ? "Current cover banner will be kept unless replaced."
                         : "Upload cover banner image."}
                   </span>
                 </label>
@@ -387,7 +413,7 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
                   <textarea
                     {...register("description")}
                     rows={3}
-                    placeholder="Provide event details..."
+                    placeholder="Provide event details, objectives, agenda..."
                     className="mt-1.5 w-full px-3 py-2 rounded-lg border border-[var(--line-soft)]"
                   />
                 </label>
@@ -397,13 +423,13 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="px-4 py-2 text-[12px] font-semibold"
+                  className="px-4 py-2 text-[12px] font-semibold border border-[var(--line-soft)] rounded-lg"
                 >
                   Cancel
                 </button>
                 <button
                   disabled={busy}
-                  className="px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold disabled:opacity-50 hover:bg-[var(--primary-hover)]"
                 >
                   {busy ? "Saving…" : "Save Event"}
                 </button>

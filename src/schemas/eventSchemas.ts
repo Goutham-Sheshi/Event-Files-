@@ -9,6 +9,7 @@ export const eventSchema = yup.object({
   event_date: yup
     .string()
     .required('Event date is required'),
+  end_date: yup.string().nullable().optional(),
   location: yup.string().nullable().optional(),
   event_type: yup
     .string()
