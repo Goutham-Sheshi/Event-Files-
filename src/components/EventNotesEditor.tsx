@@ -55,7 +55,7 @@ export default function EventNotesEditor({ eventId, canEdit }: EventNotesEditorP
   const [showColorPicker, setShowColorPicker] = useState(false)
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const defaultPlaceholder = `<h1 style="font-size: 26px; font-weight: 700; color: #f8fafc; margin-bottom: 12px;">Meeting Notes & Event Briefing</h1><p style="color: #cbd5e1; margin-bottom: 16px;">Click anywhere on this canvas to start writing notes. Use the formatting bar above or type <span style="background: rgba(255,255,255,0.15); color: #f97316; padding: 2px 6px; border-radius: 4px; font-family: monospace;">/</span> to insert headings, tables, callout boxes, or checklists.</p><div style="background: rgba(99, 102, 241, 0.12); border-left: 4px solid #6366f1; padding: 14px 16px; border-radius: 8px; margin: 16px 0; color: #e2e8f0;"><strong style="color: #818cf8;">💡 Event Focus:</strong> Keep all core preparation notes, agenda items, speaker contacts, and venue schedules organized here.</div>`
+  const defaultPlaceholder = `<h1 style="font-size: 26px; font-weight: 700; color: #f8fafc; margin-bottom: 12px;">Meeting Notes & Event Briefing</h1><p style="color: #cbd5e1; margin-bottom: 16px;">Click anywhere on this canvas to start writing notes. Use the formatting bar above or type <span style="background: rgba(255,255,255,0.15); color: #f97316; padding: 2px 6px; border-radius: 4px; font-family: monospace;">/</span> to insert headings, tables, callout boxes, or checklists.</p><div style="background: rgba(99, 102, 241, 0.14); border-left: 4px solid #6366f1; padding: 14px 16px; border-radius: 8px; margin: 16px 0; color: #e2e8f0;"><strong style="color: #818cf8;">💡 Event Focus:</strong> Keep all core preparation notes, agenda items, speaker contacts, and venue schedules organized here.</div>`
 
   // Load Initial Notes
   useEffect(() => {
@@ -104,11 +104,13 @@ export default function EventNotesEditor({ eventId, canEdit }: EventNotesEditorP
     }, 1200)
   }
 
-  // ExecCommand helper
+  // ExecCommand helper that preserves focus and selection
   const exec = (command: string, value: string = '') => {
     if (!canEdit) return
+    if (editorRef.current) {
+      editorRef.current.focus()
+    }
     document.execCommand(command, false, value)
-    if (editorRef.current) editorRef.current.focus()
     handleEditorInput()
   }
 
@@ -206,6 +208,10 @@ export default function EventNotesEditor({ eventId, canEdit }: EventNotesEditorP
     }
   }
 
+  const preventBlur = (e: React.MouseEvent) => {
+    e.preventDefault()
+  }
+
   return (
     <div className="bg-[#111622] border border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col min-h-[650px] text-slate-100">
       {/* Notion Editor Header Bar */}
@@ -227,38 +233,39 @@ export default function EventNotesEditor({ eventId, canEdit }: EventNotesEditorP
             <div className="h-4 w-px bg-white/15 mx-1" />
 
             {/* Inline Styles */}
-            <button onClick={applyBold} className="w-8 h-8 rounded-lg hover:bg-white/10 text-white font-bold flex items-center justify-center transition-colors" title="Bold (Ctrl+B)"><BoldIcon /></button>
-            <button onClick={applyItalic} className="w-8 h-8 rounded-lg hover:bg-white/10 text-white font-semibold flex items-center justify-center transition-colors" title="Italic (Ctrl+I)"><ItalicIcon /></button>
-            <button onClick={applyUnderline} className="w-8 h-8 rounded-lg hover:bg-white/10 text-white font-semibold flex items-center justify-center transition-colors" title="Underline (Ctrl+U)"><UnderlineIcon /></button>
-            <button onClick={applyStrike} className="w-8 h-8 rounded-lg hover:bg-white/10 text-white font-semibold flex items-center justify-center transition-colors" title="Strikethrough"><StrikeIcon /></button>
+            <button onMouseDown={preventBlur} onClick={applyBold} className="w-8 h-8 rounded-lg hover:bg-white/10 text-white font-bold flex items-center justify-center transition-colors cursor-pointer" title="Bold (Ctrl+B)"><BoldIcon /></button>
+            <button onMouseDown={preventBlur} onClick={applyItalic} className="w-8 h-8 rounded-lg hover:bg-white/10 text-white font-semibold flex items-center justify-center transition-colors cursor-pointer" title="Italic (Ctrl+I)"><ItalicIcon /></button>
+            <button onMouseDown={preventBlur} onClick={applyUnderline} className="w-8 h-8 rounded-lg hover:bg-white/10 text-white font-semibold flex items-center justify-center transition-colors cursor-pointer" title="Underline (Ctrl+U)"><UnderlineIcon /></button>
+            <button onMouseDown={preventBlur} onClick={applyStrike} className="w-8 h-8 rounded-lg hover:bg-white/10 text-white font-semibold flex items-center justify-center transition-colors cursor-pointer" title="Strikethrough"><StrikeIcon /></button>
 
             <div className="h-4 w-px bg-white/15 mx-1" />
 
             {/* Lists */}
-            <button onClick={applyBulletList} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-semibold text-slate-200 flex items-center gap-1.5 transition-colors" title="Bullet List"><ListIcon /> List</button>
-            <button onClick={insertTaskList} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-semibold text-slate-200 flex items-center gap-1.5 transition-colors" title="Task / Checkbox List"><TaskIcon /> Task</button>
+            <button onMouseDown={preventBlur} onClick={applyBulletList} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-semibold text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer" title="Bullet List"><ListIcon /> List</button>
+            <button onMouseDown={preventBlur} onClick={insertTaskList} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-semibold text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer" title="Task / Checkbox List"><TaskIcon /> Task</button>
 
             <div className="h-4 w-px bg-white/15 mx-1" />
 
             {/* Special Notion Blocks */}
-            <button onClick={insertTable} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-semibold text-slate-200 flex items-center gap-1.5 transition-colors" title="Insert Table">
+            <button onMouseDown={preventBlur} onClick={insertTable} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-semibold text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer" title="Insert Table">
               <TableIcon /> Table
             </button>
-            <button onClick={insertCallout} className="px-2.5 py-1.5 rounded-lg hover:bg-indigo-500/20 font-semibold text-indigo-300 flex items-center gap-1.5 transition-colors" title="Insert Callout Box">
+            <button onMouseDown={preventBlur} onClick={insertCallout} className="px-2.5 py-1.5 rounded-lg hover:bg-indigo-500/20 font-semibold text-indigo-300 flex items-center gap-1.5 transition-colors cursor-pointer" title="Insert Callout Box">
               <CalloutIcon /> Callout
             </button>
-            <button onClick={insertQuote} className="px-2.5 py-1.5 rounded-lg hover:bg-orange-500/20 font-semibold text-orange-300 flex items-center gap-1.5 transition-colors" title="Insert Quote">
+            <button onMouseDown={preventBlur} onClick={insertQuote} className="px-2.5 py-1.5 rounded-lg hover:bg-orange-500/20 font-semibold text-orange-300 flex items-center gap-1.5 transition-colors cursor-pointer" title="Insert Quote">
               <QuoteIcon /> Quote
             </button>
-            <button onClick={insertCodeBlock} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-mono font-semibold text-emerald-400 flex items-center gap-1.5 transition-colors" title="Code Block"><CodeIcon /> Code</button>
-            <button onClick={insertLink} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-semibold text-slate-200 flex items-center gap-1.5 transition-colors" title="Insert Hyperlink"><LinkIcon /> Link</button>
-            <button onClick={insertHorizontalRule} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-semibold text-slate-200 flex items-center gap-1.5 transition-colors" title="Horizontal Divider"><LineIcon /> Line</button>
+            <button onMouseDown={preventBlur} onClick={insertCodeBlock} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-mono font-semibold text-emerald-400 flex items-center gap-1.5 transition-colors cursor-pointer" title="Code Block"><CodeIcon /> Code</button>
+            <button onMouseDown={preventBlur} onClick={insertLink} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-semibold text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer" title="Insert Hyperlink"><LinkIcon /> Link</button>
+            <button onMouseDown={preventBlur} onClick={insertHorizontalRule} className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-semibold text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer" title="Horizontal Divider"><LineIcon /> Line</button>
 
             {/* Colors */}
             <div className="relative">
               <button
+                onMouseDown={preventBlur}
                 onClick={() => setShowColorPicker(!showColorPicker)}
-                className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-semibold text-slate-200 flex items-center gap-1.5 transition-colors"
+                className="px-2.5 py-1.5 rounded-lg hover:bg-white/10 font-semibold text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
                 title="Text Colors & Highlights"
               >
                 <PaletteIcon /> Color
@@ -279,8 +286,9 @@ export default function EventNotesEditor({ eventId, canEdit }: EventNotesEditorP
                       ].map(c => (
                         <button
                           key={c.color}
+                          onMouseDown={preventBlur}
                           onClick={() => { applyForeColor(c.color); setShowColorPicker(false) }}
-                          className="w-6 h-6 rounded-full border border-white/20"
+                          className="w-6 h-6 rounded-full border border-white/20 cursor-pointer"
                           style={{ background: c.color }}
                           title={c.name}
                         />
@@ -301,8 +309,9 @@ export default function EventNotesEditor({ eventId, canEdit }: EventNotesEditorP
                       ].map(c => (
                         <button
                           key={c.color}
+                          onMouseDown={preventBlur}
                           onClick={() => { applyHiliteColor(c.color); setShowColorPicker(false) }}
-                          className="w-6 h-6 rounded-md border border-white/30"
+                          className="w-6 h-6 rounded-md border border-white/30 cursor-pointer"
                           style={{ background: c.color }}
                           title={c.name}
                         />
@@ -335,9 +344,10 @@ export default function EventNotesEditor({ eventId, canEdit }: EventNotesEditorP
 
           {canEdit && (
             <button
+              onMouseDown={preventBlur}
               onClick={triggerSave}
               disabled={saving}
-              className="px-3.5 py-1.5 rounded-xl bg-[var(--primary)] text-white text-xs font-semibold hover:bg-[var(--primary-hover)] transition-all shadow-sm"
+              className="px-3.5 py-1.5 rounded-xl bg-[var(--primary)] text-white text-xs font-semibold hover:bg-[var(--primary-hover)] transition-all shadow-sm cursor-pointer"
             >
               Save Notes
             </button>
@@ -349,12 +359,12 @@ export default function EventNotesEditor({ eventId, canEdit }: EventNotesEditorP
       {showSlashMenu && canEdit && (
         <div className="mx-8 mt-3 p-2 bg-[#1e293b] border border-white/20 rounded-xl shadow-2xl z-40 max-w-sm space-y-1">
           <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">Insert Notion Block</div>
-          <button onClick={() => { applyFormatBlock('h1'); setShowSlashMenu(false) }} className="w-full text-left px-3 py-2 text-xs font-bold hover:bg-white/10 text-white rounded-lg flex items-center gap-2">H1 Heading 1</button>
-          <button onClick={() => { applyFormatBlock('h2'); setShowSlashMenu(false) }} className="w-full text-left px-3 py-2 text-xs font-bold hover:bg-white/10 text-white rounded-lg flex items-center gap-2">H2 Heading 2</button>
-          <button onClick={() => { insertTable(); setShowSlashMenu(false) }} className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-white/10 text-white rounded-lg flex items-center gap-2">📊 Data Table</button>
-          <button onClick={() => { insertCallout(); setShowSlashMenu(false) }} className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-indigo-500/20 text-indigo-300 rounded-lg flex items-center gap-2">💡 Callout Box</button>
-          <button onClick={() => { insertQuote(); setShowSlashMenu(false) }} className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-orange-500/20 text-orange-300 rounded-lg flex items-center gap-2">💬 Quote Block</button>
-          <button onClick={() => { insertTaskList(); setShowSlashMenu(false) }} className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-white/10 text-white rounded-lg flex items-center gap-2">☑ Checklist Item</button>
+          <button onMouseDown={preventBlur} onClick={() => { applyFormatBlock('h1'); setShowSlashMenu(false) }} className="w-full text-left px-3 py-2 text-xs font-bold hover:bg-white/10 text-white rounded-lg flex items-center gap-2">H1 Heading 1</button>
+          <button onMouseDown={preventBlur} onClick={() => { applyFormatBlock('h2'); setShowSlashMenu(false) }} className="w-full text-left px-3 py-2 text-xs font-bold hover:bg-white/10 text-white rounded-lg flex items-center gap-2">H2 Heading 2</button>
+          <button onMouseDown={preventBlur} onClick={() => { insertTable(); setShowSlashMenu(false) }} className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-white/10 text-white rounded-lg flex items-center gap-2">📊 Data Table</button>
+          <button onMouseDown={preventBlur} onClick={() => { insertCallout(); setShowSlashMenu(false) }} className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-indigo-500/20 text-indigo-300 rounded-lg flex items-center gap-2">💡 Callout Box</button>
+          <button onMouseDown={preventBlur} onClick={() => { insertQuote(); setShowSlashMenu(false) }} className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-orange-500/20 text-orange-300 rounded-lg flex items-center gap-2">💬 Quote Block</button>
+          <button onMouseDown={preventBlur} onClick={() => { insertTaskList(); setShowSlashMenu(false) }} className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-white/10 text-white rounded-lg flex items-center gap-2">☑ Checklist Item</button>
         </div>
       )}
 
