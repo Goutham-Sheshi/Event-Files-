@@ -5,7 +5,7 @@ export type ProductSlug = 'quanta' | 'catalyx' | 'fr' | 'consultease' | 'sheshi'
 export type Product = { id: string; name: string; slug: ProductSlug; description: string; color: string; light: string };
 
 export type ResourceType = 'logo' | 'brochure' | 'video' | 'document' | 'other';
-export type VideoCategory = 'Story' | 'Product' | 'People' | 'Event' | 'Brand' | 'Other';
+export type VideoCategory = 'Story' | 'Podcast' | 'Product' | 'People' | 'Event' | 'Brand' | 'Other';
 
 export type Resource = {
   id: string; title: string; description?: string; type: ResourceType; productId: string;

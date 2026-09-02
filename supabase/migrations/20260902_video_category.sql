@@ -1,5 +1,5 @@
 -- ============================================================================
--- SHESHI VAULT - PHASE 2: CATEGORIZE EXISTING VIDEOS MIGRATION
+-- SHESHI VAULT - PHASE 2: CATEGORIZE EXISTING VIDEOS MIGRATION (WITH PODCAST)
 -- Run this script in your Supabase SQL Editor:
 -- https://supabase.com/dashboard/project/ikkyziyugrnkolqnrxfo/sql/new
 -- ============================================================================
@@ -10,8 +10,11 @@ ALTER TABLE public.vault_resources ADD COLUMN IF NOT EXISTS video_category text;
 -- 2. Populate video_category for all existing video records based on tag and title rules
 UPDATE public.vault_resources
 SET video_category = CASE
-  WHEN EXISTS (SELECT 1 FROM unnest(tags) tag WHERE tag ILIKE '%story%' OR tag ILIKE '%podcast%')
-    OR title ILIKE '%story%' OR title ILIKE '%podcast%' THEN 'Story'
+  WHEN EXISTS (SELECT 1 FROM unnest(tags) tag WHERE tag ILIKE '%podcast%')
+    OR title ILIKE '%podcast%' THEN 'Podcast'
+
+  WHEN EXISTS (SELECT 1 FROM unnest(tags) tag WHERE tag ILIKE '%story%')
+    OR title ILIKE '%story%' THEN 'Story'
 
   WHEN EXISTS (SELECT 1 FROM unnest(tags) tag WHERE tag ILIKE '%brand%' OR tag ILIKE '%logo%')
     OR title ILIKE '%brand%' OR title ILIKE '%logo%' THEN 'Brand'

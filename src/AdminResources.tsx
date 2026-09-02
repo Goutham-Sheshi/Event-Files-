@@ -6,7 +6,7 @@ import { supabase } from './lib/supabase'
 import { createLinkedVideo, deleteManagedResource, restoreManagedResource, getErrorMessage, getManagedResources, uploadResource, type ManagedResource } from './resourcesApi'
 
 const TYPES: ResourceType[] = ['logo', 'brochure', 'video', 'document', 'other']
-const VIDEO_CATEGORIES: VideoCategory[] = ['Story', 'Product', 'People', 'Event', 'Brand', 'Other']
+const VIDEO_CATEGORIES: VideoCategory[] = ['Story', 'Podcast', 'Product', 'People', 'Event', 'Brand', 'Other']
 const PPT_VALUE = '__powerpoint_link__'
 const VIDEO_LINK_VALUE = '__video_link__'
 

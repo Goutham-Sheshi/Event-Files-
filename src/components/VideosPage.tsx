@@ -1,9 +1,7 @@
 import React, { useMemo, useState } from 'react'
-import type { Product, Resource } from '../types'
+import type { Product, Resource, VideoCategory } from '../types'
 import { products } from '../data'
 import { openViewer } from '../fileViewerBridge'
-
-export type VideoCategory = 'Story' | 'Product' | 'People' | 'Event' | 'Brand' | 'Other'
 
 const SHESHI_ID = 'sheshi'
 
@@ -13,7 +11,8 @@ export function getVideoCategory(resource: Resource): VideoCategory {
   const tags = (resource.tags || []).map(t => t.toLowerCase())
   const text = `${resource.title} ${resource.description || ''} ${tags.join(' ')}`.toLowerCase()
 
-  if (tags.includes('story') || text.includes('story') || text.includes('podcast')) return 'Story'
+  if (tags.includes('podcast') || text.includes('podcast')) return 'Podcast'
+  if (tags.includes('story') || text.includes('story')) return 'Story'
   if (tags.includes('brand') || text.includes('brand') || tags.includes('logo') || text.includes('logo')) return 'Brand'
   if (tags.includes('event') || text.includes('event') || text.includes('conrad') || text.includes('summit')) return 'Event'
   if (tags.includes('people') || text.includes('people') || tags.includes('fun friday') || text.includes('fun friday') || text.includes('marathon')) return 'People'
@@ -106,6 +105,7 @@ export function VideoCard({ resource }: { resource: Resource }) {
 const CATEGORY_FILTERS: { id: 'All' | VideoCategory; label: string }[] = [
   { id: 'All', label: 'All' },
   { id: 'Story', label: 'Story' },
+  { id: 'Podcast', label: 'Podcast' },
   { id: 'Product', label: 'Product' },
   { id: 'People', label: 'People' },
   { id: 'Event', label: 'Event' },
@@ -144,7 +144,7 @@ export default function VideosPage({ resources }: VideosPageProps) {
 
   // Categorized Video Groups for "All" View
   const categorizedSections = useMemo(() => {
-    const categories: VideoCategory[] = ['Story', 'Product', 'People', 'Event', 'Brand', 'Other']
+    const categories: VideoCategory[] = ['Story', 'Podcast', 'Product', 'People', 'Event', 'Brand', 'Other']
     return categories.map(cat => ({
       category: cat,
       title: cat === 'People' ? 'People' : `${cat} Videos`,
