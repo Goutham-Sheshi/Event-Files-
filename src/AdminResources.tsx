@@ -1,11 +1,13 @@
 import { ChangeEvent, useEffect, useState } from 'react'
+import { openViewer } from './fileViewerBridge'
 import { products } from './data'
-import type { ResourceType } from './types'
+import type { ResourceType, VideoCategory } from './types'
 import { getMyProfile } from './authApi'
 import { supabase } from './lib/supabase'
 import { createLinkedVideo, deleteManagedResource, restoreManagedResource, getErrorMessage, getManagedResources, uploadResource, type ManagedResource } from './resourcesApi'
 
 const TYPES: ResourceType[] = ['logo', 'brochure', 'video', 'document', 'other']
+const VIDEO_CATEGORIES: VideoCategory[] = ['Story', 'Podcast', 'Product', 'People', 'Event', 'Brand', 'Other']
 const PPT_VALUE = '__powerpoint_link__'
 const VIDEO_LINK_VALUE = '__video_link__'
 
@@ -16,6 +18,8 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   const [files, setFiles] = useState<File[]>([])
   const [productId, setProductId] = useState('sheshi')
   const [type, setType] = useState<ResourceType>('document')
+  const [videoCategory, setVideoCategory] = useState<VideoCategory>('Story')
+  const [categoryAutoDetected, setCategoryAutoDetected] = useState(false)
   const [linkMode, setLinkMode] = useState<LinkMode>('upload')
   const [pptMode, setPptMode] = useState(false)
   const [pptUrl, setPptUrl] = useState('')
@@ -28,6 +32,30 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   const [notice, setNotice] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [showDeleted, setShowDeleted] = useState(false)
+
+  function detectCategoryFromTags(tags: string): VideoCategory | null {
+    const t = tags.toLowerCase()
+    if (t.includes('podcast')) return 'Podcast'
+    if (t.includes('story')) return 'Story'
+    if (t.includes('brand') || t.includes('logo')) return 'Brand'
+    if (t.includes('event') || t.includes('summit') || t.includes('conrad')) return 'Event'
+    if (t.includes('people') || t.includes('fun friday') || t.includes('marathon')) return 'People'
+    if (t.includes('product') || t.includes('demo') || t.includes('module')) return 'Product'
+    return null
+  }
+
+  function handleTagsChange(value: string) {
+    setTagsInput(value)
+    if (type === 'video') {
+      const detected = detectCategoryFromTags(value)
+      if (detected) {
+        setVideoCategory(detected)
+        setCategoryAutoDetected(true)
+      } else {
+        setCategoryAutoDetected(false)
+      }
+    }
+  }
 
   const load = async () => {
     try { setItems(await getManagedResources()) }
@@ -53,6 +81,8 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
     setPptMode(false)
     setLinkMode('upload')
     setType('document')
+    setVideoCategory('Story')
+    setCategoryAutoDetected(false)
   }
 
   const addPowerPoint = async () => {
@@ -114,6 +144,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
         type: 'video',
         productId,
         tags,
+        videoCategory,
       }, url)
       resetForm()
       setNotice('Video link added successfully.')
@@ -141,6 +172,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
           type,
           productId,
           tags,
+          videoCategory: type === 'video' ? videoCategory : undefined,
         }, file)
       }
       resetForm()
@@ -240,10 +272,17 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
             </label>
 
             {type === 'video' && !pptMode && (
-              <div className="flex rounded-lg border border-[var(--line-soft)] p-1 bg-[var(--canvas)]">
-                <button type="button" onClick={() => { setLinkMode('upload'); setVideoUrl('') }} className={`flex-1 rounded-md px-3 py-2 text-[11px] font-semibold ${linkMode === 'upload' ? 'bg-[var(--primary)] text-white' : 'text-[var(--ink-45)]'}`}>Upload Video</button>
-                <button type="button" onClick={() => { setLinkMode('link'); setFiles([]) }} className={`flex-1 rounded-md px-3 py-2 text-[11px] font-semibold ${linkMode === 'link' ? 'bg-[var(--primary)] text-white' : 'text-[var(--ink-45)]'}`}>Paste Video Link</button>
-              </div>
+              <>
+                <div className="flex rounded-lg border border-[var(--line-soft)] p-1 bg-[var(--canvas)]">
+                  <button type="button" onClick={() => { setLinkMode('upload'); setVideoUrl('') }} className={`flex-1 rounded-md px-3 py-2 text-[11px] font-semibold ${linkMode === 'upload' ? 'bg-[var(--primary)] text-white' : 'text-[var(--ink-45)]'}`}>Upload Video</button>
+                  <button type="button" onClick={() => { setLinkMode('link'); setFiles([]) }} className={`flex-1 rounded-md px-3 py-2 text-[11px] font-semibold ${linkMode === 'link' ? 'bg-[var(--primary)] text-white' : 'text-[var(--ink-45)]'}`}>Paste Video Link</button>
+                </div>
+                <label className="block text-[12px] font-medium">Video Category
+                  <select value={videoCategory} onChange={e => setVideoCategory(e.target.value as VideoCategory)} className="mt-1.5 w-full px-3 py-2.5 rounded-lg border">
+                    {VIDEO_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </label>
+              </>
             )}
 
             {pptMode && (
@@ -264,8 +303,13 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
             )}
 
             <label className="block text-[12px] font-medium">Tags
-              <input value={tagsInput} onChange={e => setTagsInput(e.target.value)} placeholder="e.g. branding, event, 2026" className="mt-1.5 w-full px-3 py-2.5 rounded-lg border" />
-              <span className="block mt-1 text-[10px] text-[var(--ink-45)]">Separate multiple tags with commas</span>
+              <input value={tagsInput} onChange={e => handleTagsChange(e.target.value)} placeholder="e.g. Story, Event, Brand, 2026" className="mt-1.5 w-full px-3 py-2.5 rounded-lg border" />
+              <span className="block mt-1 text-[10px] text-[var(--ink-45)]">
+                Separate multiple tags with commas
+                {type === 'video' && categoryAutoDetected && (
+                  <span className="ml-2 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">⚡ Auto-detected category</span>
+                )}
+              </span>
             </label>
 
             <label className="block text-[12px] font-medium">Description
@@ -321,6 +365,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                   </div>
                 </div>
                 {!item.deletedAt && <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[var(--primary)]">Open</a>}
+                {!item.deletedAt && item.sourceUrl && <button onClick={() => openViewer(item.sourceUrl!, item.title, item.id, item.tags || [], item.type as ResourceType, item.description || '')} className="text-[11px] font-semibold text-[var(--ink-45)] hover:text-[var(--ink)] hover:underline">Edit</button>}
                 {item.deletedAt ? (isAdmin && <button disabled={busy} onClick={() => restore(item)} className="text-[11px] font-semibold text-emerald-600 hover:underline">Restore</button>) : (canDelete && <button disabled={busy} onClick={() => remove(item)} className="text-[11px] font-semibold text-red-600 hover:underline">Delete</button>)}
               </div>
             })
