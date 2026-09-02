@@ -16,6 +16,8 @@ const FILE_TYPES: { value: ResourceType; label: string }[] = [
 
 function fileNameFromUrl(url: string) { try { return decodeURIComponent(new URL(url).pathname.split('/').pop() || 'File'); } catch { return 'File'; } }
 
+const metadataCache = new Map<string, { tags?: string[]; description?: string; type?: ResourceType }>();
+
 let activeFlushSave: (() => Promise<void>) | null = null;
 
 function closeViewer() {
@@ -38,6 +40,11 @@ export function openViewer(
   closeViewer();
   document.body.style.overflow = 'hidden';
 
+  const cached = resourceId ? metadataCache.get(resourceId) : undefined;
+  const effectiveTags = cached?.tags ?? initialTags;
+  const effectiveType = cached?.type ?? initialType;
+  const effectiveDescription = cached?.description ?? initialDescription;
+
   const modal = document.createElement('div');
   modal.id = 'vault-file-viewer';
   modal.setAttribute('role', 'dialog');
@@ -55,7 +62,7 @@ export function openViewer(
   name.style.cssText = 'font-size:14px;font-weight:650;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
   const actions = document.createElement('div');
   actions.style.cssText = 'display:flex;align-items:center;gap:8px;flex:none;';
-  const isVideoType = initialType === 'video' || VIDEO_EXT.test(url);
+  const isVideoType = effectiveType === 'video' || VIDEO_EXT.test(url);
   const actionText = isVideoType ? 'Watch Video' : 'Download';
   const download = document.createElement('button');
   download.type = 'button';
@@ -99,7 +106,7 @@ export function openViewer(
     const el = document.createElement('option');
     el.value = option.value;
     el.textContent = option.label;
-    el.selected = option.value === initialType;
+    el.selected = option.value === effectiveType;
     typeSelect.appendChild(el);
   });
   const typeStatus = document.createElement('span');
@@ -113,7 +120,7 @@ export function openViewer(
   tagLabel.textContent = 'Tags';
   tagLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--ink-45);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;';
   const tagInput = document.createElement('input');
-  tagInput.value = initialTags.join(', ');
+  tagInput.value = effectiveTags.join(', ');
   tagInput.placeholder = 'Story, Brand, 2026…';
   tagInput.disabled = !resourceId;
   tagInput.style.cssText = 'flex:1;min-width:160px;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--ink);outline:none;background:var(--paper);';
@@ -137,7 +144,7 @@ export function openViewer(
   descLabel.textContent = 'Description';
   descLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--ink-45);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;padding-top:7px;';
   const descInput = document.createElement('textarea');
-  descInput.value = initialDescription || '';
+  descInput.value = effectiveDescription || '';
   descInput.placeholder = 'Add a short description for this file…';
   descInput.disabled = !resourceId;
   descInput.rows = 2;
@@ -172,6 +179,14 @@ export function openViewer(
       lastSavedDesc = nextDesc;
       saveStatus.textContent = 'Saved ✓';
       manualSaveBtn.style.display = 'none';
+
+      // Store in memory cache immediately so re-opening modal uses updated data
+      const prevCached = metadataCache.get(resourceId) || {};
+      metadataCache.set(resourceId, {
+        ...prevCached,
+        description: nextDesc,
+        tags: parsedTags,
+      });
 
       // Update card attributes in DOM if card exists
       const cardEl = document.querySelector(`[data-resource-id="${resourceId}"]`);
@@ -215,9 +230,17 @@ export function openViewer(
     if (!resourceId) return;
     typeStatus.textContent = 'Saving…';
     try {
-      await updateManagedResourceType(resourceId, typeSelect.value as ResourceType);
+      const nextType = typeSelect.value as ResourceType;
+      await updateManagedResourceType(resourceId, nextType);
       typeStatus.textContent = 'Saved';
-      window.dispatchEvent(new CustomEvent('vault-resources-changed', { detail: { id: resourceId, type: typeSelect.value } }));
+
+      const prevCached = metadataCache.get(resourceId) || {};
+      metadataCache.set(resourceId, {
+        ...prevCached,
+        type: nextType,
+      });
+
+      window.dispatchEvent(new CustomEvent('vault-resources-changed', { detail: { id: resourceId, type: nextType } }));
       setTimeout(() => { if (typeStatus.textContent === 'Saved') typeStatus.textContent = ''; }, 1200);
     } catch (error) {
       console.error(error);
@@ -282,13 +305,17 @@ export function startFileViewerBridge() {
     if (!looksLikeResource) return;
     event.preventDefault();
     event.stopPropagation();
+
+    const resourceId = card.getAttribute('data-resource-id') || undefined;
+    const cached = resourceId ? metadataCache.get(resourceId) : undefined;
+
     openViewer(
       link.href,
       title,
-      card.getAttribute('data-resource-id') || undefined,
-      JSON.parse(card.getAttribute('data-resource-tags') || '[]'),
-      (card.getAttribute('data-resource-type') || 'other') as ResourceType,
-      card.getAttribute('data-resource-description') || ''
+      resourceId,
+      cached?.tags ?? JSON.parse(card.getAttribute('data-resource-tags') || '[]'),
+      cached?.type ?? ((card.getAttribute('data-resource-type') || 'other') as ResourceType),
+      cached?.description ?? (card.getAttribute('data-resource-description') || '')
     );
   }, true);
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeViewer(); });
