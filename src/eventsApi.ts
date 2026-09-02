@@ -588,3 +588,76 @@ export async function deleteEventLink(id: string, userEmail?: string, isAdmin: b
   } catch { /* ignore */ }
   removeLocalEventLink(id)
 }
+
+// ─── EVENT NOTES ─────────────────────────────────────────────────────────────
+
+const LOCAL_EVENT_NOTES_KEY = 'sheshi_event_notes_v1'
+
+export interface EventNotesData {
+  content: string
+  updatedBy?: string
+  updatedAt?: string
+}
+
+function getLocalEventNotes(eventId: string): EventNotesData {
+  try {
+    const raw = localStorage.getItem(LOCAL_EVENT_NOTES_KEY)
+    const map = raw ? JSON.parse(raw) : {}
+    return map[eventId] || { content: '' }
+  } catch { return { content: '' } }
+}
+
+function saveLocalEventNotes(eventId: string, notes: EventNotesData) {
+  try {
+    const raw = localStorage.getItem(LOCAL_EVENT_NOTES_KEY)
+    const map = raw ? JSON.parse(raw) : {}
+    map[eventId] = notes
+    localStorage.setItem(LOCAL_EVENT_NOTES_KEY, JSON.stringify(map))
+  } catch { /* ignore */ }
+}
+
+export async function getEventNotes(eventId: string): Promise<EventNotesData> {
+  try {
+    const { data, error } = await supabase
+      .from('event_notes')
+      .select('*')
+      .eq('event_id', eventId)
+      .maybeSingle()
+
+    if (!error && data) {
+      const res: EventNotesData = {
+        content: data.content || '',
+        updatedBy: data.updated_by || undefined,
+        updatedAt: data.updated_at || undefined,
+      }
+      saveLocalEventNotes(eventId, res)
+      return res
+    }
+  } catch { /* ignore */ }
+
+  return getLocalEventNotes(eventId)
+}
+
+export async function saveEventNotes(eventId: string, content: string): Promise<EventNotesData> {
+  const profile = await getMyProfile()
+  const updatedBy = profile?.email || 'anonymous'
+  const updatedAt = new Date().toISOString()
+  const notesData: EventNotesData = { content, updatedBy, updatedAt }
+
+  try {
+    const { error } = await supabase.from('event_notes').upsert({
+      event_id: eventId,
+      content,
+      updated_by: updatedBy,
+      updated_at: updatedAt,
+    }, { onConflict: 'event_id' })
+
+    if (!error) {
+      saveLocalEventNotes(eventId, notesData)
+      return notesData
+    }
+  } catch { /* ignore */ }
+
+  saveLocalEventNotes(eventId, notesData)
+  return notesData
+}

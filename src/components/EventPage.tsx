@@ -24,6 +24,7 @@ import type {
 import { products } from '../data'
 import { triggerDirectDownload } from '../utils'
 import { openViewer } from '../fileViewerBridge'
+import EventNotesEditor from './EventNotesEditor'
 
 interface EventPageProps {
   event: ManagedEvent
@@ -34,7 +35,7 @@ interface EventPageProps {
   onOpenEditModal?: (event: ManagedEvent) => void
 }
 
-type TabType = 'overview' | 'resources' | 'gallery' | 'links'
+type TabType = 'overview' | 'resources' | 'gallery' | 'links' | 'notes'
 
 const CATEGORIES: { id: EventResourceCategory | 'all'; label: string }[] = [
   { id: 'all', label: 'All Files' },
@@ -343,7 +344,7 @@ export default function EventPage({
       {/* Navigation Tabs */}
       <div className="sticky top-0 z-30 bg-white border-b border-[var(--line-soft)] shadow-sm">
         <div className="max-w-[1400px] mx-auto px-8 flex gap-8">
-          {(['overview', 'resources', 'gallery', 'links'] as TabType[]).map(tab => (
+          {(['overview', 'resources', 'gallery', 'links', 'notes'] as TabType[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -355,7 +356,8 @@ export default function EventPage({
             >
               {tab === 'resources' ? `Resources (${resources.length})` :
                tab === 'gallery' ? `Gallery (${gallery.length})` :
-               tab === 'links' ? `Links (${links.length})` : 'Overview'}
+               tab === 'links' ? `Links (${links.length})` :
+               tab === 'notes' ? 'Notes 📝' : 'Overview'}
             </button>
           ))}
         </div>
@@ -688,6 +690,11 @@ export default function EventPage({
               </div>
             )}
           </div>
+        )}
+
+        {/* NOTES TAB */}
+        {activeTab === 'notes' && (
+          <EventNotesEditor eventId={event.id} canEdit={canUpload} />
         )}
       </div>
 

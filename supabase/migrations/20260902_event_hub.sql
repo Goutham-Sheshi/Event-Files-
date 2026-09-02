@@ -44,15 +44,26 @@ CREATE TABLE IF NOT EXISTS public.event_links (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- 5. Privileges and Row Level Security
+-- 5. Create Event Notes table (Notion-style rich notes)
+CREATE TABLE IF NOT EXISTS public.event_notes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id uuid NOT NULL UNIQUE REFERENCES public.events(id) ON DELETE CASCADE,
+  content text NOT NULL DEFAULT '',
+  updated_by text,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 6. Privileges and Row Level Security
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL PRIVILEGES ON public.event_resources TO anon, authenticated;
 GRANT ALL PRIVILEGES ON public.event_gallery TO anon, authenticated;
 GRANT ALL PRIVILEGES ON public.event_links TO anon, authenticated;
+GRANT ALL PRIVILEGES ON public.event_notes TO anon, authenticated;
 
 ALTER TABLE public.event_resources ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_gallery ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.event_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.event_notes ENABLE ROW LEVEL SECURITY;
 
 -- Policies for public reading
 DROP POLICY IF EXISTS "event_resources readable" ON public.event_resources;
@@ -64,6 +75,9 @@ CREATE POLICY "event_gallery readable" ON public.event_gallery FOR SELECT TO ano
 DROP POLICY IF EXISTS "event_links readable" ON public.event_links;
 CREATE POLICY "event_links readable" ON public.event_links FOR SELECT TO anon, authenticated USING (true);
 
+DROP POLICY IF EXISTS "event_notes readable" ON public.event_notes;
+CREATE POLICY "event_notes readable" ON public.event_notes FOR SELECT TO anon, authenticated USING (true);
+
 -- Policies for writing
 DROP POLICY IF EXISTS "event_resources write" ON public.event_resources;
 CREATE POLICY "event_resources write" ON public.event_resources FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
@@ -73,3 +87,6 @@ CREATE POLICY "event_gallery write" ON public.event_gallery FOR ALL TO anon, aut
 
 DROP POLICY IF EXISTS "event_links write" ON public.event_links;
 CREATE POLICY "event_links write" ON public.event_links FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "event_notes write" ON public.event_notes;
+CREATE POLICY "event_notes write" ON public.event_notes FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
