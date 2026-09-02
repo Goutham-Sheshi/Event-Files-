@@ -45,6 +45,38 @@ const CATEGORIES: { id: EventResourceCategory | 'all'; label: string }[] = [
   { id: 'other', label: 'Other' },
 ]
 
+function CalendarIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+}
+
+function LocationIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+}
+
+function FolderStatIcon() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+}
+
+function MediaStatIcon() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+}
+
+function LinkStatIcon() {
+  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+}
+
+function SearchIcon() {
+  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+}
+
+function TrashIcon() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+}
+
+function ExternalLinkIcon() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+}
+
 export default function EventPage({
   event,
   profile,
@@ -273,12 +305,12 @@ export default function EventPage({
 
               <div className="flex flex-wrap items-center gap-4 text-xs text-white/80">
                 <div className="flex items-center gap-1.5">
-                  <span>📅</span>
+                  <CalendarIcon />
                   <span>{dateRangeText}</span>
                 </div>
                 {event.location && (
                   <div className="flex items-center gap-1.5">
-                    <span>📍</span>
+                    <LocationIcon />
                     <span>{event.location}</span>
                   </div>
                 )}
@@ -346,8 +378,8 @@ export default function EventPage({
             {/* Quick Stats & Information Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white border border-[var(--line-soft)] rounded-2xl p-6 shadow-sm flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-xl">
-                  📁
+                <div className="w-12 h-12 rounded-xl bg-orange-500/10 text-[var(--primary)] border border-orange-500/20 flex items-center justify-center font-bold">
+                  <FolderStatIcon />
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-[var(--ink)]">{resources.length}</div>
@@ -356,8 +388,8 @@ export default function EventPage({
               </div>
 
               <div className="bg-white border border-[var(--line-soft)] rounded-2xl p-6 shadow-sm flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xl">
-                  🖼️
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 flex items-center justify-center font-bold">
+                  <MediaStatIcon />
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-[var(--ink)]">{gallery.length}</div>
@@ -366,8 +398,8 @@ export default function EventPage({
               </div>
 
               <div className="bg-white border border-[var(--line-soft)] rounded-2xl p-6 shadow-sm flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xl">
-                  🔗
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center justify-center font-bold">
+                  <LinkStatIcon />
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-[var(--ink)]">{links.length}</div>
@@ -415,7 +447,7 @@ export default function EventPage({
                     onChange={e => setSearchQuery(e.target.value)}
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--line-soft)] bg-white text-xs outline-none focus:border-[var(--primary)]"
                   />
-                  <span className="absolute left-3 top-2.5 text-slate-400">🔍</span>
+                  <span className="absolute left-3 top-2.5 text-slate-400"><SearchIcon /></span>
                 </div>
               </div>
 
@@ -487,10 +519,10 @@ export default function EventPage({
                         {canDeleteResource(item) && (
                           <button
                             onClick={() => handleDeleteResource(item)}
-                            className="px-2 py-1.5 text-red-600 hover:bg-red-50 rounded-lg text-xs font-semibold"
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg text-xs font-semibold"
                             title="Delete resource"
                           >
-                            🗑️
+                            <TrashIcon />
                           </button>
                         )}
                       </div>
@@ -544,9 +576,9 @@ export default function EventPage({
                         {canDeleteMedia(photo) && (
                           <button
                             onClick={e => { e.stopPropagation(); handleDeleteMedia(photo) }}
-                            className="mt-2 text-xs text-red-300 hover:text-red-100 bg-red-900/60 px-2 py-1 rounded w-fit"
+                            className="mt-2 text-xs text-red-300 hover:text-red-100 bg-red-900/60 px-2 py-1 rounded w-fit flex items-center gap-1 font-semibold"
                           >
-                            Delete
+                            <TrashIcon /> Delete
                           </button>
                         )}
                       </div>
@@ -577,9 +609,9 @@ export default function EventPage({
                         {canDeleteMedia(video) && (
                           <button
                             onClick={() => handleDeleteMedia(video)}
-                            className="text-xs text-red-600 hover:bg-red-50 px-2 py-1 rounded font-semibold"
+                            className="text-xs text-red-600 hover:bg-red-50 p-1.5 rounded font-semibold flex items-center gap-1"
                           >
-                            Delete
+                            <TrashIcon />
                           </button>
                         )}
                       </div>
@@ -621,7 +653,7 @@ export default function EventPage({
                     <div>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <h3 className="font-bold text-sm text-[var(--ink)] leading-snug">{item.title}</h3>
-                        <span className="text-base">🔗</span>
+                        <span className="text-[var(--primary)]"><ExternalLinkIcon /></span>
                       </div>
                       {item.description && (
                         <p className="text-xs text-[var(--ink-70)] line-clamp-3 mb-4">{item.description}</p>
@@ -634,16 +666,16 @@ export default function EventPage({
                         href={item.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-xs font-semibold text-[var(--primary)] hover:underline flex items-center gap-1"
+                        className="text-xs font-semibold text-[var(--primary)] hover:underline flex items-center gap-1.5"
                       >
-                        Open Link ↗
+                        Open Link <ExternalLinkIcon />
                       </a>
                       {canDeleteLink(item) && (
                         <button
                           onClick={() => handleDeleteLink(item)}
-                          className="text-xs text-red-600 hover:bg-red-50 px-2 py-1 rounded font-semibold"
+                          className="text-xs text-red-600 hover:bg-red-50 p-1.5 rounded font-semibold"
                         >
-                          Delete
+                          <TrashIcon />
                         </button>
                       )}
                     </div>
