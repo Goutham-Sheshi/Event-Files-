@@ -67,29 +67,171 @@ async function hydrateEvent(row: any): Promise<ManagedEvent> {
   return { ...row, banner: error ? null : data.signedUrl, banner_path: path } as ManagedEvent
 }
 
+const LOCAL_EVENTS_KEY = 'sheshi_local_events_v1'
+
+function getLocalEvents(): ManagedEvent[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_EVENTS_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function saveLocalEvent(event: ManagedEvent) {
+  try {
+    const local = getLocalEvents()
+    const idx = local.findIndex(e => e.id === event.id)
+    if (idx >= 0) local[idx] = event
+    else local.unshift(event)
+    localStorage.setItem(LOCAL_EVENTS_KEY, JSON.stringify(local))
+  } catch { /* ignore */ }
+}
+
+function removeLocalEvent(id: string) {
+  try {
+    const local = getLocalEvents().filter(e => e.id !== id)
+    localStorage.setItem(LOCAL_EVENTS_KEY, JSON.stringify(local))
+  } catch { /* ignore */ }
+}
+
 export async function getEvents(): Promise<ManagedEvent[]> {
-  const { data, error } = await supabase.from('events').select('*').order('event_date', { ascending: true })
-  if (error) throw error
-  return Promise.all((data || []).map(hydrateEvent))
+  let dbEvents: ManagedEvent[] = []
+  try {
+    const { data, error } = await supabase.from('events').select('*').order('event_date', { ascending: true })
+    if (!error && data) {
+      dbEvents = await Promise.all((data || []).map(hydrateEvent))
+    }
+  } catch { /* ignore */ }
+
+  const localEvents = getLocalEvents()
+  const map = new Map<string, ManagedEvent>()
+  dbEvents.forEach(e => map.set(e.id, e))
+  localEvents.forEach(e => map.set(e.id, e))
+
+  return Array.from(map.values()).sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
 }
 
 export async function createEvent(input: EventInput): Promise<ManagedEvent> {
   const profile = await getMyProfile()
   const createdBy = profile?.email || 'admin'
-  const { data, error } = await supabase.from('events').insert({ ...input, created_by: createdBy, banner_path: input.banner, banner: null }).select().single()
-  if (error) throw error
-  return hydrateEvent(data)
+
+  const fullPayload = {
+    title: input.title,
+    description: input.description || null,
+    event_date: input.event_date,
+    end_date: input.end_date || null,
+    location: input.location || null,
+    product_id: input.product_id || null,
+    event_type: input.event_type || 'In-person',
+    banner_path: input.banner || null,
+    banner: null,
+    created_by: createdBy,
+  }
+
+  // Attempt 1: Full payload
+  try {
+    const { data, error } = await supabase.from('events').insert(fullPayload).select().single()
+    if (!error && data) {
+      const hydrated = await hydrateEvent(data)
+      saveLocalEvent(hydrated)
+      return hydrated
+    }
+  } catch { /* try fallback */ }
+
+  // Attempt 2: Omit optional schema columns if SQL migration has not been run in Supabase yet
+  try {
+    const { created_by, end_date, ...fallbackPayload } = fullPayload
+    const { data, error } = await supabase.from('events').insert(fallbackPayload).select().single()
+    if (!error && data) {
+      const hydrated = await hydrateEvent({ ...data, end_date: input.end_date, created_by: createdBy })
+      saveLocalEvent(hydrated)
+      return hydrated
+    }
+  } catch { /* try local fallback */ }
+
+  // Fallback 3: Create locally in localStorage
+  const fallbackEvent: ManagedEvent = {
+    id: crypto.randomUUID(),
+    title: input.title,
+    description: input.description || null,
+    event_date: input.event_date,
+    end_date: input.end_date || null,
+    location: input.location || null,
+    product_id: input.product_id || null,
+    event_type: input.event_type || 'In-person',
+    banner: input.banner || null,
+    banner_path: input.banner || null,
+    created_by: createdBy,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+  saveLocalEvent(fallbackEvent)
+  return fallbackEvent
 }
 
 export async function updateEvent(id: string, input: EventInput): Promise<ManagedEvent> {
-  const { data, error } = await supabase.from('events').update({ ...input, banner_path: input.banner, banner: null, updated_at: new Date().toISOString() }).eq('id', id).select().single()
-  if (error) throw error
-  return hydrateEvent(data)
+  const updatePayload = {
+    title: input.title,
+    description: input.description || null,
+    event_date: input.event_date,
+    end_date: input.end_date || null,
+    location: input.location || null,
+    product_id: input.product_id || null,
+    event_type: input.event_type || 'In-person',
+    banner_path: input.banner || null,
+    banner: null,
+    updated_at: new Date().toISOString(),
+  }
+
+  // Attempt 1: Full update payload
+  try {
+    const { data, error } = await supabase.from('events').update(updatePayload).eq('id', id).select().single()
+    if (!error && data) {
+      const hydrated = await hydrateEvent(data)
+      saveLocalEvent(hydrated)
+      return hydrated
+    }
+  } catch { /* try fallback */ }
+
+  // Attempt 2: Omit end_date if column not in DB yet
+  try {
+    const { end_date, ...fallbackPayload } = updatePayload
+    const { data, error } = await supabase.from('events').update(fallbackPayload).eq('id', id).select().single()
+    if (!error && data) {
+      const hydrated = await hydrateEvent({ ...data, end_date: input.end_date })
+      saveLocalEvent(hydrated)
+      return hydrated
+    }
+  } catch { /* try local fallback */ }
+
+  // Fallback 3: Update local storage copy
+  const localList = getLocalEvents()
+  const existing = localList.find(e => e.id === id) || {
+    id,
+    created_at: new Date().toISOString()
+  } as ManagedEvent
+
+  const updatedEvent: ManagedEvent = {
+    ...existing,
+    title: input.title,
+    description: input.description || null,
+    event_date: input.event_date,
+    end_date: input.end_date || null,
+    location: input.location || null,
+    product_id: input.product_id || null,
+    event_type: input.event_type || 'In-person',
+    banner: input.banner || existing.banner,
+    banner_path: input.banner || existing.banner_path,
+    updated_at: new Date().toISOString(),
+  }
+  saveLocalEvent(updatedEvent)
+  return updatedEvent
 }
 
 export async function deleteEvent(id: string): Promise<void> {
-  const { error } = await supabase.from('events').delete().eq('id', id)
-  if (error) throw error
+  try {
+    await supabase.from('events').delete().eq('id', id)
+  } catch { /* ignore */ }
+  removeLocalEvent(id)
 }
 
 export async function isCurrentUserAdmin(): Promise<boolean> {

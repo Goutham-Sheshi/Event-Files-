@@ -13,6 +13,7 @@ import {
   type ManagedEvent,
 } from "./eventsApi";
 import { products } from "./data";
+import { getErrorMessage } from "./resourcesApi";
 import { eventSchema, type EventFormData } from "./schemas/eventSchemas";
 
 const defaultEventDate = () => {
@@ -132,7 +133,7 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
       await load();
       onChanged?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save event");
+      setError(getErrorMessage(err, "Failed to save event"));
     } finally {
       setBusy(false);
     }
@@ -147,7 +148,7 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
       await load();
       onChanged?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete event");
+      setError(getErrorMessage(err, "Failed to delete event"));
     } finally {
       setBusy(false);
     }
