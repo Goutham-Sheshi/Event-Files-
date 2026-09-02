@@ -104,12 +104,16 @@ function Home({resources,events,onProduct,onSheshi,onSelectEvent}:{resources:Res
   const[name,setName]=useState('');
   useEffect(()=>setName(localStorage.getItem('sheshi-vault-user-name')||''),[]);
   
-  const sortedEvents = [...events].sort((a, b) => {
+  // Display ONLY current events (ongoing & upcoming) on the main dashboard. Past/completed events belong in Events tab.
+  const currentEvents = events.filter(e => {
+    const s = calculateEventStatus(e);
+    return s === 'ongoing' || s === 'upcoming';
+  }).sort((a, b) => {
     const statusOrder = { ongoing: 1, upcoming: 2, completed: 3 };
     const orderA = statusOrder[calculateEventStatus(a)];
     const orderB = statusOrder[calculateEventStatus(b)];
     if (orderA !== orderB) return orderA - orderB;
-    return localDate(b.event_date).getTime() - localDate(a.event_date).getTime();
+    return localDate(a.event_date).getTime() - localDate(b.event_date).getTime();
   });
 
   const sheshiResources=resources.filter(r=>r.productId===SHESHI_ID);
@@ -125,23 +129,23 @@ function Home({resources,events,onProduct,onSheshi,onSelectEvent}:{resources:Res
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="section-heading">Featured Events</h2>
-          {events.length > 0 && (
+          {currentEvents.length > 0 && (
             <span className="text-xs text-[var(--ink-45)] font-medium">Click event card to open Event Hub</span>
           )}
         </div>
-        {sortedEvents.length ? (
+        {currentEvents.length ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2">
-              <EventCard event={sortedEvents[0]} hero onClick={() => onSelectEvent(sortedEvents[0].id)} />
+              <EventCard event={currentEvents[0]} hero onClick={() => onSelectEvent(currentEvents[0].id)} />
             </div>
             <div className="flex flex-col gap-3">
-              {sortedEvents.slice(1, 3).map(e => (
+              {currentEvents.slice(1, 3).map(e => (
                 <EventCard key={e.id} event={e} onClick={() => onSelectEvent(e.id)} />
               ))}
             </div>
           </div>
         ) : (
-          <div className="text-[13px] text-[var(--ink-45)] py-6">No events available.</div>
+          <div className="text-[13px] text-[var(--ink-45)] py-6">No current or upcoming events.</div>
         )}
       </section>
 
