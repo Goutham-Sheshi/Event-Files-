@@ -1,6 +1,7 @@
 import { updateManagedResourceTags, updateManagedResourceType, updateManagedResourceMeta } from './resourcesApi';
 import type { ContentStatus, ResourceType } from './types';
 import { triggerDirectDownload } from './utils';
+import { isFavoriteId, toggleFavoriteId } from './favoritesApi';
 
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif)(?:[?#].*)?$/i;
 const VIDEO_EXT = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i;
@@ -106,13 +107,26 @@ export function openViewer(
       try { await triggerDirectDownload(url, title); } finally { download.textContent = prevText; download.style.opacity = '1'; }
     }
   };
+  const favoriteBtn = document.createElement('button');
+  favoriteBtn.type = 'button';
+  const isFav = resourceId ? isFavoriteId(resourceId) : false;
+  favoriteBtn.textContent = isFav ? '★ Favorited' : '☆ Favorite';
+  favoriteBtn.style.cssText = `border:1px solid var(--line-soft);background:${isFav ? 'var(--primary-soft)' : 'var(--paper)'};color:${isFav ? 'var(--primary)' : 'var(--ink-70)'};border-radius:8px;padding:9px 12px;font-size:12px;font-weight:650;cursor:pointer;`;
+  favoriteBtn.onclick = () => {
+    if (!resourceId) return;
+    const nowFav = toggleFavoriteId(resourceId);
+    favoriteBtn.textContent = nowFav ? '★ Favorited' : '☆ Favorite';
+    favoriteBtn.style.background = nowFav ? 'var(--primary-soft)' : 'var(--paper)';
+    favoriteBtn.style.color = nowFav ? 'var(--primary)' : 'var(--ink-70)';
+  };
+
   const close = document.createElement('button');
   close.type = 'button';
   close.textContent = '×';
   close.setAttribute('aria-label', 'Close viewer');
   close.style.cssText = 'border:0;background:var(--line);color:var(--ink);border-radius:8px;width:34px;height:34px;font-size:24px;line-height:1;cursor:pointer;';
   close.onclick = closeViewer;
-  actions.append(download, close);
+  actions.append(favoriteBtn, download, close);
   header.append(headerLeft, actions);
 
   // ─── Meta bar (type + status + tags + description) ──────────────────────────
