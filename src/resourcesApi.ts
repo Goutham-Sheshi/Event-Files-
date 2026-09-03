@@ -145,9 +145,79 @@ export async function deleteManagedResource(r:ManagedResource){
   if(error)throw new Error(`Could not delete file record: ${getErrorMessage(error)}`)
   if(!data)throw new Error('The file could not be deleted. You may not have permission to remove it, or it may already be gone.')
 }
+
 export async function restoreManagedResource(r:ManagedResource){
   const{data,error}=await supabase.from('vault_resources').update({deleted_at:null}).eq('id',r.id).select('id').maybeSingle()
   if(error)throw new Error(`Could not restore file record: ${getErrorMessage(error)}`)
   if(!data)throw new Error('The file could not be restored. You may not have permission, or it may already be gone.')
 }
+
+export async function permanentlyDeleteResource(r:ManagedResource):Promise<void>{
+  if(r.storagePath){
+    await supabase.storage.from(STORAGE_BUCKET).remove([r.storagePath])
+  }
+  const{error}=await supabase.from('vault_resources').delete().eq('id',r.id)
+  if(error)throw new Error(`Could not permanently delete file: ${getErrorMessage(error)}`)
+}
+
+export async function checkDuplicateResource(fileName:string,fileSize?:number,title?:string):Promise<ManagedResource|null>{
+  const all=await getManagedResources()
+  const cleanFileName=fileName.trim().toLowerCase()
+  const cleanTitle=(title||fileName.replace(/\.[^.]+$/,'')).trim().toLowerCase()
+  const formattedSize=fileSize?formatFileSize(fileSize):undefined
+
+  const exact=all.find(r=>!r.deletedAt&&(r.title.trim().toLowerCase()===cleanTitle||(r.storagePath&&r.storagePath.split('/').pop()?.toLowerCase()===cleanFileName)))
+  if(exact)return exact
+
+  if(formattedSize){
+    const sizeMatch=all.find(r=>!r.deletedAt&&r.fileSize===formattedSize&&(r.title.toLowerCase().includes(cleanTitle)||cleanTitle.includes(r.title.toLowerCase())))
+    if(sizeMatch)return sizeMatch
+  }
+
+  return null
+}
+
+export async function replaceManagedResourceFile(existingResource:ManagedResource,f:File):Promise<ManagedResource>{
+  const ext=f.name.includes('.')?f.name.split('.').pop()?.toUpperCase():'FILE'
+  const m=new Date().toISOString().slice(0,7)
+  const id=existingResource.productId==='sheshi'?'sheshi':existingResource.productId
+  const path=`${id}/${existingResource.type}/${m}/${crypto.randomUUID()}-${safeName(f.name)}`
+
+  const{error:ue}=await supabase.storage.from(STORAGE_BUCKET).upload(path,f,{cacheControl:'3600',upsert:false,contentType:f.type||undefined})
+  if(ue)throw new Error(`Storage upload failed: ${getErrorMessage(ue)}`)
+
+  let thumbnail:string|null=isImageFile({source_url:f.name,file_format:f.type})?path:null
+  if(!thumbnail&&(PDF_EXT.test(f.name)||f.type==='application/pdf')){
+    const p=await renderPdfPreview(f)
+    if(p)thumbnail=await uploadPdfPreview(p,path)
+  }
+
+  const currentVerStr=existingResource.version||'v1.0'
+  const verMatch=currentVerStr.match(/^v?(\d+)(\.(\d+))?$/i)
+  let nextVersion='v2.0'
+  if(verMatch){
+    const major=parseInt(verMatch[1]||'1',10)
+    nextVersion=`v${major+1}.0`
+  }
+
+  const{data,error}=await supabase.from('vault_resources').update({
+    source_url:path,
+    thumbnail,
+    storage_path:path,
+    file_format:ext,
+    file_size:formatFileSize(f.size),
+    version:nextVersion,
+    parent_resource_id:existingResource.id,
+    updated_at:new Date().toISOString(),
+    ...await uploader()
+  }).eq('id',existingResource.id).select().single()
+
+  if(error){
+    await supabase.storage.from(STORAGE_BUCKET).remove([path])
+    throw new Error(`Failed to update resource record: ${getErrorMessage(error)}`)
+  }
+
+  return hydrateRow(data)
+}
+
 function formatFileSize(b:number){if(b<1024)return `${b} B`;const u=['KB','MB','GB'];let v=b/1024,n=0;while(v>=1024&&n<u.length-1){v/=1024;n++}return `${v.toFixed(v>=10?0:1)} ${u[n]}`}

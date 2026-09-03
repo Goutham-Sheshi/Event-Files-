@@ -4,7 +4,7 @@ import { products } from './data'
 import type { ContentStatus, ResourceType, VideoCategory } from './types'
 import { getMyProfile } from './authApi'
 import { supabase } from './lib/supabase'
-import { createLinkedVideo, deleteManagedResource, restoreManagedResource, getErrorMessage, getManagedResources, uploadResource, renameGlobalTag, mergeGlobalTags, deleteGlobalTag, type ManagedResource } from './resourcesApi'
+import { createLinkedVideo, deleteManagedResource, restoreManagedResource, permanentlyDeleteResource, checkDuplicateResource, replaceManagedResourceFile, getErrorMessage, getManagedResources, uploadResource, renameGlobalTag, mergeGlobalTags, deleteGlobalTag, type ManagedResource } from './resourcesApi'
 
 const TYPES: ResourceType[] = ['logo', 'brochure', 'video', 'document', 'other']
 const VIDEO_CATEGORIES: VideoCategory[] = ['Story', 'Podcast', 'Product', 'People', 'Event', 'Brand', 'Other']
@@ -66,6 +66,16 @@ function CloseCrossIcon() {
   )
 }
 
+function AlertTriangleIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  )
+}
+
 function parseFileSizeToBytes(sizeStr?: string | null): number {
   if (!sizeStr) return 0
   const match = sizeStr.trim().match(/^([\d.]+)\s*([A-Za-z]+)?$/)
@@ -110,11 +120,16 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   const [description, setDescription] = useState('')
   const [tagsInput, setTagsInput] = useState('')
   const [busy, setBusy] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
   const [showDeleted, setShowDeleted] = useState(false)
   const [filterStatus, setFilterStatus] = useState<string>('ACTIVE_OFFICIAL')
+
+  // Phase 2: Duplicate Modal State
+  const [duplicateMatch, setDuplicateMatch] = useState<ManagedResource | null>(null)
+  const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null)
 
   // Storage Modal state
   const [showStorageModal, setShowStorageModal] = useState(false)
@@ -128,8 +143,6 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   const [showTagModal, setShowTagModal] = useState(false)
   const [tagRenameOld, setTagRenameOld] = useState('')
   const [tagRenameNew, setTagRenameNew] = useState('')
-  const [tagMergeSelected, setTagMergeSelected] = useState<string[]>([])
-  const [tagMergeTarget, setTagMergeTarget] = useState('')
 
   function detectCategoryFromTags(tags: string): VideoCategory | null {
     const t = tags.toLowerCase()
@@ -172,6 +185,10 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
 
   const pick = (e: ChangeEvent<HTMLInputElement>) => setFiles(Array.from(e.target.files || []))
 
+  const removeFileFromQueue = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
   const resetForm = () => {
     setFiles([])
     setDescription('')
@@ -186,6 +203,9 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
     setContentStatus('Active')
     setVersionInput('v1.0')
     setCategoryAutoDetected(false)
+    setUploadProgress('')
+    setDuplicateMatch(null)
+    setPendingUploadFile(null)
   }
 
   const addPowerPoint = async () => {
@@ -244,15 +264,33 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
     }
   }
 
-  const upload = async () => {
-    if (!files.length) return
+  // Pre-flight check & Upload function
+  const upload = async (overrideFile?: File) => {
+    const uploadList = overrideFile ? [overrideFile] : files
+    if (!uploadList.length) return
+
+    // Pre-flight Duplicate Check for single upload if not overriding
+    if (!overrideFile && uploadList.length === 1) {
+      const target = uploadList[0]
+      const duplicate = await checkDuplicateResource(target.name, target.size, target.name.replace(/\.[^.]+$/, ''))
+      if (duplicate) {
+        setDuplicateMatch(duplicate)
+        setPendingUploadFile(target)
+        return
+      }
+    }
+
     setBusy(true)
     setError('')
     setNotice('')
-    const count = files.length
+    const count = uploadList.length
     const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean)
+
     try {
-      for (const file of files) {
+      let current = 0
+      for (const file of uploadList) {
+        current++
+        setUploadProgress(`Uploading file ${current} of ${count}: ${file.name}...`)
         await uploadResource({
           title: file.name.replace(/\.[^.]+$/, ''),
           description: description.trim() || null,
@@ -272,6 +310,26 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
       setError(getErrorMessage(e, 'Upload failed'))
     } finally {
       setBusy(false)
+      setUploadProgress('')
+    }
+  }
+
+  // Handle Replace File action from Duplicate Modal
+  const handleReplaceDuplicate = async () => {
+    if (!duplicateMatch || !pendingUploadFile) return
+    setBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      const updated = await replaceManagedResourceFile(duplicateMatch, pendingUploadFile)
+      setNotice(`File "${updated.title}" was updated to version ${updated.version || 'v2.0'}.`)
+      resetForm()
+      await load()
+      window.dispatchEvent(new Event('vault-resources-changed'))
+    } catch (e) {
+      setError(getErrorMessage(e, 'Failed to replace file'))
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -287,6 +345,23 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
       window.dispatchEvent(new Event('vault-resources-changed'))
     } catch (e) {
       setError(getErrorMessage(e, 'Delete failed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handlePermanentDelete = async (item: ManagedResource) => {
+    if (!confirm(`Permanently delete "${item.title}"? This cannot be undone.`)) return
+    setBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      await permanentlyDeleteResource(item)
+      await load()
+      setNotice(`"${item.title}" was permanently purged.`)
+      window.dispatchEvent(new Event('vault-resources-changed'))
+    } catch (e) {
+      setError(getErrorMessage(e, 'Permanent delete failed'))
     } finally {
       setBusy(false)
     }
@@ -321,23 +396,6 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
       window.dispatchEvent(new Event('vault-resources-changed'))
     } catch (e) {
       setError(getErrorMessage(e, 'Tag rename failed'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const handleMergeTags = async () => {
-    if (tagMergeSelected.length === 0 || !tagMergeTarget.trim()) return
-    setBusy(true)
-    try {
-      await mergeGlobalTags(tagMergeSelected, tagMergeTarget.trim())
-      setNotice(`Merged ${tagMergeSelected.length} tags into "${tagMergeTarget.trim()}".`)
-      setTagMergeSelected([])
-      setTagMergeTarget('')
-      await load()
-      window.dispatchEvent(new Event('vault-resources-changed'))
-    } catch (e) {
-      setError(getErrorMessage(e, 'Tag merge failed'))
     } finally {
       setBusy(false)
     }
@@ -428,7 +486,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
             {canDelete ? 'Related Products & Files' : 'Upload Files'}
           </h1>
           <p className="text-[13px] text-[var(--ink-45)] mt-1">
-            {canDelete ? 'Manage the shared library, file governance, and storage analytics.' : 'Upload files to the shared library.'}
+            {canDelete ? 'Manage shared library, file governance, duplicate detection, and storage analytics.' : 'Upload files to the shared library.'}
           </p>
         </div>
 
@@ -588,16 +646,42 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                   <div className="text-[13px] font-semibold">Choose files</div>
                   <div className="text-[11px] text-[var(--ink-45)] mt-1">Multiple files supported</div>
                 </label>
-                {files.length > 0 && <div className="text-[11px] space-y-1">{files.map(f => <div key={`${f.name}-${f.size}`}>{f.name}</div>)}</div>}
+                
+                {/* Pre-Upload Queue List */}
+                {files.length > 0 && (
+                  <div className="text-[11px] space-y-1.5 bg-[var(--canvas-deep)] border border-[var(--line-soft)] rounded-xl p-3">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-45)] mb-1 flex items-center justify-between">
+                      <span>Selected Queue ({files.length})</span>
+                      <button type="button" onClick={() => setFiles([])} className="text-red-500 hover:underline cursor-pointer">Clear All</button>
+                    </div>
+                    {files.map((f, idx) => (
+                      <div key={`${f.name}-${f.size}`} className="flex items-center justify-between gap-2 bg-white p-2 rounded-lg border border-[var(--line-soft)]">
+                        <div className="min-w-0 flex-1 truncate">
+                          <span className="font-semibold text-[var(--ink)] block truncate">{f.name}</span>
+                          <span className="text-[10px] text-[var(--ink-45)]">{formatBytes(f.size)}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFileFromQueue(idx)}
+                          className="w-5 h-5 rounded bg-red-100 text-red-600 font-bold flex items-center justify-center text-[12px] hover:bg-red-200 cursor-pointer"
+                          title="Remove file"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 
+            {uploadProgress && <div className="text-[12px] font-semibold text-[var(--primary)] animate-pulse">{uploadProgress}</div>}
             {error && <div className="text-[12px] text-red-600">{error}</div>}
             {notice && <div className="text-[12px] text-green-700">{notice}</div>}
 
             <button
               disabled={busy || (pptMode ? !pptUrl.trim() : isVideoLink ? !videoUrl.trim() : !files.length)}
-              onClick={pptMode ? addPowerPoint : isVideoLink ? addVideoLink : upload}
+              onClick={() => upload()}
               className="w-full px-4 py-2.5 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold disabled:opacity-40 cursor-pointer"
             >
               {busy ? (pptMode || isVideoLink ? 'Adding…' : 'Uploading…') : (pptMode ? 'Add PowerPoint' : isVideoLink ? 'Add Video Link' : `Upload ${files.length || ''} File${files.length === 1 ? '' : 's'}`)}
@@ -608,7 +692,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
         <div className="bg-white border border-[var(--line-soft)] rounded-2xl divide-y">
           <div className="px-5 py-4 flex flex-wrap items-center justify-between gap-4 font-semibold text-[14px]">
             <div className="flex items-center gap-3">
-              <span>Shared Library {showDeleted && <span className="text-[12px] font-normal text-red-600">(Trash)</span>}</span>
+              <span>Shared Library {showDeleted && <span className="text-[12px] font-normal text-red-600">(Trash Bin)</span>}</span>
               
               {/* Status Filter */}
               <select
@@ -627,7 +711,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
             {isAdmin && (
               <label className="flex items-center gap-2 text-[12px] font-normal text-[var(--ink-45)] cursor-pointer select-none">
                 <input type="checkbox" checked={showDeleted} onChange={e => setShowDeleted(e.target.checked)} className="rounded text-[var(--primary)]" />
-                Show Deleted Files
+                Show Deleted Files (Trash)
               </label>
             )}
           </div>
@@ -643,14 +727,14 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
               return status === filterStatus
             })
 
-            if (filtered.length === 0) return <div className="px-5 py-10 text-[12px] text-[var(--ink-45)]">{showDeleted ? 'No deleted files found.' : 'No files matching selected status.'}</div>
+            if (filtered.length === 0) return <div className="px-5 py-10 text-[12px] text-[var(--ink-45)]">{showDeleted ? 'No deleted files in trash.' : 'No files matching selected status.'}</div>
             
             return filtered.map(item => {
               const label = item.fileFormat === 'PPT LINK' ? 'PowerPoint' : item.type
               const status = item.contentStatus || 'Active'
               const isOfficial = item.isOfficial || status === 'Official'
 
-              return <div key={item.id} className={`px-5 py-3.5 flex items-center gap-3 ${item.deletedAt ? 'opacity-60 bg-red-50/10' : ''}`}>
+              return <div key={item.id} className={`px-5 py-3.5 flex items-center gap-3 ${item.deletedAt ? 'opacity-70 bg-red-50/20' : ''}`}>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-[12.5px] font-semibold truncate ${item.deletedAt ? 'line-through text-slate-400' : ''}`}>{item.title}</span>
@@ -685,12 +769,82 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                     Edit
                   </button>
                 )}
-                {item.deletedAt ? (isAdmin && <button disabled={busy} onClick={() => restore(item)} className="text-[11px] font-semibold text-emerald-600 hover:underline">Restore</button>) : (canDelete && <button disabled={busy} onClick={() => remove(item)} className="text-[11px] font-semibold text-red-600 hover:underline">Delete</button>)}
+                {item.deletedAt ? (
+                  <div className="flex items-center gap-3">
+                    <button disabled={busy} onClick={() => restore(item)} className="text-[11px] font-semibold text-emerald-600 hover:underline">Restore</button>
+                    {isAdmin && <button disabled={busy} onClick={() => handlePermanentDelete(item)} className="text-[11px] font-semibold text-red-600 hover:underline">Permanent Delete</button>}
+                  </div>
+                ) : (
+                  canDelete && <button disabled={busy} onClick={() => remove(item)} className="text-[11px] font-semibold text-red-600 hover:underline">Delete</button>
+                )}
               </div>
             })
           })()}
         </div>
       </div>
+
+      {/* ── Phase 2: Duplicate File Warning Modal ────────────────────────────── */}
+      {duplicateMatch && pendingUploadFile && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={e => { if (e.target === e.currentTarget) { setDuplicateMatch(null); setPendingUploadFile(null); } }}
+        >
+          <div className="bg-white border border-[var(--line-soft)] rounded-2xl w-full max-w-lg shadow-2xl p-6 text-[var(--ink)] space-y-4">
+            <div className="flex items-center gap-3 text-amber-500">
+              <span className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <AlertTriangleIcon />
+              </span>
+              <div>
+                <h2 className="text-[16px] font-bold text-[var(--ink)]">Possible Duplicate Detected</h2>
+                <p className="text-[11.5px] text-[var(--ink-45)]">A similar file already exists in the Vault.</p>
+              </div>
+            </div>
+
+            <div className="bg-[var(--canvas-deep)] border border-[var(--line-soft)] rounded-xl p-4 space-y-2">
+              <div className="text-[11px] uppercase font-bold text-[var(--ink-45)]">Existing Vault File</div>
+              <div className="font-bold text-[14px] text-[var(--ink)]">{duplicateMatch.title}</div>
+              <div className="text-[11.5px] text-[var(--ink-45)] flex items-center gap-2">
+                <span>Version: <strong className="text-[var(--ink)]">{duplicateMatch.version || 'v1.0'}</strong></span>
+                <span>• Size: <strong className="text-[var(--ink)]">{duplicateMatch.fileSize || '—'}</strong></span>
+                <span>• Uploaded by: <strong className="text-[var(--ink)]">{duplicateMatch.uploadedByName || 'Library'}</strong></span>
+              </div>
+            </div>
+
+            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl p-3 text-[12px]">
+              Would you like to replace the existing file (increments to version <strong>v2.0</strong>) or upload as a new separate file?
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { setDuplicateMatch(null); setPendingUploadFile(null); }}
+                className="px-4 py-2 rounded-lg border border-[var(--line-soft)] text-[12px] font-semibold text-[var(--ink-45)] hover:text-[var(--ink)] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const target = pendingUploadFile
+                  setDuplicateMatch(null)
+                  setPendingUploadFile(null)
+                  upload(target)
+                }}
+                className="px-4 py-2 rounded-lg border border-[var(--primary)] text-[var(--primary)] text-[12px] font-semibold hover:bg-[var(--primary)]/10 cursor-pointer"
+              >
+                Upload Anyway
+              </button>
+              <button
+                type="button"
+                onClick={handleReplaceDuplicate}
+                className="px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold hover:opacity-90 cursor-pointer"
+              >
+                Replace Existing File
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Admin Tag Governance Modal ─────────────────────────────────────── */}
       {showTagModal && (
@@ -719,7 +873,6 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
             </div>
 
             <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-[var(--canvas)]">
-              {/* Rename Tag Box */}
               <div className="bg-white border border-[var(--line-soft)] rounded-xl p-4 shadow-sm space-y-3">
                 <h3 className="text-[13px] font-bold text-[var(--ink)]">Rename Global Tag</h3>
                 <div className="flex flex-wrap items-center gap-3">
@@ -752,7 +905,6 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                 </div>
               </div>
 
-              {/* Active Tags List */}
               <div className="bg-white border border-[var(--line-soft)] rounded-xl p-4 shadow-sm space-y-3">
                 <h3 className="text-[13px] font-bold text-[var(--ink)]">Active Vault Tags ({globalTagList.length})</h3>
                 <div className="flex flex-wrap gap-2 max-h-[220px] overflow-y-auto p-1 border border-[var(--line-soft)] rounded-lg bg-[var(--canvas-deep)]">
