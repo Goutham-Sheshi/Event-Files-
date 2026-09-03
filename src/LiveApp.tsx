@@ -12,6 +12,8 @@ import { openViewer } from './fileViewerBridge'
 import EventPage from './components/EventPage'
 import VideosPage, { VideoCard } from './components/VideosPage'
 import { getFavoriteIds, isFavoriteId, toggleFavoriteId } from './favoritesApi'
+import CommandPalette from './components/CommandPalette'
+import MultiStepUploadModal from './components/MultiStepUploadModal'
 
 const Icon = ({ children }: { children: React.ReactNode }) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
 const HomeIcon = () => <Icon><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M9 22v-8h6v8" /></Icon>
@@ -635,6 +637,10 @@ export default function LiveApp() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
 
+  // Modern UI Modal States
+  const [showCmdPalette, setShowCmdPalette] = useState(false);
+  const [showMultiStepUpload, setShowMultiStepUpload] = useState(false);
+
   const fetchProfile = async () => {
     try {
       const p = await getMyProfile();
@@ -674,15 +680,48 @@ export default function LiveApp() {
   }, []);
 
   const handleSignOut = async () => { await signOut(); setView({ kind: 'home' }); };
+  const canUpload = profile && profile.status === 'approved' && (profile.role === 'admin' || profile.role === 'advanced' || profile.role === 'teammate');
 
   if (authLoading) {
-    return <div className="flex h-screen w-screen items-center justify-center bg-[var(--canvas)]"><div className="w-8 h-8 rounded-full border-2 border-[var(--primary)] border-t-transparent animate-spin" /></div>
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[var(--canvas)]">
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 rounded-full border-3 border-[var(--primary)] border-t-transparent animate-spin mx-auto" />
+          <div className="text-[12px] font-mono text-[var(--ink-45)]">Loading Sheshi Vault...</div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[var(--canvas)] text-[var(--ink)]">
       <Sidebar view={view} onView={setView} isAdmin={isAdmin} profile={profile} onSignOut={handleSignOut} onOpenAuth={(mode) => { setAuthMode(mode); setShowAuthModal(true); }} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top Header Control Bar */}
+        <header className="h-16 border-b border-[var(--line-soft)] bg-[var(--paper)] px-6 flex items-center justify-between gap-4 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowCmdPalette(true)}
+            className="flex items-center gap-3 bg-[var(--canvas-deep)] hover:bg-[var(--canvas)] border border-[var(--line-soft)] rounded-xl px-3.5 py-2 text-[12.5px] text-[var(--ink-45)] transition-all cursor-pointer w-full max-w-md"
+          >
+            <SearchIcon />
+            <span className="flex-1 text-left">Search resources, events, videos...</span>
+            <kbd className="px-2 py-0.5 rounded bg-[var(--canvas)] text-[10px] font-mono font-bold text-[var(--ink-70)] border border-[var(--line-soft)]">⌘K</kbd>
+          </button>
+
+          <div className="flex items-center gap-3">
+            {canUpload && (
+              <button
+                type="button"
+                onClick={() => setShowMultiStepUpload(true)}
+                className="px-4 py-2 rounded-xl bg-[var(--primary)] text-white text-[12.5px] font-semibold hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-2 shadow-xs"
+              >
+                <span>+ Upload Asset</span>
+              </button>
+            )}
+          </div>
+        </header>
+
         {dbError && <div className="bg-red-500/10 border-b border-red-500/20 text-red-400 px-6 py-2 text-[12px] flex justify-between items-center"><span>{dbError}</span><button onClick={loadAll} className="underline">Retry</button></div>}
 
         {view.kind === 'home' && <Home resources={resources} events={events} onProduct={s => setView({ kind: 'product', slug: s })} onSheshi={() => setView({ kind: 'sheshi' })} onSelectEvent={id => setView({ kind: 'event-detail', id })} />}
@@ -695,6 +734,25 @@ export default function LiveApp() {
         {view.kind === 'all' && <AllResources resources={resources} />}
         {view.kind === 'admin' && <AdminConsole />}
       </div>
+
+      {/* Global Command Palette (Cmd+K) */}
+      <CommandPalette
+        isOpen={showCmdPalette}
+        onClose={() => setShowCmdPalette(false)}
+        resources={resources}
+        events={events}
+        onSelectProduct={slug => setView({ kind: 'product', slug })}
+        onSelectEvent={id => setView({ kind: 'event-detail', id })}
+      />
+
+      {/* Guided Multi-Step Upload Modal */}
+      <MultiStepUploadModal
+        isOpen={showMultiStepUpload}
+        onClose={() => setShowMultiStepUpload(false)}
+        onUploadComplete={() => {
+          loadAll();
+        }}
+      />
 
       <AuthScreen isOpen={showAuthModal} initialMode={authMode} onClose={() => setShowAuthModal(false)} onSuccess={async () => { setShowAuthModal(false); await fetchProfile(); await loadAll(); }} />
     </div>
