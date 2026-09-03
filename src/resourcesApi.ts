@@ -1,8 +1,23 @@
 import { supabase } from './lib/supabase'
 import { getMyProfile } from './authApi'
-import type { Resource, ResourceType, VideoCategory } from './types'
+import type { ContentStatus, Resource, ResourceType, VideoCategory } from './types'
+
 export type ManagedResource = Resource & { storagePath?:string; created_at?:string; updated_at?:string; uploadedBy?:string; uploadedByName?:string; deletedAt?:string }
-export type ResourceInput={title:string;description?:string|null;type:ResourceType;productId:string;tags?:string[];videoCategory?:VideoCategory;featured?:boolean}
+
+export type ResourceInput = {
+  title: string;
+  description?: string | null;
+  type: ResourceType;
+  productId: string;
+  tags?: string[];
+  videoCategory?: VideoCategory;
+  contentStatus?: ContentStatus;
+  isOfficial?: boolean;
+  version?: string;
+  parentResourceId?: string;
+  featured?: boolean;
+}
+
 const STORAGE_BUCKET='event-assets',SIGNED_URL_TTL=60*30,IMAGE_EXT=/\.(png|jpe?g|gif|webp|svg|avif)(?:[?#].*)?$/i,PDF_EXT=/\.pdf(?:[?#].*)?$/i,PDFJS_VERSION='4.10.38';let pdfjsPromise:Promise<any>|null=null
 const safeName=(n:string)=>n.toLowerCase().replace(/[^a-z0-9._-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')
 const isImageFile=(r:any)=>IMAGE_EXT.test(String(r.source_url||''))||['png','jpg','jpeg','gif','webp','svg','avif'].includes(String(r.file_format||'').toLowerCase())
@@ -49,8 +64,7 @@ export function generateSharePointVideoThumbnail(title: string, isFolder: boolea
 
     <text x="400" y="225" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" text-anchor="middle" opacity="0.95">${displayTitle}</text>
   </svg>`;
-
-  return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 export function getVideoThumbnailUrl(url: string | null | undefined, title?: string): string | null {
@@ -86,17 +100,46 @@ export function getVideoThumbnailUrl(url: string | null | undefined, title?: str
   return null;
 }
 
-const mapRow=(r:any,u:string,t?:string):ManagedResource=>({id:r.id,title:r.title,description:r.description||undefined,type:r.type as ResourceType,productId:r.product_id,thumbnail:t,sourceUrl:u,storagePath:r.storage_path||undefined,fileFormat:r.file_format||undefined,fileSize:r.file_size||undefined,tags:r.tags||[],videoCategory:r.video_category as VideoCategory||undefined,viewCount:r.view_count||0,downloadCount:r.download_count||0,featured:r.featured||false,createdAt:r.created_at,updatedAt:r.updated_at,uploadedBy:r.uploaded_by||undefined,uploadedByName:r.uploaded_by_name||undefined,deletedAt:r.deleted_at||undefined})
+const mapRow = (r: any, u: string, t?: string): ManagedResource => ({
+  id: r.id,
+  title: r.title,
+  description: r.description || undefined,
+  type: r.type as ResourceType,
+  productId: r.product_id,
+  thumbnail: t,
+  sourceUrl: u,
+  storagePath: r.storage_path || undefined,
+  fileFormat: r.file_format || undefined,
+  fileSize: r.file_size || undefined,
+  tags: r.tags || [],
+  videoCategory: r.video_category as VideoCategory || undefined,
+  contentStatus: (r.content_status || 'Active') as ContentStatus,
+  isOfficial: r.is_official || r.content_status === 'Official',
+  version: r.version || 'v1.0',
+  parentResourceId: r.parent_resource_id || undefined,
+  viewCount: r.view_count || 0,
+  downloadCount: r.download_count || 0,
+  featured: r.featured || false,
+  createdAt: r.created_at,
+  updatedAt: r.updated_at,
+  uploadedBy: r.uploaded_by || undefined,
+  uploadedByName: r.uploaded_by_name || undefined,
+  deletedAt: r.deleted_at || undefined,
+})
+
 async function hydrateRow(r:any){if(r.storage_path){const u=(await signedUrl(r.storage_path))||'',p=isImageFile(r)?r.storage_path:isPdfFile(r)?`${r.storage_path}.preview.png`:undefined;return mapRow(r,u,p?await signedUrl(p):undefined)}const autoThumb=r.thumbnail||(r.type==='video'?getVideoThumbnailUrl(r.source_url,r.title):isImageFile(r)?r.source_url||undefined:undefined);return mapRow(r,r.source_url||'',autoThumb||undefined)}
 async function ensurePdfPreview(r:any){if(!isPdfFile(r)||r.thumbnail||!r.storage_path)return r;try{const{data:f,error}=await supabase.storage.from(STORAGE_BUCKET).download(r.storage_path);if(error||!f)return r;const p=await renderPdfPreview(f);if(!p)return r;const t=await uploadPdfPreview(p,r.storage_path);if(!t)return r;const{error:e}=await supabase.from('vault_resources').update({thumbnail:t}).eq('id',r.id);return e?r:{...r,thumbnail:t}}catch{return r}}
 export async function getManagedResources(){const{data,error}=await supabase.from('vault_resources').select('*').order('created_at',{ascending:false});if(error)throw new Error(`Could not load files: ${getErrorMessage(error)}`);return Promise.all((await Promise.all((data||[]).map(ensurePdfPreview))).map(hydrateRow))}
 async function uploader(){const p=await getMyProfile();return{uploaded_by:p?.id||null,uploaded_by_name:p?.full_name||null}}
-export async function createLinkedVideo(i:ResourceInput,url:string){url=url.trim();if(!url)throw new Error('Please enter a video link');try{new URL(url)}catch{throw new Error('Please enter a valid video URL')}const autoThumb=getVideoThumbnailUrl(url,i.title);const{data,error}=await supabase.from('vault_resources').insert({title:i.title.trim()||'Video',description:i.description||null,type:'video',product_id:i.productId,source_url:url,thumbnail:autoThumb||null,storage_path:null,file_format:'LINK',file_size:null,tags:i.tags||[],video_category:i.videoCategory||'Other',featured:i.featured||false,...await uploader()}).select().single();if(error)throw new Error(`Video link failed: ${getErrorMessage(error)}`);return hydrateRow(data)}
-export async function uploadResource(i:ResourceInput,f:File){const ext=f.name.includes('.')?f.name.split('.').pop()?.toUpperCase():'FILE',m=new Date().toISOString().slice(0,7),id=i.productId==='sheshi'?'sheshi':i.productId,path=`${id}/${i.type}/${m}/${crypto.randomUUID()}-${safeName(f.name)}`;const{error:ue}=await supabase.storage.from(STORAGE_BUCKET).upload(path,f,{cacheControl:'3600',upsert:false,contentType:f.type||undefined});if(ue)throw new Error(`Storage upload failed: ${getErrorMessage(ue)}`);let thumbnail:string|null=isImageFile({source_url:f.name,file_format:f.type})?path:null;if(!thumbnail&&(PDF_EXT.test(f.name)||f.type==='application/pdf')){const p=await renderPdfPreview(f);if(p)thumbnail=await uploadPdfPreview(p,path)}const{data,error}=await supabase.from('vault_resources').insert({title:i.title||f.name,description:i.description||null,type:i.type,product_id:i.productId,source_url:path,thumbnail,storage_path:path,file_format:ext,file_size:formatFileSize(f.size),tags:i.tags||[],video_category:i.type==='video'?(i.videoCategory||'Other'):null,featured:i.featured||false,...await uploader()}).select().single();if(error){await supabase.storage.from(STORAGE_BUCKET).remove([path]);throw new Error(`Database record failed: ${getErrorMessage(error)}`)}return hydrateRow(data)}
+export async function createLinkedVideo(i:ResourceInput,url:string){url=url.trim();if(!url)throw new Error('Please enter a video link');try{new URL(url)}catch{throw new Error('Please enter a valid video URL')}const autoThumb=getVideoThumbnailUrl(url,i.title);const{data,error}=await supabase.from('vault_resources').insert({title:i.title.trim()||'Video',description:i.description||null,type:'video',product_id:i.productId,source_url:url,thumbnail:autoThumb||null,storage_path:null,file_format:'LINK',file_size:null,tags:i.tags||[],video_category:i.videoCategory||'Other',content_status:i.contentStatus||'Active',is_official:i.contentStatus==='Official'||i.isOfficial||false,version:i.version||'v1.0',parent_resource_id:i.parentResourceId||null,featured:i.featured||false,...await uploader()}).select().single();if(error)throw new Error(`Video link failed: ${getErrorMessage(error)}`);return hydrateRow(data)}
+export async function uploadResource(i:ResourceInput,f:File){const ext=f.name.includes('.')?f.name.split('.').pop()?.toUpperCase():'FILE',m=new Date().toISOString().slice(0,7),id=i.productId==='sheshi'?'sheshi':i.productId,path=`${id}/${i.type}/${m}/${crypto.randomUUID()}-${safeName(f.name)}`;const{error:ue}=await supabase.storage.from(STORAGE_BUCKET).upload(path,f,{cacheControl:'3600',upsert:false,contentType:f.type||undefined});if(ue)throw new Error(`Storage upload failed: ${getErrorMessage(ue)}`);let thumbnail:string|null=isImageFile({source_url:f.name,file_format:f.type})?path:null;if(!thumbnail&&(PDF_EXT.test(f.name)||f.type==='application/pdf')){const p=await renderPdfPreview(f);if(p)thumbnail=await uploadPdfPreview(p,path)}const{data,error}=await supabase.from('vault_resources').insert({title:i.title||f.name,description:i.description||null,type:i.type,product_id:i.productId,source_url:path,thumbnail,storage_path:path,file_format:ext,file_size:formatFileSize(f.size),tags:i.tags||[],video_category:i.type==='video'?(i.videoCategory||'Other'):null,content_status:i.contentStatus||'Active',is_official:i.contentStatus==='Official'||i.isOfficial||false,version:i.version||'v1.0',parent_resource_id:i.parentResourceId||null,featured:i.featured||false,...await uploader()}).select().single();if(error){await supabase.storage.from(STORAGE_BUCKET).remove([path]);throw new Error(`Database record failed: ${getErrorMessage(error)}`)}return hydrateRow(data)}
 export async function updateManagedResourceType(id:string,type:ResourceType){const{error}=await supabase.from('vault_resources').update({type}).eq('id',id);if(error)throw new Error(`Could not update file type: ${getErrorMessage(error)}`)}
 export async function updateManagedResourceTags(id:string,tags:string[]){const{error}=await supabase.from('vault_resources').update({tags:tags.map(t=>t.trim()).filter(Boolean)}).eq('id',id);if(error)throw new Error(`Could not update tags: ${getErrorMessage(error)}`)}
-export async function updateManagedResourceMeta(id:string,updates:{tags?:string[];description?:string|null;videoCategory?:string|null}){const patch:Record<string,unknown>={};if(updates.tags!==undefined)patch.tags=updates.tags.map(t=>t.trim()).filter(Boolean);if(updates.description!==undefined)patch.description=updates.description||null;if(updates.videoCategory!==undefined)patch.video_category=updates.videoCategory||null;const{error}=await supabase.from('vault_resources').update(patch).eq('id',id);if(error)throw new Error(`Could not update resource: ${getErrorMessage(error)}`)}
+export async function updateManagedResourceMeta(id:string,updates:{tags?:string[];description?:string|null;videoCategory?:string|null;contentStatus?:ContentStatus;isOfficial?:boolean;featured?:boolean;version?:string}){const patch:Record<string,unknown>={};if(updates.tags!==undefined)patch.tags=updates.tags.map(t=>t.trim()).filter(Boolean);if(updates.description!==undefined)patch.description=updates.description||null;if(updates.videoCategory!==undefined)patch.video_category=updates.videoCategory||null;if(updates.contentStatus!==undefined){patch.content_status=updates.contentStatus;patch.is_official=updates.contentStatus==='Official'}if(updates.isOfficial!==undefined)patch.is_official=updates.isOfficial;if(updates.featured!==undefined)patch.featured=updates.featured;if(updates.version!==undefined)patch.version=updates.version;const{error}=await supabase.from('vault_resources').update(patch).eq('id',id);if(error)throw new Error(`Could not update resource: ${getErrorMessage(error)}`)}
 export async function updateManagedResourceVideoCategory(id:string,videoCategory:VideoCategory){const{error}=await supabase.from('vault_resources').update({video_category:videoCategory}).eq('id',id);if(error)throw new Error(`Could not update video category: ${getErrorMessage(error)}`)}
+export async function renameGlobalTag(oldTag:string,newTag:string){const{error}=await supabase.rpc('admin_rename_tag',{old_tag:oldTag,new_tag:newTag});if(error)throw new Error(`Failed to rename tag: ${getErrorMessage(error)}`)}
+export async function mergeGlobalTags(sourceTags:string[],targetTag:string){const{error}=await supabase.rpc('admin_merge_tags',{source_tags:sourceTags,target_tag:targetTag});if(error)throw new Error(`Failed to merge tags: ${getErrorMessage(error)}`)}
+export async function deleteGlobalTag(targetTag:string){const{error}=await supabase.rpc('admin_delete_tag',{target_tag:targetTag});if(error)throw new Error(`Failed to delete tag: ${getErrorMessage(error)}`)}
 export async function deleteManagedResource(r:ManagedResource){
   const{data,error}=await supabase.from('vault_resources').update({deleted_at:new Date().toISOString()}).eq('id',r.id).select('id').maybeSingle()
   if(error)throw new Error(`Could not delete file record: ${getErrorMessage(error)}`)
