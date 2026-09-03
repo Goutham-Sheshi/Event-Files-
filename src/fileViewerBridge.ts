@@ -1,6 +1,7 @@
 import { updateManagedResourceTags, updateManagedResourceType, updateManagedResourceMeta } from './resourcesApi';
-import type { ResourceType } from './types';
+import type { ContentStatus, ResourceType } from './types';
 import { triggerDirectDownload } from './utils';
+import { isFavoriteId, toggleFavoriteId } from './favoritesApi';
 
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif)(?:[?#].*)?$/i;
 const VIDEO_EXT = /\.(mp4|webm|ogg|mov|m4v)(?:[?#].*)?$/i;
@@ -14,9 +15,16 @@ const FILE_TYPES: { value: ResourceType; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
+const STATUS_TYPES: { value: ContentStatus; label: string; badge: string; color: string }[] = [
+  { value: 'Active', label: 'Active', badge: 'Active', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
+  { value: 'Official', label: 'Official ✓', badge: 'Official ✓', color: 'bg-[var(--primary)]/20 text-[var(--primary)] border-[var(--primary)]/40' },
+  { value: 'Archived', label: 'Archived', badge: 'Archived', color: 'bg-slate-500/20 text-slate-300 border-slate-500/30' },
+  { value: 'Deprecated', label: 'Deprecated ⚠️', badge: 'Deprecated ⚠️', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
+];
+
 function fileNameFromUrl(url: string) { try { return decodeURIComponent(new URL(url).pathname.split('/').pop() || 'File'); } catch { return 'File'; } }
 
-const metadataCache = new Map<string, { tags?: string[]; description?: string; type?: ResourceType }>();
+const metadataCache = new Map<string, { tags?: string[]; description?: string; type?: ResourceType; contentStatus?: ContentStatus; version?: string }>();
 
 let activeFlushSave: (() => Promise<void>) | null = null;
 
@@ -35,7 +43,9 @@ export function openViewer(
   resourceId?: string,
   initialTags: string[] = [],
   initialType: ResourceType = 'other',
-  initialDescription: string = ''
+  initialDescription: string = '',
+  initialContentStatus: ContentStatus = 'Active',
+  initialVersion: string = 'v1.0'
 ) {
   closeViewer();
   document.body.style.overflow = 'hidden';
@@ -44,6 +54,8 @@ export function openViewer(
   const effectiveTags = cached?.tags ?? initialTags;
   const effectiveType = cached?.type ?? initialType;
   const effectiveDescription = cached?.description ?? initialDescription;
+  const effectiveStatus = cached?.contentStatus ?? initialContentStatus;
+  const effectiveVersion = cached?.version ?? initialVersion;
 
   const modal = document.createElement('div');
   modal.id = 'vault-file-viewer';
@@ -57,9 +69,25 @@ export function openViewer(
   // ─── Header ─────────────────────────────────────────────────────────────────
   const header = document.createElement('div');
   header.style.cssText = 'height:64px;flex:none;padding:0 20px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between;gap:16px;font-family:Inter,system-ui,sans-serif;background:var(--paper);';
+  
+  const headerLeft = document.createElement('div');
+  headerLeft.style.cssText = 'display:flex;align-items:center;gap:10px;min-width:0;';
+  
   const name = document.createElement('div');
   name.textContent = title || fileNameFromUrl(url);
   name.style.cssText = 'font-size:14px;font-weight:650;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+  
+  const statusBadge = document.createElement('span');
+  const matchedStatus = STATUS_TYPES.find(s => s.value === effectiveStatus) || STATUS_TYPES[0];
+  statusBadge.className = `px-2 py-0.5 rounded-full text-[10px] font-bold border ${matchedStatus.color}`;
+  statusBadge.textContent = matchedStatus.badge;
+
+  const versionBadge = document.createElement('span');
+  versionBadge.className = 'px-2 py-0.5 rounded bg-slate-700/50 text-slate-300 font-mono text-[10px] font-bold border border-slate-600/40';
+  versionBadge.textContent = effectiveVersion;
+
+  headerLeft.append(name, statusBadge, versionBadge);
+
   const actions = document.createElement('div');
   actions.style.cssText = 'display:flex;align-items:center;gap:8px;flex:none;';
   const isVideoType = effectiveType === 'video' || VIDEO_EXT.test(url);
@@ -79,20 +107,33 @@ export function openViewer(
       try { await triggerDirectDownload(url, title); } finally { download.textContent = prevText; download.style.opacity = '1'; }
     }
   };
+  const favoriteBtn = document.createElement('button');
+  favoriteBtn.type = 'button';
+  const isFav = resourceId ? isFavoriteId(resourceId) : false;
+  favoriteBtn.textContent = isFav ? '★ Favorited' : '☆ Favorite';
+  favoriteBtn.style.cssText = `border:1px solid var(--line-soft);background:${isFav ? 'var(--primary-soft)' : 'var(--paper)'};color:${isFav ? 'var(--primary)' : 'var(--ink-70)'};border-radius:8px;padding:9px 12px;font-size:12px;font-weight:650;cursor:pointer;`;
+  favoriteBtn.onclick = () => {
+    if (!resourceId) return;
+    const nowFav = toggleFavoriteId(resourceId);
+    favoriteBtn.textContent = nowFav ? '★ Favorited' : '☆ Favorite';
+    favoriteBtn.style.background = nowFav ? 'var(--primary-soft)' : 'var(--paper)';
+    favoriteBtn.style.color = nowFav ? 'var(--primary)' : 'var(--ink-70)';
+  };
+
   const close = document.createElement('button');
   close.type = 'button';
   close.textContent = '×';
   close.setAttribute('aria-label', 'Close viewer');
   close.style.cssText = 'border:0;background:var(--line);color:var(--ink);border-radius:8px;width:34px;height:34px;font-size:24px;line-height:1;cursor:pointer;';
   close.onclick = closeViewer;
-  actions.append(download, close);
-  header.append(name, actions);
+  actions.append(favoriteBtn, download, close);
+  header.append(headerLeft, actions);
 
-  // ─── Meta bar (type + tags + description) ───────────────────────────────────
+  // ─── Meta bar (type + status + tags + description) ──────────────────────────
   const metaBar = document.createElement('div');
   metaBar.style.cssText = 'flex:none;padding:12px 20px;border-bottom:1px solid var(--line-soft);background:var(--canvas-deep);font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;gap:8px;';
 
-  // Row 1: file type + status + tags
+  // Row 1: file type + content status + tags
   const row1 = document.createElement('div');
   row1.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
 
@@ -101,7 +142,7 @@ export function openViewer(
   typeLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--ink-45);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;';
   const typeSelect = document.createElement('select');
   typeSelect.disabled = !resourceId;
-  typeSelect.style.cssText = 'width:140px;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--ink);outline:none;background:var(--paper);';
+  typeSelect.style.cssText = 'width:130px;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--ink);outline:none;background:var(--paper);';
   FILE_TYPES.forEach(option => {
     const el = document.createElement('option');
     el.value = option.value;
@@ -109,8 +150,20 @@ export function openViewer(
     el.selected = option.value === effectiveType;
     typeSelect.appendChild(el);
   });
-  const typeStatus = document.createElement('span');
-  typeStatus.style.cssText = 'font-size:11px;color:var(--ink-45);white-space:nowrap;';
+
+  const statusLabel = document.createElement('span');
+  statusLabel.textContent = 'Status';
+  statusLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--ink-45);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;margin-left:4px;';
+  const statusSelect = document.createElement('select');
+  statusSelect.disabled = !resourceId;
+  statusSelect.style.cssText = 'width:130px;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--ink);outline:none;background:var(--paper);';
+  STATUS_TYPES.forEach(option => {
+    const el = document.createElement('option');
+    el.value = option.value;
+    el.textContent = option.label;
+    el.selected = option.value === effectiveStatus;
+    statusSelect.appendChild(el);
+  });
 
   const sep = document.createElement('span');
   sep.textContent = '|';
@@ -135,7 +188,7 @@ export function openViewer(
   manualSaveBtn.disabled = !resourceId;
   manualSaveBtn.style.cssText = 'border:1px solid var(--line-soft);background:var(--paper);color:var(--ink);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;display:none;';
 
-  row1.append(typeLabel, typeSelect, typeStatus, sep, tagLabel, tagInput, saveStatus, manualSaveBtn);
+  row1.append(typeLabel, typeSelect, statusLabel, statusSelect, sep, tagLabel, tagInput, saveStatus, manualSaveBtn);
 
   // Row 2: description
   const row2 = document.createElement('div');
@@ -156,36 +209,46 @@ export function openViewer(
   // ─── Auto-save & Manual-save logic ─────────────────────────────────────────
   let lastSavedTags = tagInput.value;
   let lastSavedDesc = descInput.value;
+  let lastSavedStatus = statusSelect.value;
   let savingTimer: number | undefined;
 
   const saveAll = async () => {
     if (!resourceId) return;
     const nextTags = tagInput.value.trim();
     const nextDesc = descInput.value.trim();
-    if (nextTags === lastSavedTags && nextDesc === lastSavedDesc) return;
+    const nextStatus = statusSelect.value as ContentStatus;
+    if (nextTags === lastSavedTags && nextDesc === lastSavedDesc && nextStatus === lastSavedStatus) return;
     
     saveStatus.textContent = 'Saving…';
     manualSaveBtn.disabled = true;
 
     try {
-      const updates: { tags?: string[]; description?: string | null } = {};
+      const updates: { tags?: string[]; description?: string | null; contentStatus?: ContentStatus } = {};
       const parsedTags = nextTags.split(',').map(t => t.trim()).filter(Boolean);
       if (nextTags !== lastSavedTags) updates.tags = parsedTags;
       if (nextDesc !== lastSavedDesc) updates.description = nextDesc || null;
+      if (nextStatus !== lastSavedStatus) updates.contentStatus = nextStatus;
       
       await updateManagedResourceMeta(resourceId, updates);
       
       lastSavedTags = nextTags;
       lastSavedDesc = nextDesc;
+      lastSavedStatus = nextStatus;
       saveStatus.textContent = 'Saved ✓';
       manualSaveBtn.style.display = 'none';
 
-      // Store in memory cache immediately so re-opening modal uses updated data
+      // Update Header Badge
+      const updatedMatch = STATUS_TYPES.find(s => s.value === nextStatus) || STATUS_TYPES[0];
+      statusBadge.className = `px-2 py-0.5 rounded-full text-[10px] font-bold border ${updatedMatch.color}`;
+      statusBadge.textContent = updatedMatch.badge;
+
+      // Store in memory cache immediately
       const prevCached = metadataCache.get(resourceId) || {};
       metadataCache.set(resourceId, {
         ...prevCached,
         description: nextDesc,
         tags: parsedTags,
+        contentStatus: nextStatus,
       });
 
       // Update card attributes in DOM if card exists
@@ -196,7 +259,7 @@ export function openViewer(
       }
 
       window.dispatchEvent(new CustomEvent('vault-resources-changed', {
-        detail: { id: resourceId, tags: updates.tags, description: updates.description }
+        detail: { id: resourceId, tags: updates.tags, description: updates.description, contentStatus: nextStatus }
       }));
       
       setTimeout(() => { if (saveStatus.textContent === 'Saved ✓') saveStatus.textContent = 'Auto-save'; }, 1500);
@@ -211,7 +274,7 @@ export function openViewer(
   manualSaveBtn.onclick = () => { saveAll(); };
 
   const schedSave = () => {
-    const isDirty = tagInput.value.trim() !== lastSavedTags || descInput.value.trim() !== lastSavedDesc;
+    const isDirty = tagInput.value.trim() !== lastSavedTags || descInput.value.trim() !== lastSavedDesc || statusSelect.value !== lastSavedStatus;
     if (isDirty) {
       manualSaveBtn.style.display = 'inline-block';
       manualSaveBtn.disabled = false;
@@ -225,26 +288,18 @@ export function openViewer(
   tagInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (savingTimer) window.clearTimeout(savingTimer); saveAll(); } });
   descInput.addEventListener('input', schedSave);
   descInput.addEventListener('blur', () => { if (savingTimer) window.clearTimeout(savingTimer); saveAll(); });
+  statusSelect.addEventListener('change', schedSave);
 
   const saveType = async () => {
     if (!resourceId) return;
-    typeStatus.textContent = 'Saving…';
     try {
       const nextType = typeSelect.value as ResourceType;
       await updateManagedResourceType(resourceId, nextType);
-      typeStatus.textContent = 'Saved';
-
       const prevCached = metadataCache.get(resourceId) || {};
-      metadataCache.set(resourceId, {
-        ...prevCached,
-        type: nextType,
-      });
-
+      metadataCache.set(resourceId, { ...prevCached, type: nextType });
       window.dispatchEvent(new CustomEvent('vault-resources-changed', { detail: { id: resourceId, type: nextType } }));
-      setTimeout(() => { if (typeStatus.textContent === 'Saved') typeStatus.textContent = ''; }, 1200);
     } catch (error) {
       console.error(error);
-      typeStatus.textContent = 'Could not save';
     }
   };
   typeSelect.addEventListener('change', saveType);
@@ -315,7 +370,9 @@ export function startFileViewerBridge() {
       resourceId,
       cached?.tags ?? JSON.parse(card.getAttribute('data-resource-tags') || '[]'),
       cached?.type ?? ((card.getAttribute('data-resource-type') || 'other') as ResourceType),
-      cached?.description ?? (card.getAttribute('data-resource-description') || '')
+      cached?.description ?? (card.getAttribute('data-resource-description') || ''),
+      cached?.contentStatus ?? 'Active',
+      cached?.version ?? 'v1.0'
     );
   }, true);
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeViewer(); });

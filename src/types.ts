@@ -6,11 +6,16 @@ export type Product = { id: string; name: string; slug: ProductSlug; description
 
 export type ResourceType = 'logo' | 'brochure' | 'video' | 'document' | 'other';
 export type VideoCategory = 'Story' | 'Podcast' | 'Product' | 'People' | 'Event' | 'Brand' | 'Other';
+export type ContentStatus = 'Active' | 'Official' | 'Archived' | 'Deprecated';
 
 export type Resource = {
   id: string; title: string; description?: string; type: ResourceType; productId: string;
   thumbnail?: string; sourceUrl: string; fileFormat?: string; fileSize?: string; tags?: string[];
   videoCategory?: VideoCategory;
+  contentStatus?: ContentStatus;
+  isOfficial?: boolean;
+  version?: string;
+  parentResourceId?: string;
   viewCount: number; downloadCount: number; featured?: boolean; createdAt: string; updatedAt?: string;
 };
 
