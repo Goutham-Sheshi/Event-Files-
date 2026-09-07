@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { products } from './data'
 import { getManagedResources } from './resourcesApi'
-import { getEvents, calculateEventStatus, type ManagedEvent } from './eventsApi'
+import { getEvents, calculateEventStatus, type ManagedEvent, type EventStatus } from './eventsApi'
 import type { Product, Resource, ResourceType } from './types'
 import AdminConsole from './AdminConsole'
 import { getMyProfile, signOut, type VaultProfile } from './authApi'
@@ -175,6 +175,48 @@ function EventCard({ event, hero, onClick }: { event: ManagedEvent; hero?: boole
       </div>
     </div>
   );
+}
+
+
+function EventsPage({ events, onSelectEvent }: { events: ManagedEvent[]; onSelectEvent: (id: string) => void }) {
+  const sorted = [...events].sort((a, b) => {
+    const statusOrder: Record<EventStatus, number> = { ongoing: 0, upcoming: 1, completed: 2 }
+    const diff = statusOrder[calculateEventStatus(a)] - statusOrder[calculateEventStatus(b)]
+    return diff || localDate(a.event_date).getTime() - localDate(b.event_date).getTime()
+  })
+  const current = sorted.filter(e => calculateEventStatus(e) !== 'completed')
+  const completed = sorted.filter(e => calculateEventStatus(e) === 'completed')
+
+  return (
+    <main className="flex-1 overflow-y-auto">
+      <div className="px-8 py-6 max-w-[1400px]">
+        <div className="mb-8">
+          <h1 className="font-display text-[24px] font-bold">Events</h1>
+          <p className="text-[13px] text-[var(--ink-45)] mt-1">Upcoming, ongoing and past events across Sheshi and all product suites.</p>
+        </div>
+
+        {current.length > 0 ? (
+          <section className="mb-10">
+            <h2 className="section-heading mb-4">Current & Upcoming</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {current.map(event => <EventCard key={event.id} event={event} onClick={() => onSelectEvent(event.id)} />)}
+            </div>
+          </section>
+        ) : (
+          <div className="mb-10 py-12 text-center text-[13px] text-[var(--ink-45)] bg-white rounded-2xl border border-[var(--line-soft)]">No current or upcoming events.</div>
+        )}
+
+        {completed.length > 0 && (
+          <section className="pb-8">
+            <h2 className="section-heading mb-4">Past Events</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {completed.map(event => <EventCard key={event.id} event={event} onClick={() => onSelectEvent(event.id)} />)}
+            </div>
+          </section>
+        )}
+      </div>
+    </main>
+  )
 }
 
 function Home({ resources, events, onProduct, onSheshi, onSelectEvent }: { resources: Resource[]; events: ManagedEvent[]; onProduct: (s: string) => void; onSheshi: () => void; onSelectEvent: (id: string) => void }) {
@@ -688,8 +730,21 @@ export default function LiveApp() {
         {view.kind === 'home' && <Home resources={resources} events={events} onProduct={s => setView({ kind: 'product', slug: s })} onSheshi={() => setView({ kind: 'sheshi' })} onSelectEvent={id => setView({ kind: 'event-detail', id })} />}
         {view.kind === 'sheshi' && <SheshiPage resources={resources} />}
         {view.kind === 'product' && (() => { const p = productOf(view.slug); return p ? <ProductPage product={p} resources={resources} /> : <AllResources resources={resources} />; })()}
-        {view.kind === 'events' && <EventPage events={events} resources={resources} onSelectEvent={id => setView({ kind: 'event-detail', id })} />}
-        {view.kind === 'event-detail' && <EventPage events={events} resources={resources} selectedEventId={view.id} onBack={() => setView({ kind: 'events' })} onSelectEvent={id => setView({ kind: 'event-detail', id })} />}
+        {view.kind === 'events' && <EventsPage events={events} onSelectEvent={id => setView({ kind: 'event-detail', id })} />}
+        {view.kind === 'event-detail' && (() => {
+          const event = events.find(e => e.id === view.id)
+          return event ? (
+            <EventPage
+              event={event}
+              profile={profile}
+              isAdmin={isAdmin}
+              onBack={() => setView({ kind: 'events' })}
+              onEventUpdated={loadAll}
+            />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-[13px] text-[var(--ink-45)]">Event not found.</div>
+          )
+        })()}
         {view.kind === 'videos' && <VideosPage resources={resources} />}
         {view.kind === 'favorites' && <FavoritesPage resources={resources} />}
         {view.kind === 'all' && <AllResources resources={resources} />}
