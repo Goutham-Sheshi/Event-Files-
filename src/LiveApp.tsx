@@ -376,6 +376,20 @@ function ResourceListRow({ resource }: { resource: Resource }) {
   )
 }
 
+function isDeckResource(resource: Resource) {
+  const type = String(resource.type || '').toLowerCase()
+  const format = String(resource.fileFormat || '').toLowerCase()
+  const tags = (resource.tags || []).map(tag => String(tag).toLowerCase())
+  const url = String(resource.sourceUrl || '').toLowerCase()
+  const title = String(resource.title || '').toLowerCase()
+
+  return type === 'deck' ||
+    ['ppt', 'pptx', 'powerpoint', 'presentation'].includes(format) ||
+    tags.some(tag => ['deck', 'ppt', 'pptx', 'powerpoint', 'presentation'].includes(tag)) ||
+    /\.(ppt|pptx)(?:[?#].*)?$/.test(url) ||
+    /\b(deck|powerpoint presentation)\b/.test(title)
+}
+
 function SmartResourceExplorer({ items }: { items: Resource[] }) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
@@ -383,10 +397,11 @@ function SmartResourceExplorer({ items }: { items: Resource[] }) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   const typeCounts = useMemo(() => {
-    const counts = { all: items.length, video: 0, logo: 0, brochure: 0, document: 0, other: 0 }
+    const counts = { all: items.length, video: 0, deck: 0, logo: 0, brochure: 0, document: 0, other: 0 }
     items.forEach(r => {
-      if (r.type in counts) { counts[r.type as keyof typeof counts]++ }
-      else { counts.other++ }
+      if (isDeckResource(r)) counts.deck++
+      else if (r.type in counts) counts[r.type as keyof typeof counts]++
+      else counts.other++
     })
     return counts
   }, [items])
@@ -401,7 +416,11 @@ function SmartResourceExplorer({ items }: { items: Resource[] }) {
         (r.tags && r.tags.some(t => t.toLowerCase().includes(search.toLowerCase())))
 
       const matchesType = typeFilter === 'all' ||
-        (typeFilter === 'brand_assets' ? (r.type === 'logo' || r.type === 'brochure') : r.type === typeFilter)
+        (typeFilter === 'brand_assets'
+          ? (r.type === 'logo' || r.type === 'brochure')
+          : typeFilter === 'deck'
+            ? isDeckResource(r)
+            : r.type === typeFilter)
 
       return matchesSearch && matchesType
     })
@@ -482,6 +501,7 @@ function SmartResourceExplorer({ items }: { items: Resource[] }) {
         {[
           { key: 'all', label: `All Files (${typeCounts.all})` },
           { key: 'video', label: `Videos (${typeCounts.video})` },
+          { key: 'deck', label: `Decks (${typeCounts.deck})` },
           { key: 'brand_assets', label: `Brand Assets (${typeCounts.logo + typeCounts.brochure})` },
           { key: 'document', label: `Documents (${typeCounts.document})` },
           { key: 'other', label: `Other (${typeCounts.other})` }
@@ -519,7 +539,7 @@ function SheshiPage({ resources }: { resources: Resource[] }) {
         <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold bg-[#3a2214] text-[#ff5500]">S</div>
         <div>
           <h1 className="font-display text-[24px] font-bold">Sheshi Hub</h1>
-          <p className="text-[13px] text-[var(--ink-45)]">Company files, CEO material, Sheshi information and shared resources.</p>
+          <p className="text-[13px] text-[var(--ink-45)]">Company files, CEO material, decks, Sheshi information and shared resources.</p>
         </div>
       </div>
       <div className="pb-8">
@@ -595,7 +615,7 @@ function AllResources({ resources }: { resources: Resource[] }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="font-display text-[24px] font-bold">All Resources</h1>
-          <p className="text-[13px] text-[var(--ink-45)]">Browse all logos, brochures, documents, and videos across the organization.</p>
+          <p className="text-[13px] text-[var(--ink-45)]">Browse all logos, brochures, decks, documents, and videos across the organization.</p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
