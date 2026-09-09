@@ -18,7 +18,7 @@ export type ResourceInput = {
   featured?: boolean;
 }
 
-const STORAGE_BUCKET='event-assets',SIGNED_URL_TTL=60*30,IMAGE_EXT=/\.(png|jpe?g|gif|webp|svg|avif)(?:[?#].*)?$/i,PDF_EXT=/\.pdf(?:[?#].*)?$/i,PDFJS_VERSION='4.10.38';let pdfjsPromise:Promise<any>|null=null
+const STORAGE_BUCKET='event-assets',SIGNED_URL_TTL=60*60*24*7,IMAGE_EXT=/\.(png|jpe?g|gif|webp|svg|avif)(?:[?#].*)?$/i,PDF_EXT=/\.pdf(?:[?#].*)?$/i,PDFJS_VERSION='4.10.38';let pdfjsPromise:Promise<any>|null=null
 const safeName=(n:string)=>n.toLowerCase().replace(/[^a-z0-9._-]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'')
 const isImageFile=(r:any)=>IMAGE_EXT.test(String(r.source_url||''))||['png','jpg','jpeg','gif','webp','svg','avif'].includes(String(r.file_format||'').toLowerCase())
 const isPdfFile=(r:any)=>PDF_EXT.test(String(r.source_url||''))||String(r.file_format||'').toLowerCase()==='pdf'
@@ -26,6 +26,8 @@ async function getPdfJs(){if(!pdfjsPromise){const u=`https://cdnjs.cloudflare.co
 async function renderPdfPreview(b:Blob){try{const p=await getPdfJs(),pdf=await p.getDocument({data:new Uint8Array(await b.arrayBuffer())}).promise,page=await pdf.getPage(1),base=page.getViewport({scale:1}),v=page.getViewport({scale:Math.min(2,Math.max(.6,900/Math.max(base.width,base.height)))}),c=document.createElement('canvas');c.width=Math.floor(v.width);c.height=Math.floor(v.height);const x=c.getContext('2d',{alpha:false});if(!x)return null;x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);await page.render({canvasContext:x,viewport:v}).promise;return await new Promise<Blob|null>(r=>c.toBlob(r,'image/png',.9))}catch(e){console.warn('Could not generate PDF preview',e);return null}}
 async function uploadPdfPreview(b:Blob,p:string){const q=`${p}.preview.png`,{error}=await supabase.storage.from(STORAGE_BUCKET).upload(q,b,{cacheControl:'31536000',upsert:true,contentType:'image/png'});return error?null:q}
 async function signedUrl(p:string|null|undefined){if(!p||/^https?:\/\//i.test(p))return p||undefined;const{data,error}=await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(p,SIGNED_URL_TTL);return error?undefined:data.signedUrl}
+export async function getFreshResourceUrl(url:string,storagePath?:string){if(storagePath){const fresh=await signedUrl(storagePath);if(fresh)return fresh}return url}
+
 export function getErrorMessage(e:unknown,f='Something went wrong'){if(e instanceof Error&&e.message)return e.message;if(e&&typeof e==='object'){const v=e as Record<string,unknown>;for(const k of['message','error_description','error','details','hint'])if(typeof v[k]==='string'&&v[k])return v[k] as string;try{return JSON.stringify(e)}catch{}}return f}
 export function generateSharePointVideoThumbnail(title: string, isFolder: boolean = false): string {
   const cleanTitle = (title || 'SharePoint Video').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
