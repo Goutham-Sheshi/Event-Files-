@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { products } from './data'
-import { getManagedResources } from './resourcesApi'
+import { getManagedResources, getFreshResourceUrl } from './resourcesApi'
 import { getEvents, calculateEventStatus, type ManagedEvent, type EventStatus } from './eventsApi'
 import type { Product, Resource, ResourceType } from './types'
 import AdminConsole from './AdminConsole'
@@ -60,7 +60,11 @@ function ResourceCard({ resource }: { resource: Resource }) {
       data-resource-type={resource.type}
       data-resource-description={resource.description || ''}
       className="group bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow cursor-pointer relative"
-      onClick={() => { if (resource.sourceUrl) { openViewer(resource.sourceUrl, resource.title, resource.id, (resource.tags || []), resource.type, resource.description || '', resource.contentStatus || 'Active', resource.version || 'v1.0') } }}
+      onClick={async () => {
+        if (!resource.sourceUrl) return;
+        const freshUrl = await getFreshResourceUrl(resource.sourceUrl, (resource as any).storagePath);
+        openViewer(freshUrl, resource.title, resource.id, (resource.tags || []), resource.type, resource.description || '', resource.contentStatus || 'Active', resource.version || 'v1.0');
+      }}
     >
       <div className="h-40 bg-[var(--canvas-deep)] flex items-center justify-center overflow-hidden relative">
         {resource.thumbnail ? (
@@ -107,7 +111,12 @@ function ResourceCard({ resource }: { resource: Resource }) {
         <div className="mt-auto flex justify-between items-center text-[11px]">
           <span className="text-[var(--ink-45)]">{resource.viewCount || 0} views</span>
           {resource.sourceUrl && (
-            <button onClick={(e) => { e.stopPropagation(); if (isVideo) { window.open(resource.sourceUrl!, '_blank', 'noreferrer') } else { triggerDirectDownload(resource.sourceUrl!, resource.title) } }} className="font-semibold text-[var(--ink)] hover:underline border-0 bg-transparent p-0 cursor-pointer">
+            <button onClick={async (e) => {
+              e.stopPropagation();
+              const freshUrl = await getFreshResourceUrl(resource.sourceUrl!, (resource as any).storagePath);
+              if (isVideo) window.open(freshUrl, '_blank', 'noreferrer');
+              else await triggerDirectDownload(freshUrl, resource.title);
+            }} className="font-semibold text-[var(--ink)] hover:underline border-0 bg-transparent p-0 cursor-pointer">
               {isVideo ? 'Open Video' : 'Download'}
             </button>
           )}
