@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { products } from './data'
-import { getManagedResources } from './resourcesApi'
-import { getEvents, calculateEventStatus, type ManagedEvent } from './eventsApi'
+import { getManagedResources, getFreshResourceUrl } from './resourcesApi'
+import { getEvents, calculateEventStatus, type ManagedEvent, type EventStatus } from './eventsApi'
 import type { Product, Resource, ResourceType } from './types'
 import AdminConsole from './AdminConsole'
 import { getMyProfile, signOut, type VaultProfile } from './authApi'
@@ -62,7 +62,11 @@ function ResourceCard({ resource }: { resource: Resource }) {
       data-resource-type={resource.type}
       data-resource-description={resource.description || ''}
       className="group bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden flex flex-col hover:shadow-lg transition-shadow cursor-pointer relative"
-      onClick={() => { if (resource.sourceUrl) { openViewer(resource.sourceUrl, resource.title, resource.id, (resource.tags || []), resource.type, resource.description || '', resource.contentStatus || 'Active', resource.version || 'v1.0') } }}
+      onClick={async () => {
+        if (!resource.sourceUrl) return;
+        const freshUrl = await getFreshResourceUrl(resource.sourceUrl, (resource as any).storagePath);
+        openViewer(freshUrl, resource.title, resource.id, (resource.tags || []), resource.type, resource.description || '', resource.contentStatus || 'Active', resource.version || 'v1.0');
+      }}
     >
       <div className="h-40 bg-[var(--canvas-deep)] flex items-center justify-center overflow-hidden relative">
         {resource.thumbnail ? (
@@ -109,7 +113,12 @@ function ResourceCard({ resource }: { resource: Resource }) {
         <div className="mt-auto flex justify-between items-center text-[11px]">
           <span className="text-[var(--ink-45)]">{resource.viewCount || 0} views</span>
           {resource.sourceUrl && (
-            <button onClick={(e) => { e.stopPropagation(); if (isVideo) { window.open(resource.sourceUrl!, '_blank', 'noreferrer') } else { triggerDirectDownload(resource.sourceUrl!, resource.title) } }} className="font-semibold text-[var(--ink)] hover:underline border-0 bg-transparent p-0 cursor-pointer">
+            <button onClick={async (e) => {
+              e.stopPropagation();
+              const freshUrl = await getFreshResourceUrl(resource.sourceUrl!, (resource as any).storagePath);
+              if (isVideo) window.open(freshUrl, '_blank', 'noreferrer');
+              else await triggerDirectDownload(freshUrl, resource.title);
+            }} className="font-semibold text-[var(--ink)] hover:underline border-0 bg-transparent p-0 cursor-pointer">
               {isVideo ? 'Open Video' : 'Download'}
             </button>
           )}
@@ -177,6 +186,48 @@ function EventCard({ event, hero, onClick }: { event: ManagedEvent; hero?: boole
       </div>
     </div>
   );
+}
+
+
+function EventsPage({ events, onSelectEvent }: { events: ManagedEvent[]; onSelectEvent: (id: string) => void }) {
+  const sorted = [...events].sort((a, b) => {
+    const statusOrder: Record<EventStatus, number> = { ongoing: 0, upcoming: 1, completed: 2 }
+    const diff = statusOrder[calculateEventStatus(a)] - statusOrder[calculateEventStatus(b)]
+    return diff || localDate(a.event_date).getTime() - localDate(b.event_date).getTime()
+  })
+  const current = sorted.filter(e => calculateEventStatus(e) !== 'completed')
+  const completed = sorted.filter(e => calculateEventStatus(e) === 'completed')
+
+  return (
+    <main className="flex-1 overflow-y-auto">
+      <div className="px-8 py-6 max-w-[1400px]">
+        <div className="mb-8">
+          <h1 className="font-display text-[24px] font-bold">Events</h1>
+          <p className="text-[13px] text-[var(--ink-45)] mt-1">Upcoming, ongoing and past events across Sheshi and all product suites.</p>
+        </div>
+
+        {current.length > 0 ? (
+          <section className="mb-10">
+            <h2 className="section-heading mb-4">Current & Upcoming</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {current.map(event => <EventCard key={event.id} event={event} onClick={() => onSelectEvent(event.id)} />)}
+            </div>
+          </section>
+        ) : (
+          <div className="mb-10 py-12 text-center text-[13px] text-[var(--ink-45)] bg-white rounded-2xl border border-[var(--line-soft)]">No current or upcoming events.</div>
+        )}
+
+        {completed.length > 0 && (
+          <section className="pb-8">
+            <h2 className="section-heading mb-4">Past Events</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {completed.map(event => <EventCard key={event.id} event={event} onClick={() => onSelectEvent(event.id)} />)}
+            </div>
+          </section>
+        )}
+      </div>
+    </main>
+  )
 }
 
 function Home({ resources, events, onProduct, onSheshi, onSelectEvent }: { resources: Resource[]; events: ManagedEvent[]; onProduct: (s: string) => void; onSheshi: () => void; onSelectEvent: (id: string) => void }) {
@@ -336,6 +387,20 @@ function ResourceListRow({ resource }: { resource: Resource }) {
   )
 }
 
+function isDeckResource(resource: Resource) {
+  const type = String(resource.type || '').toLowerCase()
+  const format = String(resource.fileFormat || '').toLowerCase()
+  const tags = (resource.tags || []).map(tag => String(tag).toLowerCase())
+  const url = String(resource.sourceUrl || '').toLowerCase()
+  const title = String(resource.title || '').toLowerCase()
+
+  return type === 'deck' ||
+    ['ppt', 'pptx', 'powerpoint', 'presentation'].includes(format) ||
+    tags.some(tag => ['deck', 'ppt', 'pptx', 'powerpoint', 'presentation'].includes(tag)) ||
+    /\.(ppt|pptx)(?:[?#].*)?$/.test(url) ||
+    /\b(deck|powerpoint presentation)\b/.test(title)
+}
+
 function SmartResourceExplorer({ items }: { items: Resource[] }) {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
@@ -343,10 +408,11 @@ function SmartResourceExplorer({ items }: { items: Resource[] }) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   const typeCounts = useMemo(() => {
-    const counts = { all: items.length, video: 0, logo: 0, brochure: 0, document: 0, other: 0 }
+    const counts = { all: items.length, video: 0, deck: 0, logo: 0, brochure: 0, document: 0, other: 0 }
     items.forEach(r => {
-      if (r.type in counts) { counts[r.type as keyof typeof counts]++ }
-      else { counts.other++ }
+      if (isDeckResource(r)) counts.deck++
+      else if (r.type in counts) counts[r.type as keyof typeof counts]++
+      else counts.other++
     })
     return counts
   }, [items])
@@ -361,7 +427,11 @@ function SmartResourceExplorer({ items }: { items: Resource[] }) {
         (r.tags && r.tags.some(t => t.toLowerCase().includes(search.toLowerCase())))
 
       const matchesType = typeFilter === 'all' ||
-        (typeFilter === 'brand_assets' ? (r.type === 'logo' || r.type === 'brochure') : r.type === typeFilter)
+        (typeFilter === 'brand_assets'
+          ? (r.type === 'logo' || r.type === 'brochure')
+          : typeFilter === 'deck'
+            ? isDeckResource(r)
+            : r.type === typeFilter)
 
       return matchesSearch && matchesType
     })
@@ -442,6 +512,7 @@ function SmartResourceExplorer({ items }: { items: Resource[] }) {
         {[
           { key: 'all', label: `All Files (${typeCounts.all})` },
           { key: 'video', label: `Videos (${typeCounts.video})` },
+          { key: 'deck', label: `Decks (${typeCounts.deck})` },
           { key: 'brand_assets', label: `Brand Assets (${typeCounts.logo + typeCounts.brochure})` },
           { key: 'document', label: `Documents (${typeCounts.document})` },
           { key: 'other', label: `Other (${typeCounts.other})` }
@@ -479,7 +550,7 @@ function SheshiPage({ resources }: { resources: Resource[] }) {
         <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold bg-[#3a2214] text-[#ff5500]">S</div>
         <div>
           <h1 className="font-display text-[24px] font-bold">Sheshi Hub</h1>
-          <p className="text-[13px] text-[var(--ink-45)]">Company files, CEO material, Sheshi information and shared resources.</p>
+          <p className="text-[13px] text-[var(--ink-45)]">Company files, CEO material, decks, Sheshi information and shared resources.</p>
         </div>
       </div>
       <div className="pb-8">
@@ -555,7 +626,7 @@ function AllResources({ resources }: { resources: Resource[] }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="font-display text-[24px] font-bold">All Resources</h1>
-          <p className="text-[13px] text-[var(--ink-45)]">Browse all logos, brochures, documents, and videos across the organization.</p>
+          <p className="text-[13px] text-[var(--ink-45)]">Browse all logos, brochures, decks, documents, and videos across the organization.</p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -727,8 +798,21 @@ export default function LiveApp() {
         {view.kind === 'home' && <Home resources={resources} events={events} onProduct={s => setView({ kind: 'product', slug: s })} onSheshi={() => setView({ kind: 'sheshi' })} onSelectEvent={id => setView({ kind: 'event-detail', id })} />}
         {view.kind === 'sheshi' && <SheshiPage resources={resources} />}
         {view.kind === 'product' && (() => { const p = productOf(view.slug); return p ? <ProductPage product={p} resources={resources} /> : <AllResources resources={resources} />; })()}
-        {view.kind === 'events' && <EventPage events={events} resources={resources} onSelectEvent={id => setView({ kind: 'event-detail', id })} />}
-        {view.kind === 'event-detail' && <EventPage events={events} resources={resources} selectedEventId={view.id} onBack={() => setView({ kind: 'events' })} onSelectEvent={id => setView({ kind: 'event-detail', id })} />}
+        {view.kind === 'events' && <EventsPage events={events} onSelectEvent={id => setView({ kind: 'event-detail', id })} />}
+        {view.kind === 'event-detail' && (() => {
+          const event = events.find(e => e.id === view.id)
+          return event ? (
+            <EventPage
+              event={event}
+              profile={profile}
+              isAdmin={isAdmin}
+              onBack={() => setView({ kind: 'events' })}
+              onEventUpdated={loadAll}
+            />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-[13px] text-[var(--ink-45)]">Event not found.</div>
+          )
+        })()}
         {view.kind === 'videos' && <VideosPage resources={resources} />}
         {view.kind === 'favorites' && <FavoritesPage resources={resources} />}
         {view.kind === 'all' && <AllResources resources={resources} />}

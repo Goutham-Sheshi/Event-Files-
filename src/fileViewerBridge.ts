@@ -11,6 +11,7 @@ const FILE_TYPES: { value: ResourceType; label: string }[] = [
   { value: 'logo', label: 'Brand Asset' },
   { value: 'brochure', label: 'Brochure' },
   { value: 'video', label: 'Video' },
+  { value: 'deck', label: 'Deck' },
   { value: 'document', label: 'Document' },
   { value: 'other', label: 'Other' },
 ];
