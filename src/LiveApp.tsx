@@ -12,6 +12,8 @@ import { openViewer } from './fileViewerBridge'
 import EventPage from './components/EventPage'
 import VideosPage, { VideoCard } from './components/VideosPage'
 import { getFavoriteIds, isFavoriteId, toggleFavoriteId } from './favoritesApi'
+import CommandPalette from './components/CommandPalette'
+import MultiStepUploadModal from './components/MultiStepUploadModal'
 
 const Icon = ({ children }: { children: React.ReactNode }) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
 const HomeIcon = () => <Icon><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M9 22v-8h6v8" /></Icon>
@@ -29,8 +31,17 @@ const StarIcon = ({ filled }: { filled?: boolean }) => (
   </svg>
 )
 const Chevron = ({ open }: { open: boolean }) => <span style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .15s' }}>›</span>
+const FigmaIcon = () => (
+  <Icon>
+    <path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H12v7H8.5A3.5 3.5 0 0 1 5 5.5z" />
+    <path d="M12 2h3.5a3.5 3.5 0 1 1 0 7H12V2z" />
+    <path d="M12 12.5a3.5 3.5 0 1 1 7 0 3.5 3.5 0 1 1-7 0z" />
+    <path d="M5 19.5A3.5 3.5 0 0 1 8.5 16H12v3.5a3.5 3.5 0 1 1-7 0z" />
+    <path d="M5 12.5A3.5 3.5 0 0 1 8.5 9H12v7H8.5A3.5 3.5 0 0 1 5 12.5z" />
+  </Icon>
+)
 
-type View = { kind: 'home' } | { kind: 'product'; slug: string } | { kind: 'sheshi' } | { kind: 'all' } | { kind: 'events' } | { kind: 'videos' } | { kind: 'favorites' } | { kind: 'admin' } | { kind: 'event-detail'; id: string }
+type View = { kind: 'home' } | { kind: 'product'; slug: string } | { kind: 'sheshi' } | { kind: 'all' } | { kind: 'events' } | { kind: 'videos' } | { kind: 'favorites' } | { kind: 'admin' } | { kind: 'event-detail'; id: string } | { kind: 'figma-plugin' }
 const SHESHI_ID = 'sheshi'
 const productOf = (id: string) => products.find(p => p.id === id || p.slug === id)
 const localDate = (v: string) => { const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(v) }
@@ -684,6 +695,15 @@ function Sidebar({ view, onView, isAdmin, profile, onSignOut, onOpenAuth }: { vi
         </button>
 
         <button title="All Resources" onClick={() => onView({ kind: 'all' })} className={nav(view.kind === 'all')}><DownloadIcon />{label('All Resources')}</button>
+        <button title="Figma Plugin" onClick={() => onView({ kind: 'figma-plugin' })} className={nav(view.kind === 'figma-plugin')}>
+          <FigmaIcon />
+          {!collapsed && (
+            <span className="flex-1 flex items-center justify-between">
+              <span>Figma Plugin</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-indigo-500/15 text-indigo-400 font-bold text-[10px] border border-indigo-500/20">PPT</span>
+            </span>
+          )}
+        </button>
         {isAdmin && <div className="mt-2 pt-2 border-t border-[var(--line-soft)]"><button title="Admin" onClick={() => onView({ kind: 'admin' })} className={nav(view.kind === 'admin')}><ShieldIcon />{label('Admin')}</button></div>}
         {isAdvanced && !isAdmin && <div className="mt-2 pt-2 border-t border-[var(--line-soft)]"><button title="Upload Files" onClick={() => onView({ kind: 'admin' })} className={nav(view.kind === 'admin')}><ShieldIcon />{label('Upload Files')}</button></div>}
       </nav>
@@ -692,6 +712,92 @@ function Sidebar({ view, onView, isAdmin, profile, onSignOut, onOpenAuth }: { vi
         {profile ? <div className="flex flex-col gap-2">{!collapsed && <div className="px-1"><div className="text-[12.5px] font-semibold text-[var(--ink)] truncate">{profile.full_name || profile.email}</div><div className="text-[11px] text-[var(--ink-45)] truncate flex items-center justify-between mt-0.5"><span>{profile.email}</span>{profile.role !== 'teammate' && <span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold uppercase ${profile.role === 'admin' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700'}`}>{profile.role}</span>}</div></div>}<button onClick={onSignOut} className="w-full py-1.5 px-3 rounded-lg border border-[var(--line-soft)] text-[12px] font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">Sign Out</button></div> : <div className="flex flex-col gap-2">{!collapsed && <div className="text-[11px] text-[var(--ink-45)] px-1">Sign in to access admin features and private resources.</div>}<button onClick={() => onOpenAuth('login')} className="w-full py-2 px-3 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold hover:opacity-90 transition-opacity cursor-pointer">Sign In / Register</button></div>}
       </div>
     </aside>
+  )
+}
+
+function FigmaPluginPage() {
+  const base = import.meta.env.BASE_URL || '/'
+  const cleanBase = base.endsWith('/') ? base : `${base}/`
+  const pluginUrl = `${cleanBase}figma-plugin/`
+  const zipUrl = `${cleanBase}figma-plugin/sheshi-frame-to-pptx.zip`
+
+  return (
+    <div className="flex-1 overflow-y-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto flex flex-col gap-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--card)] border border-[var(--line-soft)] rounded-2xl p-6 shadow-sm">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                OFFICIAL TOOL
+              </span>
+              <span className="text-[12px] text-[var(--ink-45)]">Auto-Updates via GitHub Pages</span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold font-display text-[var(--ink)]">Sheshi Frame to PPTX Converter</h1>
+            <p className="text-sm text-[var(--ink-70)] mt-1.5 max-w-2xl">
+              Export Figma frames into Microsoft PowerPoint presentations in seconds with pixel-perfect resolution, custom aspect ratios, and auto-updating cloud hosting.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <a
+              href={zipUrl}
+              download="sheshi-frame-to-pptx.zip"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--primary)] text-white text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm"
+            >
+              <DownloadIcon />
+              <span>Download Plugin (.zip)</span>
+            </a>
+            <a
+              href={pluginUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--line-soft)] text-[var(--ink)] text-sm font-semibold hover:bg-[var(--canvas)] transition-colors"
+            >
+              <span>Open in New Tab ↗</span>
+            </a>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-[var(--card)] border border-[var(--line-soft)] rounded-xl p-4 flex flex-col gap-1.5">
+            <div className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">Step 1</div>
+            <div className="text-sm font-semibold text-[var(--ink)]">Download & Unzip</div>
+            <p className="text-xs text-[var(--ink-45)] leading-relaxed">
+              Click <strong>Download Plugin (.zip)</strong> and extract the folder on your computer.
+            </p>
+          </div>
+          <div className="bg-[var(--card)] border border-[var(--line-soft)] rounded-xl p-4 flex flex-col gap-1.5">
+            <div className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">Step 2</div>
+            <div className="text-sm font-semibold text-[var(--ink)]">Import into Figma Desktop</div>
+            <p className="text-xs text-[var(--ink-45)] leading-relaxed">
+              In Figma Desktop: Right-click canvas ➔ <strong>Plugins</strong> ➔ <strong>Development</strong> ➔ <strong>Import plugin from manifest...</strong>
+            </p>
+          </div>
+          <div className="bg-[var(--card)] border border-[var(--line-soft)] rounded-xl p-4 flex flex-col gap-1.5">
+            <div className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">Step 3</div>
+            <div className="text-sm font-semibold text-[var(--ink)]">Auto-Updates Forever</div>
+            <p className="text-xs text-[var(--ink-45)] leading-relaxed">
+              Any code pushed to GitHub updates your installed Figma plugin instantly without reinstalling.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-[#121316] border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col" style={{ minHeight: '680px' }}>
+          <div className="px-4 py-2.5 bg-[#181920] border-b border-white/10 flex items-center justify-between text-xs text-gray-400">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+              <span className="font-semibold text-gray-200">Interactive Plugin Preview</span>
+            </div>
+            <span className="text-[11px] text-gray-400 font-mono">{pluginUrl}</span>
+          </div>
+          <iframe
+            src={pluginUrl}
+            className="w-full flex-1 border-none"
+            style={{ minHeight: '640px' }}
+            title="Sheshi Frame to PPTX Web Application"
+          />
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -705,6 +811,10 @@ export default function LiveApp() {
   const [dbError, setDbError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('login');
+
+  // Modern UI Modal States
+  const [showCmdPalette, setShowCmdPalette] = useState(false);
+  const [showMultiStepUpload, setShowMultiStepUpload] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -745,15 +855,48 @@ export default function LiveApp() {
   }, []);
 
   const handleSignOut = async () => { await signOut(); setView({ kind: 'home' }); };
+  const canUpload = profile && profile.status === 'approved' && (profile.role === 'admin' || profile.role === 'advanced' || profile.role === 'teammate');
 
   if (authLoading) {
-    return <div className="flex h-screen w-screen items-center justify-center bg-[var(--canvas)]"><div className="w-8 h-8 rounded-full border-2 border-[var(--primary)] border-t-transparent animate-spin" /></div>
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[var(--canvas)]">
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 rounded-full border-3 border-[var(--primary)] border-t-transparent animate-spin mx-auto" />
+          <div className="text-[12px] font-mono text-[var(--ink-45)]">Loading Sheshi Vault...</div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[var(--canvas)] text-[var(--ink)]">
       <Sidebar view={view} onView={setView} isAdmin={isAdmin} profile={profile} onSignOut={handleSignOut} onOpenAuth={(mode) => { setAuthMode(mode); setShowAuthModal(true); }} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {/* Top Header Control Bar */}
+        <header className="h-16 border-b border-[var(--line-soft)] bg-[var(--paper)] px-6 flex items-center justify-between gap-4 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowCmdPalette(true)}
+            className="flex items-center gap-3 bg-[var(--canvas-deep)] hover:bg-[var(--canvas)] border border-[var(--line-soft)] rounded-xl px-3.5 py-2 text-[12.5px] text-[var(--ink-45)] transition-all cursor-pointer w-full max-w-md"
+          >
+            <SearchIcon />
+            <span className="flex-1 text-left">Search resources, events, videos...</span>
+            <kbd className="px-2 py-0.5 rounded bg-[var(--canvas)] text-[10px] font-mono font-bold text-[var(--ink-70)] border border-[var(--line-soft)]">⌘K</kbd>
+          </button>
+
+          <div className="flex items-center gap-3">
+            {canUpload && (
+              <button
+                type="button"
+                onClick={() => setShowMultiStepUpload(true)}
+                className="px-4 py-2 rounded-xl bg-[var(--primary)] text-white text-[12.5px] font-semibold hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-2 shadow-xs"
+              >
+                <span>+ Upload Asset</span>
+              </button>
+            )}
+          </div>
+        </header>
+
         {dbError && <div className="bg-red-500/10 border-b border-red-500/20 text-red-400 px-6 py-2 text-[12px] flex justify-between items-center"><span>{dbError}</span><button onClick={loadAll} className="underline">Retry</button></div>}
 
         {view.kind === 'home' && <Home resources={resources} events={events} onProduct={s => setView({ kind: 'product', slug: s })} onSheshi={() => setView({ kind: 'sheshi' })} onSelectEvent={id => setView({ kind: 'event-detail', id })} />}
@@ -777,8 +920,28 @@ export default function LiveApp() {
         {view.kind === 'videos' && <VideosPage resources={resources} />}
         {view.kind === 'favorites' && <FavoritesPage resources={resources} />}
         {view.kind === 'all' && <AllResources resources={resources} />}
+        {view.kind === 'figma-plugin' && <FigmaPluginPage />}
         {view.kind === 'admin' && <AdminConsole />}
       </div>
+
+      {/* Global Command Palette (Cmd+K) */}
+      <CommandPalette
+        isOpen={showCmdPalette}
+        onClose={() => setShowCmdPalette(false)}
+        resources={resources}
+        events={events}
+        onSelectProduct={slug => setView({ kind: 'product', slug })}
+        onSelectEvent={id => setView({ kind: 'event-detail', id })}
+      />
+
+      {/* Guided Multi-Step Upload Modal */}
+      <MultiStepUploadModal
+        isOpen={showMultiStepUpload}
+        onClose={() => setShowMultiStepUpload(false)}
+        onUploadComplete={() => {
+          loadAll();
+        }}
+      />
 
       <AuthScreen isOpen={showAuthModal} initialMode={authMode} onClose={() => setShowAuthModal(false)} onSuccess={async () => { setShowAuthModal(false); await fetchProfile(); await loadAll(); }} />
     </div>
