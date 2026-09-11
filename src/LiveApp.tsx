@@ -25,6 +25,15 @@ const FileIcon = () => <Icon><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a
 const CompanyIcon = () => <Icon><path d="M4 21V7l8-4 8 4v14" /><path d="M8 21v-5h8v5M8 10h.01M12 10h.01M16 10h.01" /></Icon>
 const PanelIcon = ({ collapsed }: { collapsed: boolean }) => <Icon><rect x="3" y="4" width="18" height="16" rx="2" /><path d={collapsed ? 'M14 8l4 4-4 4' : 'M10 8l-4 4 4 4'} /><path d="M9 4v16" /></Icon>
 const PlayIcon = () => <Icon><path d="m8 5 11 7-11 7z" /></Icon>
+const FigmaIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 5.5A3.5 3.5 0 0 1 8.5 2H12v7H8.5A3.5 3.5 0 0 1 5 5.5z" />
+    <path d="M12 2h3.5a3.5 3.5 0 1 1 0 7H12V2z" />
+    <path d="M12 12.5a3.5 3.5 0 1 1 7 0 3.5 3.5 0 1 1-7 0z" />
+    <path d="M5 19.5A3.5 3.5 0 0 1 8.5 16H12v3.5a3.5 3.5 0 1 1-7 0z" />
+    <path d="M5 12.5A3.5 3.5 0 0 1 8.5 9H12v7H8.5A3.5 3.5 0 0 1 5 12.5z" />
+  </svg>
+)
 const StarIcon = ({ filled }: { filled?: boolean }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -32,7 +41,7 @@ const StarIcon = ({ filled }: { filled?: boolean }) => (
 )
 const Chevron = ({ open }: { open: boolean }) => <span style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .15s' }}>›</span>
 
-type View = { kind: 'home' } | { kind: 'product'; slug: string } | { kind: 'sheshi' } | { kind: 'all' } | { kind: 'events' } | { kind: 'videos' } | { kind: 'favorites' } | { kind: 'admin' } | { kind: 'event-detail'; id: string }
+type View = { kind: 'home' } | { kind: 'product'; slug: string } | { kind: 'sheshi' } | { kind: 'all' } | { kind: 'events' } | { kind: 'videos' } | { kind: 'favorites' } | { kind: 'figma-plugin' } | { kind: 'admin' } | { kind: 'event-detail'; id: string }
 const SHESHI_ID = 'sheshi'
 const productOf = (id: string) => products.find(p => p.id === id || p.slug === id)
 const localDate = (v: string) => { const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(v) }
@@ -642,6 +651,92 @@ function AllResources({ resources }: { resources: Resource[] }) {
   </main>
 }
 
+function FigmaPluginPage() {
+  const pluginZipUrl = (import.meta as any).env?.BASE_URL 
+    ? `${(import.meta as any).env.BASE_URL}figma-plugin/sheshi-frame-to-pptx.zip`
+    : '/figma-plugin/sheshi-frame-to-pptx.zip';
+  const standaloneUrl = (import.meta as any).env?.BASE_URL
+    ? `${(import.meta as any).env.BASE_URL}figma-plugin/index.html`
+    : '/figma-plugin/index.html';
+
+  return (
+    <main className="flex-1 overflow-y-auto bg-[var(--canvas)]">
+      <div className="px-8 py-6 max-w-[1400px]">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="font-display text-[24px] font-bold">Figma Frame to PPTX Plugin</h1>
+              <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-orange-500/15 text-orange-500 border border-orange-500/30">
+                Official Plugin
+              </span>
+            </div>
+            <p className="text-[13px] text-[var(--ink-45)] mt-1">
+              Convert any Figma frame into crisp, widescreen PowerPoint (.pptx) presentation slides. Auto-updates directly from this platform!
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <a
+              href={pluginZipUrl}
+              download="sheshi-frame-to-pptx.zip"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--primary)] text-white text-[13px] font-semibold hover:opacity-90 shadow-sm transition-all"
+            >
+              <DownloadIcon />
+              Download Plugin (.zip)
+            </a>
+            <a
+              href={standaloneUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[var(--line-soft)] text-[13px] font-medium text-[var(--ink-70)] hover:bg-[var(--canvas-deep)] transition-colors"
+            >
+              Open Fullscreen ↗
+            </a>
+          </div>
+        </div>
+
+        {/* Quick Instructions Banner */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="p-4 rounded-xl bg-white border border-[var(--line-soft)] shadow-xs">
+            <div className="w-7 h-7 rounded-lg bg-orange-500/10 text-orange-500 font-bold text-[13px] flex items-center justify-center mb-2">1</div>
+            <div className="text-[13px] font-semibold text-[var(--ink)]">Download & Unzip</div>
+            <div className="text-[12px] text-[var(--ink-45)] mt-0.5">Click the Download Plugin button above to get the plugin bundle folder.</div>
+          </div>
+          <div className="p-4 rounded-xl bg-white border border-[var(--line-soft)] shadow-xs">
+            <div className="w-7 h-7 rounded-lg bg-orange-500/10 text-orange-500 font-bold text-[13px] flex items-center justify-center mb-2">2</div>
+            <div className="text-[13px] font-semibold text-[var(--ink)]">Import into Figma</div>
+            <div className="text-[12px] text-[var(--ink-45)] mt-0.5">In Figma Desktop: Right-click canvas ➔ <strong>Plugins ➔ Development ➔ Import plugin from manifest...</strong> and choose <code>manifest.json</code>.</div>
+          </div>
+          <div className="p-4 rounded-xl bg-white border border-[var(--line-soft)] shadow-xs">
+            <div className="w-7 h-7 rounded-lg bg-orange-500/10 text-orange-500 font-bold text-[13px] flex items-center justify-center mb-2">3</div>
+            <div className="text-[13px] font-semibold text-[var(--ink)]">Select Frames & Convert</div>
+            <div className="text-[12px] text-[var(--ink-45)] mt-0.5">Select your slides in Figma, run the plugin, and download your ready-to-present PowerPoint deck.</div>
+          </div>
+        </div>
+
+        {/* Live Interactive Converter Embed */}
+        <div className="rounded-2xl overflow-hidden border border-[var(--line-soft)] shadow-md bg-[#121316]">
+          <div className="px-4 py-2.5 bg-[#181920] border-b border-white/10 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-red-500/60 inline-block"></span>
+              <span className="w-3 h-3 rounded-full bg-yellow-500/60 inline-block"></span>
+              <span className="w-3 h-3 rounded-full bg-green-500/60 inline-block"></span>
+              <span className="text-[12px] text-gray-400 font-mono ml-2">Sheshi Frame to PPTX Web Engine</span>
+            </div>
+            <span className="text-[11px] text-indigo-400 font-medium">Live Hosted • Auto-updates on push</span>
+          </div>
+          <iframe
+            src={standaloneUrl}
+            title="Sheshi Frame to PPTX Converter"
+            className="w-full h-[720px] border-none"
+          />
+        </div>
+      </div>
+    </main>
+  );
+}
+
 function Sidebar({ view, onView, isAdmin, profile, onSignOut, onOpenAuth }: { view: View; onView: (v: View) => void; isAdmin: boolean; profile: VaultProfile | null; onSignOut: () => void; onOpenAuth: (mode: AuthMode) => void }) {
   const [open, setOpen] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
@@ -686,6 +781,11 @@ function Sidebar({ view, onView, isAdmin, profile, onSignOut, onOpenAuth }: { vi
         </button>
 
         <button title="All Resources" onClick={() => onView({ kind: 'all' })} className={nav(view.kind === 'all')}><DownloadIcon />{label('All Resources')}</button>
+        <button title="Figma Plugin" onClick={() => onView({ kind: 'figma-plugin' })} className={nav(view.kind === 'figma-plugin')}>
+          <FigmaIcon />
+          {label('Figma Plugin')}
+          {!collapsed && <span className="ml-auto text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-500 border border-orange-500/30">New</span>}
+        </button>
         {isAdmin && <div className="mt-2 pt-2 border-t border-[var(--line-soft)]"><button title="Admin" onClick={() => onView({ kind: 'admin' })} className={nav(view.kind === 'admin')}><ShieldIcon />{label('Admin')}</button></div>}
         {isAdvanced && !isAdmin && <div className="mt-2 pt-2 border-t border-[var(--line-soft)]"><button title="Upload Files" onClick={() => onView({ kind: 'admin' })} className={nav(view.kind === 'admin')}><ShieldIcon />{label('Upload Files')}</button></div>}
       </nav>
@@ -698,7 +798,14 @@ function Sidebar({ view, onView, isAdmin, profile, onSignOut, onOpenAuth }: { vi
 }
 
 export default function LiveApp() {
-  const [view, setView] = useState<View>({ kind: 'home' });
+  const [view, setView] = useState<View>(() => {
+    if (typeof window !== 'undefined') {
+      const p = window.location.pathname.toLowerCase();
+      const h = window.location.hash.toLowerCase();
+      if (p.includes('figma') || h.includes('figma')) return { kind: 'figma-plugin' };
+    }
+    return { kind: 'home' };
+  });
   const [resources, setResources] = useState<Resource[]>([]);
   const [events, setEvents] = useState<ManagedEvent[]>([]);
   const [profile, setProfile] = useState<VaultProfile | null>(null);
@@ -816,6 +923,7 @@ export default function LiveApp() {
         {view.kind === 'videos' && <VideosPage resources={resources} />}
         {view.kind === 'favorites' && <FavoritesPage resources={resources} />}
         {view.kind === 'all' && <AllResources resources={resources} />}
+        {view.kind === 'figma-plugin' && <FigmaPluginPage />}
         {view.kind === 'admin' && <AdminConsole />}
       </div>
 
