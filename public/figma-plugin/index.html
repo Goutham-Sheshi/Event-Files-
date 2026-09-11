@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sheshi Frame to PPTX Converter</title>
+  <link rel="stylesheet" href="./style.css">
+  <!-- Bundled local PptxGenJS (Self-contained, 100% offline-resilient) -->
+  <script src="./libs/pptxgen.bundle.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4zm2 0v12h12V4H6zm3 3h6v2H9V7zm0 4h6v2H9v-2zm-3 8h12v2H6v-2z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">Frame to PPTX</div>
+      </div>
+      <span class="brand-tag">v1.0</span>
+    </div>
+    <div class="header-actions">
+      <a href="./sheshi-frame-to-pptx.zip" download="sheshi-frame-to-pptx.zip" class="btn-download-zip" title="Download Plugin files for Figma Desktop">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
+        </svg>
+        Plugin .zip
+      </a>
+      <button class="btn-icon" id="btn-refresh" title="Rescan Figma Canvas">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-indicator">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-label">Connecting...</span>
+    </div>
+    <div class="page-indicator" id="page-name-display">Active Canvas</div>
+  </div>
+
+  <!-- Main Container -->
+  <main class="app-container">
+    <!-- Web Browser Notice (Hidden when running inside Figma) -->
+    <div class="web-mode-notice" id="web-notice" style="display: none;">
+      <div class="web-mode-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#a5b4fc">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+        </svg>
+        <span>First-time setup for Figma Desktop</span>
+      </div>
+      <p class="web-mode-text">
+        You are viewing the hosted plugin web app! Download the plugin ZIP, unzip it, and in Figma Desktop choose <strong>Plugins ➔ Development ➔ Import plugin from manifest...</strong>.
+      </p>
+      <a href="./sheshi-frame-to-pptx.zip" download="sheshi-frame-to-pptx.zip" class="web-mode-action">
+        Download Plugin Package (.zip) &rarr;
+      </a>
+    </div>
+
+    <!-- Frame Selection Section -->
+    <section>
+      <div class="section-header">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span class="section-title">Slides</span>
+          <span class="badge-count" id="slide-count-badge">0</span>
+        </div>
+        <div class="batch-controls">
+          <button class="text-btn" id="btn-select-all">Select All</button>
+          <button class="text-btn" id="btn-deselect-all">Deselect All</button>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h10v2H7zm0-3h10v2H7zm0 6h7v2H7z"/>
+          </svg>
+        </div>
+        <div class="empty-title">No Frames Found</div>
+        <div class="empty-desc">Create or select frames on your Figma canvas, then click refresh.</div>
+      </div>
+
+      <!-- Slides List -->
+      <div class="slides-list" id="slides-list" style="display: none;"></div>
+    </section>
+
+    <!-- Export & Presentation Settings -->
+    <section class="settings-card">
+      <div class="form-group">
+        <label class="form-label" for="deck-title">
+          <span>Presentation Title</span>
+        </label>
+        <input type="text" id="deck-title" class="form-input" placeholder="e.g. Q4 Strategy Presentation" value="Figma Presentation">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <span>Slide Aspect Ratio</span>
+        </label>
+        <div class="segmented-control" id="ratio-selector">
+          <div class="segment-option active" data-ratio="16:9">16:9 Widescreen</div>
+          <div class="segment-option" data-ratio="4:3">4:3 Standard</div>
+          <div class="segment-option" data-ratio="custom">Match Frame</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <span>Export Quality (DPI)</span>
+        </label>
+        <div class="segmented-control" id="quality-selector">
+          <div class="segment-option" data-scale="1">1x (Fast)</div>
+          <div class="segment-option active" data-scale="2">2x (Retina HD)</div>
+          <div class="segment-option" data-scale="3">3x (Ultra HD)</div>
+        </div>
+      </div>
+
+      <div class="toggle-row" id="toggle-bg-row">
+        <span class="toggle-label">Match Frame Background Color</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="match-bg" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row" id="toggle-notes-row">
+        <span class="toggle-label">Include Speaker Notes</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="include-notes" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- Progress Card -->
+    <div class="progress-card" id="progress-card">
+      <div class="progress-header">
+        <span id="progress-title">Exporting Slides...</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-status" id="progress-status">Preparing frames...</div>
+    </div>
+
+    <!-- Success Notification Card -->
+    <div class="success-card" id="success-card">
+      <div class="success-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+      </div>
+      <div class="success-title">PowerPoint File Created!</div>
+      <div class="success-details" id="success-details">
+        Your presentation has been generated and downloaded.
+      </div>
+      <button class="btn-primary" id="btn-download-again" style="margin-top: 6px; padding: 8px 16px; font-size: 11px;">
+        Download Again
+      </button>
+    </div>
+
+    <!-- Action Button -->
+    <button class="btn-primary" id="btn-convert">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+      </svg>
+      <span id="btn-convert-label">Convert & Download PPTX</span>
+    </button>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <span>Sheshi Vault Ecosystem</span>
+    <span style="display: flex; gap: 8px;">
+      <a href="../" class="footer-link" target="_blank">Open Vault</a>
+      <span>•</span>
+      <span>Auto-Updates Live</span>
+    </span>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>

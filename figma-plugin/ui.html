@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sheshi Frame to PPTX</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #121316;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #f3f4f6;
+    }
+    #app-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: none;
+    }
+    #loader-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 24px;
+      text-align: center;
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(99, 102, 241, 0.2);
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .loading-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f3f4f6;
+      margin-bottom: 6px;
+    }
+    .loading-sub {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 20px;
+    }
+    .error-box {
+      display: none;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #fca5a5;
+      margin-bottom: 16px;
+      max-width: 360px;
+    }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    button:hover {
+      background: #4338ca;
+    }
+    button.secondary {
+      background: #27272a;
+      color: #d4d4d8;
+    }
+    button.secondary:hover {
+      background: #3f3f46;
+    }
+  </style>
+</head>
+<body>
+  <div id="loader-container">
+    <div class="spinner" id="spinner"></div>
+    <div class="loading-title">Connecting to Sheshi Frame to PPTX</div>
+    <div class="loading-sub" id="status-text">Fetching latest version from GitHub Pages...</div>
+    <div class="error-box" id="error-box"></div>
+    <div class="btn-group" id="fallback-btns" style="display: none;">
+      <button onclick="reloadFrame()">Retry Connection</button>
+      <button class="secondary" onclick="toggleLocalhost()">Use Localhost (Dev)</button>
+    </div>
+  </div>
+
+  <iframe id="app-frame" allow="clipboard-write"></iframe>
+
+  <script>
+    const PROD_URL = 'https://goutham-sheshi.github.io/Event-Files-/figma-plugin/';
+    const DEV_URL = 'http://localhost:8443/figma-plugin/';
+
+    let targetUrl = PROD_URL;
+    let loadTimeout = null;
+    let pendingFigmaMessages = [];
+
+    const frame = document.getElementById('app-frame');
+    const loaderContainer = document.getElementById('loader-container');
+    const spinner = document.getElementById('spinner');
+    const statusText = document.getElementById('status-text');
+    const errorBox = document.getElementById('error-box');
+    const fallbackBtns = document.getElementById('fallback-btns');
+
+    function loadApp(url) {
+      targetUrl = url;
+      frame.style.display = 'none';
+      loaderContainer.style.display = 'flex';
+      spinner.style.display = 'block';
+      errorBox.style.display = 'none';
+      fallbackBtns.style.display = 'none';
+      statusText.textContent = `Connecting to ${url}...`;
+
+      frame.src = url;
+
+      // Timeout safety in case network is down
+      clearTimeout(loadTimeout);
+      loadTimeout = setTimeout(() => {
+        if (frame.style.display !== 'block') {
+          spinner.style.display = 'none';
+          statusText.textContent = 'Connection timeout';
+          errorBox.style.display = 'block';
+          errorBox.textContent = 'Could not reach the hosted application. Please check your internet connection or switch to localhost mode if running a local dev server.';
+          fallbackBtns.style.display = 'flex';
+        }
+      }, 7000);
+    }
+
+    function reloadFrame() {
+      loadApp(targetUrl);
+    }
+
+    function toggleLocalhost() {
+      loadApp(targetUrl === PROD_URL ? DEV_URL : PROD_URL);
+    }
+
+    frame.onload = () => {
+      clearTimeout(loadTimeout);
+      loaderContainer.style.display = 'none';
+      frame.style.display = 'block';
+
+      // Flush any messages buffered before iframe loaded
+      while (pendingFigmaMessages.length > 0) {
+        const msg = pendingFigmaMessages.shift();
+        frame.contentWindow.postMessage({ figmaMessage: msg }, '*');
+      }
+
+      // Send greeting handshake to hosted app
+      frame.contentWindow.postMessage({ figmaMessage: { type: 'SHELL_READY' } }, '*');
+    };
+
+    // Bidirectional postMessage bridge
+    window.addEventListener('message', (event) => {
+      // 1. Message from Figma main thread (code.js)
+      if (event.data && event.data.pluginMessage) {
+        const msg = event.data.pluginMessage;
+        if (frame && frame.contentWindow && frame.style.display === 'block') {
+          frame.contentWindow.postMessage({ figmaMessage: msg }, '*');
+        } else {
+          pendingFigmaMessages.push(msg);
+        }
+      }
+
+      // 2. Message from hosted iframe intended for Figma code.js
+      if (event.data && event.data.toFigma) {
+        parent.postMessage({ pluginMessage: event.data.toFigma }, '*');
+      }
+    });
+
+    // Start loading hosted app
+    loadApp(PROD_URL);
+  </script>
+</body>
+</html>
