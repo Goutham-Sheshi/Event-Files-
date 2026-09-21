@@ -756,33 +756,35 @@ export default function LiveApp() {
       }
     });
 
-    const handleVaultChange = () => {
-      if (profile) loadAll();
-    };
+    const handleVaultChange = () => { loadAll(); };
     window.addEventListener('vault-resources-changed', handleVaultChange);
+
+    return () => {
+      sub.data.subscription.unsubscribe();
+      window.removeEventListener('vault-resources-changed', handleVaultChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!profile || !hasWeeklyAuthentication()) return;
 
     const now = new Date();
     const nextMonday = new Date(now);
     const daysUntilMonday = ((8 - now.getDay()) % 7) || 7;
     nextMonday.setDate(now.getDate() + daysUntilMonday);
     nextMonday.setHours(0, 0, 0, 0);
+
     const weeklyTimer = window.setTimeout(async () => {
-      if (profile) {
-        await signOut();
-        setResources([]);
-        setEvents([]);
-        setProfile(null);
-        setIsAdmin(false);
-        setView({ kind: 'home' });
-      }
+      await signOut();
+      setResources([]);
+      setEvents([]);
+      setProfile(null);
+      setIsAdmin(false);
+      setView({ kind: 'home' });
     }, Math.max(1000, nextMonday.getTime() - now.getTime()));
 
-    return () => {
-      sub.data.subscription.unsubscribe();
-      window.removeEventListener('vault-resources-changed', handleVaultChange);
-      window.clearTimeout(weeklyTimer);
-    };
-  }, []);
+    return () => window.clearTimeout(weeklyTimer);
+  }, [profile]);
 
   const handleSignOut = async () => {
     setAuthLoading(true);
