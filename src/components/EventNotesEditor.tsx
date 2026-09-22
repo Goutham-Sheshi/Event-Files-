@@ -213,9 +213,10 @@ export default function EventNotesEditor({ eventId, canEdit }: EventNotesEditorP
   }
 
   return (
-    <div className="bg-[#111622] border border-white/10 rounded-2xl shadow-xl overflow-hidden flex flex-col min-h-[650px] text-slate-100">
+    <div className="bg-[var(--paper)] border border-[var(--border-2)] rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col min-h-[650px] text-slate-100 relative">
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-orange-500/80 via-indigo-500/80 to-teal-400/80" />
       {/* Notion Editor Header Bar */}
-      <div className="px-5 py-3 bg-[#182030] border-b border-white/10 flex flex-wrap items-center justify-between gap-3">
+      <div className="px-5 py-3.5 bg-[var(--surface-1)] border-b border-[var(--border-1)] flex flex-wrap items-center justify-between gap-3">
         {/* Formatting Toolbar */}
         {canEdit ? (
           <div className="flex items-center gap-1 flex-wrap text-xs">
@@ -347,7 +348,7 @@ export default function EventNotesEditor({ eventId, canEdit }: EventNotesEditorP
               onMouseDown={preventBlur}
               onClick={triggerSave}
               disabled={saving}
-              className="px-3.5 py-1.5 rounded-xl bg-[var(--primary)] text-white text-xs font-semibold hover:bg-[var(--primary-hover)] transition-all shadow-sm cursor-pointer"
+              className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:brightness-110 text-white text-xs font-bold transition-all shadow-[0_4px_12px_rgba(249,115,22,0.25)] cursor-pointer"
             >
               Save Notes
             </button>

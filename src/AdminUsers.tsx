@@ -4,11 +4,17 @@ import type { UserRole } from './types'
 import ResetUserPasswordModal from './components/ResetUserPasswordModal'
 import { deleteUserProfile, getAllProfiles, updateUserRole, updateUserStatus } from './userManagementApi'
 
-const roleLabel = (role: UserRole) => role === 'admin' ? 'Admin' : role === 'advanced' || role === 'teammate' ? 'Advanced User' : 'Standard User'
+const roleLabel = (role: UserRole) =>
+  role === 'admin' ? 'Admin' : role === 'advanced' || role === 'teammate' ? 'Advanced User' : 'Standard User'
+
 const isAdvanced = (role: UserRole) => role === 'advanced' || role === 'teammate'
 
 function AdvancedBadge() {
-  return <span className="inline-flex shrink-0 items-center rounded-full border border-[#f6c453] bg-[#2a2112] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] leading-none text-[#f6c453] shadow-[0_0_0_1px_rgba(246,196,83,0.08)]">ADVANCED</span>
+  return (
+    <span className="inline-flex shrink-0 items-center rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[9.5px] font-mono font-bold uppercase tracking-wider text-amber-400">
+      ADVANCED
+    </span>
+  )
 }
 
 export default function AdminUsers() {
@@ -21,20 +27,323 @@ export default function AdminUsers() {
   const [selectedUserForReset, setSelectedUserForReset] = useState<VaultProfile | null>(null)
   const [selectedUser, setSelectedUser] = useState<VaultProfile | null>(null)
 
-  const loadUsers = async () => { setLoading(true); setError(null); try { setUsers(await getAllProfiles()); getRegisteredAccounts() } catch (e: any) { setError(e?.message || 'Failed to load user list') } finally { setLoading(false) } }
-  useEffect(() => { getMyProfile().then(setCurrentUser); loadUsers() }, [])
-  const run = async (id: string, fn: () => Promise<void>) => { setBusyId(id); setError(null); try { await fn(); await loadUsers() } catch (e: any) { setError(e?.message || 'Update failed') } finally { setBusyId(null) } }
-  const isSelf = (u: VaultProfile) => !!currentUser && (u.id === currentUser.id || u.email.toLowerCase() === currentUser.email.toLowerCase())
-  const changeRole = async (u: VaultProfile, role: UserRole) => { await run(u.id, async () => { await updateUserRole(u.id, role, u.email); setNotice(`${u.full_name || u.email} is now ${roleLabel(role)}.`); setSelectedUser({ ...u, role }) }) }
-  const approve = (u: VaultProfile) => run(u.id, async () => { await updateUserStatus(u.id, 'approved', u.email); setNotice(`Approved ${u.full_name || u.email}.`); setSelectedUser({ ...u, status: 'approved' }) })
-  const reject = (u: VaultProfile) => run(u.id, async () => { await updateUserStatus(u.id, 'rejected', u.email); setNotice(`Rejected ${u.full_name || u.email}.`); setSelectedUser({ ...u, status: 'rejected' }) })
-  const remove = (u: VaultProfile) => { if (window.confirm(`Delete ${u.full_name || u.email}?`)) run(u.id, async () => { await deleteUserProfile(u.id, u.email); setNotice(`Deleted ${u.full_name || u.email}.`); setSelectedUser(null) }) }
+  const loadUsers = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      setUsers(await getAllProfiles())
+      getRegisteredAccounts()
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load user directory')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  if (loading) return <div className="p-12 text-center text-[13px] text-[var(--ink-45)]">Loading user list...</div>
-  return <div className="flex-1 self-stretch w-full overflow-y-auto"><div className="px-8 py-6 max-w-[1400px]">
-    <div className="flex items-start justify-between gap-4 mb-6"><div><h1 className="font-display text-[22px] font-bold text-[var(--ink)] tracking-tight">User Management & Access Control</h1><p className="text-[13px] text-[var(--ink-45)] mt-1">Click a user to view details and manage their access.</p></div><button onClick={loadUsers} className="px-3.5 py-2 rounded-lg border border-[var(--line-soft)] bg-white text-[12px] font-semibold">Refresh List</button></div>
-    {notice && <div className="mb-5 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[12px]">{notice}</div>}
-    {error && <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[12px]">{error}</div>}
-    <div className="bg-white border border-[var(--line-soft)] rounded-2xl overflow-hidden shadow-sm"><div className="overflow-x-auto"><table className="w-full text-left border-collapse"><thead className="bg-[var(--canvas)] border-b border-[var(--line-soft)] text-[11px] text-[var(--ink-45)] uppercase tracking-wider"><tr><th className="px-5 py-3.5">User</th><th className="px-5 py-3.5">Email</th><th className="px-5 py-3.5">Role</th><th className="px-5 py-3.5">Status</th></tr></thead><tbody className="divide-y divide-[var(--line-soft)] text-[12.5px]">{users.map(u => { const self = isSelf(u); return <tr key={u.id} onClick={() => setSelectedUser(u)} className="cursor-pointer hover:bg-[var(--canvas)] transition-colors"><td className="px-5 py-4 font-semibold"><div className="flex items-center gap-2 flex-wrap"><span>{u.full_name || 'User'}</span>{self && <span className="text-[9px] text-blue-700">YOU</span>}{isAdvanced(u.role) && <AdvancedBadge />}</div></td><td className="px-5 py-4 font-mono text-[12px] text-[var(--ink-70)]">{u.email}</td><td className="px-5 py-4"><span className="px-2 py-1 rounded-full text-[10px] font-bold uppercase border border-[var(--line-soft)]">{roleLabel(u.role)}</span></td><td className="px-5 py-4"><span className="px-2 py-1 rounded-full text-[10px] font-bold uppercase">{u.status}</span></td></tr> })}</tbody></table></div></div>
-  </div>{selectedUser && <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40" onClick={() => setSelectedUser(null)}><div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-[var(--line-soft)] p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}><div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-bold text-[var(--ink)]">User Details</h2><p className="text-[12px] text-[var(--ink-45)] mt-1">Manage this user's access and account.</p></div><button onClick={() => setSelectedUser(null)} className="text-xl text-[var(--ink-45)]">×</button></div><div className="mt-6 space-y-4 text-sm"><div><div className="text-[10px] uppercase tracking-wider text-[var(--ink-45)]">Name</div><div className="mt-2 flex items-center gap-2 flex-wrap"><span className="font-semibold">{selectedUser.full_name || 'User'}</span>{isAdvanced(selectedUser.role) && <AdvancedBadge />}</div></div><div><div className="text-[10px] uppercase tracking-wider text-[var(--ink-45)]">Email</div><div className="font-mono text-[13px] mt-1">{selectedUser.email}</div></div><div className="grid grid-cols-2 gap-4"><div><div className="text-[10px] uppercase tracking-wider text-[var(--ink-45)]">Status</div><div className="font-semibold mt-1 capitalize">{selectedUser.status}</div></div><div><div className="text-[10px] uppercase tracking-wider text-[var(--ink-45)]">Current Role</div><div className="font-semibold mt-1">{roleLabel(selectedUser.role)}</div></div></div></div>{!isSelf(selectedUser) && selectedUser.status === 'approved' ? <div className="mt-6 pt-5 border-t border-[var(--line-soft)]"><div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-45)] mb-3">Access Level</div><label className="block text-[12px] mb-2">Change role</label><select value={isAdvanced(selectedUser.role) ? 'advanced' : 'standard'} disabled={busyId === selectedUser.id} onChange={e => changeRole(selectedUser, e.target.value as UserRole)} className="w-full rounded-xl border border-[var(--line-soft)] px-3 py-2.5 bg-white text-sm"><option value="standard">Standard User — View & Download</option><option value="advanced">Advanced User — View, Download & Upload</option></select><p className="text-[11px] text-[var(--ink-45)] mt-2">Only approved users can have their access level changed.</p></div> : !isSelf(selectedUser) ? <div className="mt-6 p-3 rounded-xl bg-slate-50 text-[12px] text-[var(--ink-45)]">Approve this user to enable role changes.</div> : null}<div className="mt-6 pt-5 border-t border-[var(--line-soft)]"><div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-45)] mb-3">Account Actions</div><div className="flex flex-wrap gap-2">{!isSelf(selectedUser) && selectedUser.status !== 'approved' && <button disabled={busyId === selectedUser.id} onClick={() => approve(selectedUser)} className="px-3 py-2 rounded-lg text-sm font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Approve</button>}{!isSelf(selectedUser) && selectedUser.status !== 'rejected' && <button disabled={busyId === selectedUser.id} onClick={() => reject(selectedUser)} className="px-3 py-2 rounded-lg text-sm font-semibold bg-yellow-50 text-yellow-800 border border-yellow-200">Reject</button>}<button onClick={() => setSelectedUserForReset(selectedUser)} className="px-3 py-2 rounded-lg text-sm font-semibold border border-[var(--line-soft)]">Reset Password</button>{!isSelf(selectedUser) && <button disabled={busyId === selectedUser.id} onClick={() => remove(selectedUser)} className="px-3 py-2 rounded-lg text-sm font-semibold text-red-700 border border-red-200">Delete</button>}</div></div><div className="mt-6 flex justify-end"><button onClick={() => setSelectedUser(null)} className="px-4 py-2 rounded-lg border border-[var(--line-soft)] text-sm font-semibold">Done</button></div></div></div>}{selectedUserForReset && <ResetUserPasswordModal user={selectedUserForReset} onClose={() => setSelectedUserForReset(null)} onSuccess={() => { setNotice(`Password reset for ${selectedUserForReset.full_name || selectedUserForReset.email}.`); setSelectedUserForReset(null); loadUsers() }} />}</div>
+  useEffect(() => {
+    getMyProfile().then(setCurrentUser)
+    loadUsers()
+  }, [])
+
+  const run = async (id: string, fn: () => Promise<void>) => {
+    setBusyId(id)
+    setError(null)
+    try {
+      await fn()
+      await loadUsers()
+    } catch (e: any) {
+      setError(e?.message || 'Action update failed')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const isSelf = (u: VaultProfile) =>
+    !!currentUser && (u.id === currentUser.id || u.email.toLowerCase() === currentUser.email.toLowerCase())
+
+  const changeRole = async (u: VaultProfile, role: UserRole) => {
+    await run(u.id, async () => {
+      await updateUserRole(u.id, role, u.email)
+      setNotice(`${u.full_name || u.email} access role updated to ${roleLabel(role)}.`)
+      setSelectedUser({ ...u, role })
+    })
+  }
+
+  const approve = (u: VaultProfile) =>
+    run(u.id, async () => {
+      await updateUserStatus(u.id, 'approved', u.email)
+      setNotice(`Approved access for ${u.full_name || u.email}.`)
+      setSelectedUser({ ...u, status: 'approved' })
+    })
+
+  const reject = (u: VaultProfile) =>
+    run(u.id, async () => {
+      await updateUserStatus(u.id, 'rejected', u.email)
+      setNotice(`Rejected access for ${u.full_name || u.email}.`)
+      setSelectedUser({ ...u, status: 'rejected' })
+    })
+
+  const remove = (u: VaultProfile) => {
+    if (window.confirm(`Permanently remove member ${u.full_name || u.email}?`))
+      run(u.id, async () => {
+        await deleteUserProfile(u.id, u.email)
+        setNotice(`Removed ${u.full_name || u.email}.`)
+        setSelectedUser(null)
+      })
+  }
+
+  if (loading)
+    return (
+      <div className="p-16 text-center text-[13px] font-mono text-[var(--ink-45)]">
+        Synchronizing member credentials & authorizations…
+      </div>
+    )
+
+  return (
+    <div className="flex-1 self-stretch w-full overflow-y-auto bg-[var(--canvas)]">
+      <div className="px-8 py-8 max-w-[1400px] mx-auto space-y-6">
+        {/* Header Ribbon */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border)]">
+          <div>
+            <div className="badge-pill mb-1">
+              <span className="pulse-dot bg-blue-500" />
+              DIRECTORY & AUTHORIZATION
+            </div>
+            <h1 className="font-display text-[24px] font-extrabold tracking-tight heading-gradient">
+              Member Directory & Access Roles
+            </h1>
+            <p className="text-[13px] text-[var(--ink-45)] mt-0.5">
+              Click any team member to view permissions, adjust roles, or approve membership.
+            </p>
+          </div>
+          <button
+            onClick={loadUsers}
+            className="px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] hover:bg-[var(--surface-2)] text-[12px] font-semibold text-[var(--ink)] cursor-pointer transition-colors"
+          >
+            Refresh Directory
+          </button>
+        </div>
+
+        {notice && (
+          <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[12.5px] flex items-center gap-2 font-mono">
+            <span>✓</span>
+            <span>{notice}</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-[12.5px] flex items-center gap-2 font-mono">
+            <span>⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* 21st.dev Members Table */}
+        <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl overflow-hidden backdrop-blur-md shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-[var(--surface-2)] border-b border-[var(--border)] text-[11px] font-mono text-[var(--ink-45)] uppercase tracking-wider">
+                <tr>
+                  <th className="px-5 py-3.5">Member Name</th>
+                  <th className="px-5 py-3.5">Corporate Email</th>
+                  <th className="px-5 py-3.5">Role Level</th>
+                  <th className="px-5 py-3.5">Approval Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)] text-[12.5px]">
+                {users.map((u) => {
+                  const self = isSelf(u)
+                  return (
+                    <tr
+                      key={u.id}
+                      onClick={() => setSelectedUser(u)}
+                      className="cursor-pointer hover:bg-[var(--surface-2)] transition-colors"
+                    >
+                      <td className="px-5 py-4 font-semibold text-[var(--ink)]">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <span>{u.full_name || 'Member'}</span>
+                          {self && (
+                            <span className="badge-pill bg-blue-500/20 text-blue-400 border-blue-500/30 text-[9px] py-0 px-1.5 font-bold">
+                              YOU
+                            </span>
+                          )}
+                          {isAdvanced(u.role) && <AdvancedBadge />}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 font-mono text-[12px] text-[var(--ink-70)]">
+                        {u.email}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="badge-pill text-[10px] font-semibold">
+                          {roleLabel(u.role)}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider ${
+                            u.status === 'approved'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : u.status === 'rejected'
+                              ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                              : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                          }`}
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{
+                              background:
+                                u.status === 'approved' ? '#10b981' : u.status === 'rejected' ? '#ef4444' : '#f59e0b',
+                            }}
+                          />
+                          {u.status}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* 21st.dev Member Details Modal */}
+      {selectedUser && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md"
+          onClick={() => setSelectedUser(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-3xl bg-[var(--paper)] border border-[var(--border)] shadow-2xl p-7 max-h-[90vh] overflow-y-auto space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 pb-3 border-b border-[var(--border)]">
+              <div>
+                <h2 className="text-lg font-bold text-[var(--ink)] font-display">Member Access Dossier</h2>
+                <p className="text-[12px] text-[var(--ink-45)] mt-0.5">Manage permissions and corporate credentials.</p>
+              </div>
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="text-xl text-[var(--ink-45)] hover:text-[var(--ink)] cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4 text-sm font-mono">
+              <div className="p-3.5 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)]">
+                <div className="text-[10px] uppercase tracking-wider text-[var(--ink-45)] font-bold">Member Name</div>
+                <div className="mt-1 flex items-center gap-2 flex-wrap font-sans">
+                  <span className="font-bold text-base text-[var(--ink)]">{selectedUser.full_name || 'Member'}</span>
+                  {isAdvanced(selectedUser.role) && <AdvancedBadge />}
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)]">
+                <div className="text-[10px] uppercase tracking-wider text-[var(--ink-45)] font-bold">Email Address</div>
+                <div className="text-[13px] text-[var(--ink)] mt-1 font-mono">{selectedUser.email}</div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3.5 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)]">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--ink-45)] font-bold">Status</div>
+                  <div className="font-bold mt-1 text-[var(--ink)] capitalize font-sans">{selectedUser.status}</div>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-[var(--surface-2)] border border-[var(--border)]">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--ink-45)] font-bold">Current Role</div>
+                  <div className="font-bold mt-1 text-[var(--ink)] font-sans">{roleLabel(selectedUser.role)}</div>
+                </div>
+              </div>
+            </div>
+
+            {!isSelf(selectedUser) && selectedUser.status === 'approved' ? (
+              <div className="pt-4 border-t border-[var(--border)] space-y-2">
+                <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--ink-45)]">
+                  Access Authorization
+                </div>
+                <select
+                  value={isAdvanced(selectedUser.role) ? 'advanced' : 'standard'}
+                  disabled={busyId === selectedUser.id}
+                  onChange={(e) => changeRole(selectedUser, e.target.value as UserRole)}
+                  className="w-full rounded-xl border border-[var(--border)] px-3.5 py-2.5 bg-[var(--surface)] text-xs text-[var(--ink)] outline-none cursor-pointer"
+                >
+                  <option value="standard">Standard User — View & Download Access</option>
+                  <option value="advanced">Advanced User — View, Download & Asset Upload Access</option>
+                </select>
+                <p className="text-[11px] text-[var(--ink-45)]">
+                  Elevates this member to upload collateral directly to products and events.
+                </p>
+              </div>
+            ) : !isSelf(selectedUser) ? (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[12px] text-amber-300">
+                Approve this member first to enable role modifications.
+              </div>
+            ) : null}
+
+            <div className="pt-4 border-t border-[var(--border)] space-y-2.5">
+              <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-[var(--ink-45)]">
+                Account Actions
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {!isSelf(selectedUser) && selectedUser.status !== 'approved' && (
+                  <button
+                    disabled={busyId === selectedUser.id}
+                    onClick={() => approve(selectedUser)}
+                    className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 cursor-pointer transition-colors"
+                  >
+                    Approve Member
+                  </button>
+                )}
+                {!isSelf(selectedUser) && selectedUser.status !== 'rejected' && (
+                  <button
+                    disabled={busyId === selectedUser.id}
+                    onClick={() => reject(selectedUser)}
+                    className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 cursor-pointer transition-colors"
+                  >
+                    Reject Access
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedUserForReset(selectedUser)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-semibold border border-[var(--border)] hover:bg-[var(--surface-2)] text-[var(--ink)] cursor-pointer transition-colors"
+                >
+                  Reset Password
+                </button>
+                {!isSelf(selectedUser) && (
+                  <button
+                    disabled={busyId === selectedUser.id}
+                    onClick={() => remove(selectedUser)}
+                    className="px-3.5 py-2 rounded-xl text-xs font-semibold text-red-300 bg-red-500/15 border border-red-500/30 hover:bg-red-500/25 cursor-pointer transition-colors"
+                  >
+                    Delete Account
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-[var(--border)]">
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="px-4 py-2 rounded-xl border border-[var(--border)] text-xs font-semibold text-[var(--ink-70)] hover:bg-[var(--surface-2)] cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedUserForReset && (
+        <ResetUserPasswordModal
+          user={selectedUserForReset}
+          onClose={() => setSelectedUserForReset(null)}
+          onSuccess={() => {
+            setNotice(`Password reset for ${selectedUserForReset.full_name || selectedUserForReset.email}.`)
+            setSelectedUserForReset(null)
+            loadUsers()
+          }}
+        />
+      )}
+    </div>
+  )
 }

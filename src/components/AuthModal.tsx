@@ -95,10 +95,10 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
     setNotice(null)
     try {
       await forgotPassword(data.email)
-      setNotice(`Password reset initialized for ${data.email}. Please set your new password below.`)
-      setMode('reset')
+      setNotice(`Password reset instructions initialized for ${data.email}. Check your inbox.`)
+      setMode('login')
     } catch (err: any) {
-      setApiError(err?.message || 'Password reset failed')
+      setApiError(err?.message || 'Failed to request reset')
     } finally {
       setBusy(false)
     }
@@ -110,10 +110,10 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
     setNotice(null)
     try {
       await resetPassword(data.password)
-      setNotice('Password updated successfully! You can now sign in.')
+      setNotice('Password updated successfully. You can now log in.')
       setMode('login')
     } catch (err: any) {
-      setApiError(err?.message || 'Password update failed')
+      setApiError(err?.message || 'Failed to update password')
     } finally {
       setBusy(false)
     }
@@ -131,15 +131,18 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fadeIn"
       onClick={e => { if (e.target === e.currentTarget && onClose) onClose() }}
     >
-      <div className="w-full max-w-[420px] bg-white rounded-3xl shadow-2xl border border-[var(--line-soft)] overflow-hidden flex flex-col p-8 transition-all relative">
+      <div className="w-full max-w-[440px] bg-[var(--paper)] rounded-3xl shadow-[0_30px_70px_rgba(0,0,0,0.6)] border border-[var(--border-2)] overflow-hidden flex flex-col p-8 transition-all relative">
+        {/* Glowing top line */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-orange-500/80 via-amber-400/80 to-indigo-500/80" />
+
         {onClose && (
           <button
             onClick={onClose}
             aria-label="Close modal"
-            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[var(--canvas-deep)] hover:bg-[var(--line-soft)] text-[var(--ink-45)] hover:text-[var(--ink)] flex items-center justify-center font-bold text-sm transition-colors"
+            className="absolute top-5 right-5 w-8 h-8 rounded-xl bg-[var(--surface-1)] hover:bg-[var(--surface-2)] text-[var(--ink-45)] hover:text-[var(--ink)] flex items-center justify-center border border-[var(--border-1)] text-sm transition-colors"
           >
             ✕
           </button>
@@ -147,8 +150,12 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
 
         {/* Header Branding */}
         <div className="text-center mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[var(--primary)] to-orange-400 text-white font-bold text-xl flex items-center justify-center mx-auto shadow-md mb-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-400 text-black font-extrabold text-xl flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(249,115,22,0.4)] mb-3">
             S
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 font-mono text-[10px] uppercase tracking-wider mb-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Vault SSO Terminal
           </div>
           <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ink)]">
             {mode === 'login' && 'Sign in to Sheshi Vault'}
@@ -156,7 +163,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
             {mode === 'forgot' && 'Reset your password'}
             {mode === 'reset' && 'Set new password'}
           </h2>
-          <p className="text-[13px] text-[var(--ink-45)] mt-1">
+          <p className="text-[12.5px] text-[var(--ink-45)] mt-1">
             {mode === 'login' && 'Enter your @sheshi.ai credentials to access files & events'}
             {mode === 'register' && 'Create your corporate account with your @sheshi.ai email'}
             {mode === 'forgot' && 'We will send a reset link to your @sheshi.ai email'}
@@ -166,14 +173,16 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
 
         {/* Alerts */}
         {apiError && (
-          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[12.5px] font-medium break-words animate-shake">
-            ⚠️ {apiError}
+          <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[12.5px] font-medium break-words animate-shake flex items-center gap-2">
+            <span>⚠️</span>
+            <span>{apiError}</span>
           </div>
         )}
 
         {notice && (
-          <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[12.5px] font-medium break-words animate-fadeIn">
-            ✅ {notice}
+          <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[12.5px] font-medium break-words animate-fadeIn flex items-center gap-2">
+            <span>✅</span>
+            <span>{notice}</span>
           </div>
         )}
 
@@ -181,31 +190,31 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
         {mode === 'login' && (
           <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
             <div>
-              <label className="block text-[12px] font-semibold text-[var(--ink-70)] mb-1">
+              <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-70)] mb-1.5">
                 Email Address
               </label>
               <input
                 type="email"
                 {...loginForm.register('email')}
                 placeholder="name@sheshi.ai"
-                className={`w-full px-4 py-3 rounded-xl border bg-[var(--canvas-deep)] outline-none text-[13px] transition-colors ${loginForm.formState.errors.email ? 'border-red-500 focus:border-red-500' : 'border-[var(--line)] focus:border-[var(--primary)]'}`}
+                className={`w-full px-4 py-2.5 rounded-xl border bg-[var(--canvas)] outline-none text-[13px] font-mono text-[var(--ink)] transition-colors ${loginForm.formState.errors.email ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-2)] focus:border-orange-500/50'}`}
               />
               {loginForm.formState.errors.email && (
-                <p className="mt-1 text-[11.5px] text-red-600 font-medium">
+                <p className="mt-1 font-mono text-[11px] text-red-400 font-medium">
                   ⚠️ {loginForm.formState.errors.email.message}
                 </p>
               )}
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-[12px] font-semibold text-[var(--ink-70)]">
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-70)]">
                   Password
                 </label>
                 <button
                   type="button"
                   onClick={() => switchMode('forgot')}
-                  className="text-[11px] font-semibold text-[var(--primary)] hover:underline"
+                  className="font-mono text-[11px] font-semibold text-orange-400 hover:text-orange-300 transition-colors"
                 >
                   Forgot password?
                 </button>
@@ -215,7 +224,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
                   type={showPassword ? 'text' : 'password'}
                   {...loginForm.register('password')}
                   placeholder="••••••••"
-                  className={`w-full px-4 py-3 pr-12 rounded-xl border bg-[var(--canvas-deep)] outline-none text-[13px] transition-colors ${loginForm.formState.errors.password ? 'border-red-500 focus:border-red-500' : 'border-[var(--line)] focus:border-[var(--primary)]'}`}
+                  className={`w-full px-4 py-2.5 pr-12 rounded-xl border bg-[var(--canvas)] outline-none text-[13px] font-mono text-[var(--ink)] transition-colors ${loginForm.formState.errors.password ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-2)] focus:border-orange-500/50'}`}
                 />
                 <button
                   type="button"
@@ -223,14 +232,14 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
                   className="absolute right-3.5 text-[var(--ink-45)] hover:text-[var(--ink)] transition-colors p-1 flex items-center justify-center cursor-pointer"
                 >
                   {showPassword ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
                       <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
                       <path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
                       <line x1="2" y1="2" x2="22" y2="22" />
                     </svg>
                   ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>
@@ -238,7 +247,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
                 </button>
               </div>
               {loginForm.formState.errors.password && (
-                <p className="mt-1 text-[11.5px] text-red-600 font-medium">
+                <p className="mt-1 font-mono text-[11px] text-red-400 font-medium">
                   ⚠️ {loginForm.formState.errors.password.message}
                 </p>
               )}
@@ -247,7 +256,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
             <button
               type="submit"
               disabled={busy}
-              className="w-full py-3.5 px-4 rounded-xl bg-[var(--primary)] hover:opacity-95 text-white font-semibold text-[13px] shadow-md transition-all disabled:opacity-50 mt-2 cursor-pointer"
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:brightness-110 text-white font-bold text-[13px] tracking-wide shadow-[0_4px_16px_rgba(249,115,22,0.3)] transition-all disabled:opacity-50 mt-2 cursor-pointer"
             >
               {busy ? 'Processing...' : 'Sign In'}
             </button>
@@ -258,41 +267,41 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
         {mode === 'register' && (
           <form onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4">
             <div>
-              <label className="block text-[12px] font-semibold text-[var(--ink-70)] mb-1">
+              <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-70)] mb-1.5">
                 Full Name
               </label>
               <input
                 type="text"
                 {...registerForm.register('fullName')}
                 placeholder="e.g. Goutham"
-                className={`w-full px-4 py-3 rounded-xl border bg-[var(--canvas-deep)] outline-none text-[13px] transition-colors ${registerForm.formState.errors.fullName ? 'border-red-500 focus:border-red-500' : 'border-[var(--line)] focus:border-[var(--primary)]'}`}
+                className={`w-full px-4 py-2.5 rounded-xl border bg-[var(--canvas)] outline-none text-[13px] text-[var(--ink)] transition-colors ${registerForm.formState.errors.fullName ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-2)] focus:border-orange-500/50'}`}
               />
               {registerForm.formState.errors.fullName && (
-                <p className="mt-1 text-[11.5px] text-red-600 font-medium">
+                <p className="mt-1 font-mono text-[11px] text-red-400 font-medium">
                   ⚠️ {registerForm.formState.errors.fullName.message}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-[12px] font-semibold text-[var(--ink-70)] mb-1">
+              <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-70)] mb-1.5">
                 Email Address
               </label>
               <input
                 type="email"
                 {...registerForm.register('email')}
                 placeholder="name@sheshi.ai"
-                className={`w-full px-4 py-3 rounded-xl border bg-[var(--canvas-deep)] outline-none text-[13px] transition-colors ${registerForm.formState.errors.email ? 'border-red-500 focus:border-red-500' : 'border-[var(--line)] focus:border-[var(--primary)]'}`}
+                className={`w-full px-4 py-2.5 rounded-xl border bg-[var(--canvas)] outline-none text-[13px] font-mono text-[var(--ink)] transition-colors ${registerForm.formState.errors.email ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-2)] focus:border-orange-500/50'}`}
               />
               {registerForm.formState.errors.email && (
-                <p className="mt-1 text-[11.5px] text-red-600 font-medium">
+                <p className="mt-1 font-mono text-[11px] text-red-400 font-medium">
                   ⚠️ {registerForm.formState.errors.email.message}
                 </p>
               )}
             </div>
 
             <div>
-              <label className="block text-[12px] font-semibold text-[var(--ink-70)] mb-1">
+              <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-70)] mb-1.5">
                 Password
               </label>
               <div className="relative flex items-center">
@@ -300,7 +309,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
                   type={showPassword ? 'text' : 'password'}
                   {...registerForm.register('password')}
                   placeholder="••••••••"
-                  className={`w-full px-4 py-3 pr-12 rounded-xl border bg-[var(--canvas-deep)] outline-none text-[13px] transition-colors ${registerForm.formState.errors.password ? 'border-red-500 focus:border-red-500' : 'border-[var(--line)] focus:border-[var(--primary)]'}`}
+                  className={`w-full px-4 py-2.5 pr-12 rounded-xl border bg-[var(--canvas)] outline-none text-[13px] font-mono text-[var(--ink)] transition-colors ${registerForm.formState.errors.password ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-2)] focus:border-orange-500/50'}`}
                 />
                 <button
                   type="button"
@@ -308,14 +317,14 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
                   className="absolute right-3.5 text-[var(--ink-45)] hover:text-[var(--ink)] transition-colors p-1 flex items-center justify-center cursor-pointer"
                 >
                   {showPassword ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
                       <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
                       <path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
                       <line x1="2" y1="2" x2="22" y2="22" />
                     </svg>
                   ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>
@@ -323,7 +332,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
                 </button>
               </div>
               {registerForm.formState.errors.password && (
-                <p className="mt-1 text-[11.5px] text-red-600 font-medium">
+                <p className="mt-1 font-mono text-[11px] text-red-400 font-medium">
                   ⚠️ {registerForm.formState.errors.password.message}
                 </p>
               )}
@@ -332,7 +341,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
             <button
               type="submit"
               disabled={busy}
-              className="w-full py-3.5 px-4 rounded-xl bg-[var(--primary)] hover:opacity-95 text-white font-semibold text-[13px] shadow-md transition-all disabled:opacity-50 mt-2 cursor-pointer"
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:brightness-110 text-white font-bold text-[13px] tracking-wide shadow-[0_4px_16px_rgba(249,115,22,0.3)] transition-all disabled:opacity-50 mt-2 cursor-pointer"
             >
               {busy ? 'Processing...' : 'Create Account'}
             </button>
@@ -343,17 +352,17 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
         {mode === 'forgot' && (
           <form onSubmit={forgotForm.handleSubmit(handleForgotSubmit)} className="space-y-4">
             <div>
-              <label className="block text-[12px] font-semibold text-[var(--ink-70)] mb-1">
+              <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-70)] mb-1.5">
                 Email Address
               </label>
               <input
                 type="email"
                 {...forgotForm.register('email')}
                 placeholder="name@sheshi.ai"
-                className={`w-full px-4 py-3 rounded-xl border bg-[var(--canvas-deep)] outline-none text-[13px] transition-colors ${forgotForm.formState.errors.email ? 'border-red-500 focus:border-red-500' : 'border-[var(--line)] focus:border-[var(--primary)]'}`}
+                className={`w-full px-4 py-2.5 rounded-xl border bg-[var(--canvas)] outline-none text-[13px] font-mono text-[var(--ink)] transition-colors ${forgotForm.formState.errors.email ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-2)] focus:border-orange-500/50'}`}
               />
               {forgotForm.formState.errors.email && (
-                <p className="mt-1 text-[11.5px] text-red-600 font-medium">
+                <p className="mt-1 font-mono text-[11px] text-red-400 font-medium">
                   ⚠️ {forgotForm.formState.errors.email.message}
                 </p>
               )}
@@ -362,7 +371,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
             <button
               type="submit"
               disabled={busy}
-              className="w-full py-3.5 px-4 rounded-xl bg-[var(--primary)] hover:opacity-95 text-white font-semibold text-[13px] shadow-md transition-all disabled:opacity-50 mt-2 cursor-pointer"
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:brightness-110 text-white font-bold text-[13px] tracking-wide shadow-[0_4px_16px_rgba(249,115,22,0.3)] transition-all disabled:opacity-50 mt-2 cursor-pointer"
             >
               {busy ? 'Processing...' : 'Send Reset Instructions'}
             </button>
@@ -373,7 +382,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
         {mode === 'reset' && (
           <form onSubmit={resetForm.handleSubmit(handleResetSubmit)} className="space-y-4">
             <div>
-              <label className="block text-[12px] font-semibold text-[var(--ink-70)] mb-1">
+              <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-70)] mb-1.5">
                 New Password
               </label>
               <div className="relative flex items-center">
@@ -381,7 +390,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
                   type={showPassword ? 'text' : 'password'}
                   {...resetForm.register('password')}
                   placeholder="••••••••"
-                  className={`w-full px-4 py-3 pr-12 rounded-xl border bg-[var(--canvas-deep)] outline-none text-[13px] transition-colors ${resetForm.formState.errors.password ? 'border-red-500 focus:border-red-500' : 'border-[var(--line)] focus:border-[var(--primary)]'}`}
+                  className={`w-full px-4 py-2.5 pr-12 rounded-xl border bg-[var(--canvas)] outline-none text-[13px] font-mono text-[var(--ink)] transition-colors ${resetForm.formState.errors.password ? 'border-red-500 focus:border-red-500' : 'border-[var(--border-2)] focus:border-orange-500/50'}`}
                 />
                 <button
                   type="button"
@@ -389,14 +398,14 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
                   className="absolute right-3.5 text-[var(--ink-45)] hover:text-[var(--ink)] transition-colors p-1 flex items-center justify-center cursor-pointer"
                 >
                   {showPassword ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
                       <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
                       <path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
                       <line x1="2" y1="2" x2="22" y2="22" />
                     </svg>
                   ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>
@@ -404,7 +413,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
                 </button>
               </div>
               {resetForm.formState.errors.password && (
-                <p className="mt-1 text-[11.5px] text-red-600 font-medium">
+                <p className="mt-1 font-mono text-[11px] text-red-400 font-medium">
                   ⚠️ {resetForm.formState.errors.password.message}
                 </p>
               )}
@@ -413,7 +422,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
             <button
               type="submit"
               disabled={busy}
-              className="w-full py-3.5 px-4 rounded-xl bg-[var(--primary)] hover:opacity-95 text-white font-semibold text-[13px] shadow-md transition-all disabled:opacity-50 mt-2 cursor-pointer"
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:brightness-110 text-white font-bold text-[13px] tracking-wide shadow-[0_4px_16px_rgba(249,115,22,0.3)] transition-all disabled:opacity-50 mt-2 cursor-pointer"
             >
               {busy ? 'Processing...' : 'Update Password'}
             </button>
@@ -421,14 +430,14 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
         )}
 
         {/* Footer Navigation */}
-        <div className="mt-6 pt-4 border-t border-[var(--line-soft)] text-center text-[12px] text-[var(--ink-45)]">
+        <div className="mt-6 pt-4 border-t border-[var(--border-1)] text-center text-[12px] text-[var(--ink-45)]">
           {mode === 'login' && (
             <span>
               Don't have an account?{' '}
               <button
                 type="button"
                 onClick={() => switchMode('register')}
-                className="font-semibold text-[var(--primary)] hover:underline"
+                className="font-semibold text-orange-400 hover:text-orange-300 transition-colors"
               >
                 Register / Request access
               </button>
@@ -441,7 +450,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
               <button
                 type="button"
                 onClick={() => switchMode('login')}
-                className="font-semibold text-[var(--primary)] hover:underline"
+                className="font-semibold text-orange-400 hover:text-orange-300 transition-colors"
               >
                 Sign In
               </button>
@@ -452,7 +461,7 @@ export default function AuthModal({ initialMode = 'login', onSuccess, onClose }:
             <button
               type="button"
               onClick={() => switchMode('login')}
-              className="font-semibold text-[var(--primary)] hover:underline"
+              className="font-semibold text-orange-400 hover:text-orange-300 transition-colors"
             >
               ← Back to Sign In
             </button>

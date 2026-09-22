@@ -128,38 +128,45 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
         location: data.location || null,
         product_id: data.product_id || null,
         event_type: data.event_type as "In-person" | "Virtual",
-        banner: uploadedBanner || null,
+        banner_path: uploadedBanner,
       };
+
       if (editing) {
         await updateEvent(editing.id, payload);
       } else {
-        const created = await createEvent(payload);
+        const newEvt = await createEvent(payload);
         try {
-          await createEventNotification(created, 'Admin');
+          await createEventNotification({
+            event_id: newEvt.id,
+            title: `New Event: ${newEvt.title}`,
+            message: `${newEvt.title} has been scheduled for ${new Date(newEvt.event_date).toLocaleDateString()}. Check out resources and agenda in Sheshi Vault!`,
+          });
         } catch (notifErr) {
-          console.warn('Failed to dispatch notification for created event:', notifErr);
+          console.warn("Automated notification creation warning:", notifErr);
         }
       }
+
       setOpen(false);
+      reset();
+      setBannerFile(null);
       await load();
       onChanged?.();
-    } catch (err) {
-      setError(getErrorMessage(err, "Failed to save event"));
+    } catch (e) {
+      setError(getErrorMessage(e));
     } finally {
       setBusy(false);
     }
   };
 
   const remove = async (event: ManagedEvent) => {
-    if (!window.confirm(`Are you sure you want to delete "${event.title}"? All associated files, gallery media, and links will also be removed. This cannot be undone.`))
-      return;
+    if (!window.confirm(`Are you sure you want to delete "${event.title}"?`)) return;
+    setBusy(true);
     try {
-      setBusy(true);
       await deleteEvent(event.id);
       await load();
       onChanged?.();
-    } catch (err) {
-      setError(getErrorMessage(err, "Failed to delete event"));
+    } catch (e) {
+      setError(getErrorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -167,71 +174,71 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
 
   if (checkingAdmin) {
     return (
-      <div className="flex-1 flex items-center justify-center text-[13px] text-[var(--ink-45)]">
-        Checking access…
+      <div className="p-8 text-center text-sm font-mono text-[var(--ink-45)]">
+        Checking administrative privileges…
       </div>
     );
   }
 
   if (!isAdmin) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center max-w-sm">
-          <div className="font-display text-[16px] font-bold text-[var(--ink)] mb-1.5">
-            Admin access required
-          </div>
-          <div className="text-[13px] text-[var(--ink-45)] leading-relaxed">
-            Your account isn't marked as an admin. Ask an existing admin to
-            grant you access if you believe this is a mistake.
-          </div>
-        </div>
+      <div className="p-8 text-center text-sm text-[var(--ink-45)]">
+        Administrator access required to manage events.
       </div>
     );
   }
 
   return (
-    <div className="flex-1 self-stretch w-full overflow-y-auto">
-      <div className="px-8 py-6 max-w-[1400px]">
-        <div className="flex items-start justify-between gap-4 mb-6">
+    <div className="flex-1 self-stretch w-full overflow-y-auto bg-[var(--canvas)]">
+      <div className="px-8 py-8 max-w-[1400px] mx-auto space-y-6">
+        {/* Header Ribbon */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border)]">
           <div>
-            <h1 className="font-display text-[22px] font-bold text-[var(--ink)] tracking-tight">
-              Events Management
+            <div className="badge-pill mb-1">
+              <span className="pulse-dot bg-orange-500" />
+              EVENT OPERATIONS
+            </div>
+            <h1 className="font-display text-[24px] font-extrabold tracking-tight heading-gradient">
+              Corporate Events & Summits
             </h1>
-            <p className="text-[13px] text-[var(--ink-45)] mt-1">
-              Create and manage corporate events across Sheshi product suites.
+            <p className="text-[13px] text-[var(--ink-45)] mt-0.5">
+              Create, curate, and orchestrate events across all Sheshi product lines.
             </p>
           </div>
           <div className="flex items-center gap-2.5">
             <button
               onClick={startAdd}
-              className="px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold hover:bg-[var(--primary-hover)] cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-[12.5px] font-semibold transition-all shadow-md shadow-orange-500/20 cursor-pointer flex items-center gap-2"
             >
-              + Create Event
+              <span>+</span>
+              <span>Create New Event</span>
             </button>
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 px-3 py-2 rounded-lg bg-red-50 text-red-700 text-[12px]">
-            ⚠️ {error}
+          <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-[12px] flex items-center gap-2 font-mono">
+            <span>⚠️</span>
+            <span>{error}</span>
           </div>
         )}
 
-        <div className="bg-white border border-[var(--line-soft)] rounded-xl overflow-hidden shadow-sm">
+        {/* Modern 21st.dev Events Table */}
+        <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl overflow-hidden backdrop-blur-md shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="bg-[var(--canvas)] border-b border-[var(--line-soft)] text-[11px] text-[var(--ink-45)] uppercase tracking-wide">
+              <thead className="bg-[var(--surface-2)] border-b border-[var(--border)] text-[11px] text-[var(--ink-45)] uppercase font-mono tracking-wider">
                 <tr>
-                  <th className="px-4 py-3">Event</th>
-                  <th className="px-4 py-3">Product</th>
-                  <th className="px-4 py-3">Dates</th>
-                  <th className="px-4 py-3">Location</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-5 py-3.5">Event Name</th>
+                  <th className="px-5 py-3.5">Product Suite</th>
+                  <th className="px-5 py-3.5">Date Schedule</th>
+                  <th className="px-5 py-3.5">Location</th>
+                  <th className="px-5 py-3.5">Format</th>
+                  <th className="px-5 py-3.5">Status</th>
+                  <th className="px-5 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-[var(--border)]">
                 {events.map((event) => {
                   const product = products.find(
                     (p) => p.id === event.product_id || p.slug === event.product_id,
@@ -241,55 +248,79 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
                     undefined,
                     { year: "numeric", month: "short", day: "numeric" }
                   );
-                  const endDateStr = event.end_date ? new Date(event.end_date).toLocaleDateString(
-                    undefined,
-                    { year: "numeric", month: "short", day: "numeric" }
-                  ) : null;
+                  const endDateStr = event.end_date
+                    ? new Date(event.end_date).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : null;
 
                   return (
                     <tr
                       key={event.id}
-                      className="border-b border-[var(--line-soft)] last:border-0 text-[12.5px]"
+                      className="hover:bg-[var(--surface-2)] transition-colors text-[12.5px]"
                     >
-                      <td className="px-4 py-3 font-semibold text-[var(--ink)]">
+                      <td className="px-5 py-4 font-semibold text-[var(--ink)]">
                         {event.title}
                       </td>
-                      <td className="px-4 py-3 text-[var(--ink-70)]">
-                        {product?.name || "Sheshi"}
+                      <td className="px-5 py-4">
+                        {product ? (
+                          <span
+                            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border"
+                            style={{
+                              background: `${product.color}15`,
+                              borderColor: `${product.color}35`,
+                              color: product.color,
+                            }}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ background: product.color }} />
+                            {product.name}
+                          </span>
+                        ) : (
+                          <span className="badge-pill text-[10px]">Sheshi</span>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-[var(--ink-70)]">
-                        {startDateStr}{endDateStr ? ` - ${endDateStr}` : ''}
+                      <td className="px-5 py-4 font-mono text-[11.5px] text-[var(--ink-70)]">
+                        {startDateStr}
+                        {endDateStr ? ` — ${endDateStr}` : ''}
                       </td>
-                      <td className="px-4 py-3 text-[var(--ink-70)]">
+                      <td className="px-5 py-4 text-[var(--ink-70)]">
                         {event.location || "—"}
                       </td>
-                      <td className="px-4 py-3 text-[var(--ink-70)]">
-                        {event.event_type}
+                      <td className="px-5 py-4">
+                        <span className="badge-pill text-[10px]">{event.event_type}</span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-4">
                         <span
-                          className={`px-2 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider ${
                             status === "ongoing"
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                               : status === "upcoming"
-                              ? "bg-blue-50 text-blue-700 border border-blue-200"
-                              : "bg-slate-100 text-slate-600 border border-slate-200"
+                              ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                              : "bg-slate-500/20 text-slate-400 border border-slate-500/30"
                           }`}
                         >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{
+                              background: status === "ongoing" ? "#10b981" : status === "upcoming" ? "#3b82f6" : "#94a3b8",
+                            }}
+                          />
                           {status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <td className="px-5 py-4 text-right whitespace-nowrap">
                         <button
                           onClick={() => startEdit(event)}
-                          className="text-[var(--primary)] font-semibold mr-3 hover:underline cursor-pointer"
+                          className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-semibold mr-3 cursor-pointer text-xs"
                         >
                           Edit
                         </button>
                         <button
                           disabled={busy}
                           onClick={() => remove(event)}
-                          className="text-red-600 font-semibold disabled:opacity-40 hover:underline cursor-pointer"
+                          className="text-red-400 hover:text-red-300 font-semibold disabled:opacity-40 cursor-pointer text-xs"
                         >
                           Delete
                         </button>
@@ -301,58 +332,61 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
             </table>
           </div>
           {events.length === 0 && (
-            <div className="py-12 text-center text-[13px] text-[var(--ink-45)]">
-              No events yet. Click "+ Create Event" above to create your first event.
+            <div className="py-16 text-center text-[13px] text-[var(--ink-45)]">
+              No events scheduled yet. Click "+ Create New Event" above to publish your first summit.
             </div>
           )}
         </div>
 
+        {/* 21st.dev Create / Edit Modal Dialog */}
         {open && (
-          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
             <form
               onSubmit={handleSubmit(onSubmit)}
-              className="w-full max-w-xl bg-white rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-xl bg-[var(--paper)] border border-[var(--border)] rounded-3xl shadow-2xl p-7 max-h-[90vh] overflow-y-auto space-y-4"
             >
-              <div className="flex justify-between items-center mb-5">
+              <div className="flex justify-between items-start pb-2 border-b border-[var(--border)]">
                 <div>
-                  <h2 className="font-display text-[18px] font-bold">
-                    {editing ? "Edit Event Details" : "Create New Event"}
+                  <h2 className="font-display text-[18px] font-bold text-[var(--ink)]">
+                    {editing ? "Edit Event Parameters" : "Create New Corporate Event"}
                   </h2>
-                  <p className="text-[12px] text-[var(--ink-45)] mt-1">
-                    Fill in event information and associated product suite.
+                  <p className="text-[12px] text-[var(--ink-45)] mt-0.5">
+                    Configure dates, associated product suite, and cover banner.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="text-[var(--ink-45)] text-xl hover:text-[var(--ink)]"
+                  className="text-[var(--ink-45)] text-xl hover:text-[var(--ink)] cursor-pointer"
                 >
                   ×
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <label className="sm:col-span-2 text-[12px] font-medium">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <label className="sm:col-span-2 text-[12px] font-semibold text-[var(--ink-70)]">
                   Event Name *
                   <input
                     {...register("title")}
                     placeholder="e.g. India FinTech Summit 2026"
-                    className={`mt-1.5 w-full px-3 py-2 rounded-lg border outline-none ${errors.title ? "border-red-500" : "border-[var(--line-soft)]"}`}
+                    className={`mt-1.5 w-full px-3.5 py-2.5 rounded-xl border bg-[var(--surface)] text-[var(--ink)] text-xs outline-none ${
+                      errors.title ? "border-red-500" : "border-[var(--border)] focus:border-[var(--primary)]"
+                    }`}
                   />
                   {errors.title && (
-                    <span className="block text-[11px] text-red-600 mt-1">
+                    <span className="block text-[11px] text-red-400 mt-1 font-mono">
                       ⚠️ {errors.title.message}
                     </span>
                   )}
                 </label>
 
-                <label className="text-[12px] font-medium">
+                <label className="text-[12px] font-semibold text-[var(--ink-70)]">
                   Associated Product *
                   <select
                     {...register("product_id")}
-                    className="mt-1.5 w-full px-3 py-2 rounded-lg border border-[var(--line-soft)] bg-white"
+                    className="mt-1.5 w-full px-3.5 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] text-xs outline-none"
                   >
-                    <option value="sheshi">Sheshi</option>
+                    <option value="sheshi">Sheshi Central</option>
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name}
@@ -361,90 +395,92 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
                   </select>
                 </label>
 
-                <label className="text-[12px] font-medium">
+                <label className="text-[12px] font-semibold text-[var(--ink-70)]">
                   Event Format *
                   <select
                     {...register("event_type")}
-                    className="mt-1.5 w-full px-3 py-2 rounded-lg border border-[var(--line-soft)] bg-white"
+                    className="mt-1.5 w-full px-3.5 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] text-xs outline-none"
                   >
                     <option value="In-person">In-person</option>
                     <option value="Virtual">Virtual</option>
                   </select>
                 </label>
 
-                <label className="text-[12px] font-medium">
+                <label className="text-[12px] font-semibold text-[var(--ink-70)]">
                   Start Date *
                   <input
                     type="date"
                     {...register("event_date")}
-                    className={`mt-1.5 w-full px-3 py-2 rounded-lg border outline-none ${errors.event_date ? "border-red-500" : "border-[var(--line-soft)]"}`}
+                    className={`mt-1.5 w-full px-3.5 py-2.5 rounded-xl border bg-[var(--surface)] text-[var(--ink)] text-xs outline-none ${
+                      errors.event_date ? "border-red-500" : "border-[var(--border)] focus:border-[var(--primary)]"
+                    }`}
                   />
                   {errors.event_date && (
-                    <span className="block text-[11px] text-red-600 mt-1">
+                    <span className="block text-[11px] text-red-400 mt-1 font-mono">
                       ⚠️ {errors.event_date.message}
                     </span>
                   )}
                 </label>
 
-                <label className="text-[12px] font-medium">
+                <label className="text-[12px] font-semibold text-[var(--ink-70)]">
                   End Date (Optional)
                   <input
                     type="date"
                     {...register("end_date")}
-                    className="mt-1.5 w-full px-3 py-2 rounded-lg border border-[var(--line-soft)] outline-none"
+                    className="mt-1.5 w-full px-3.5 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] text-xs outline-none"
                   />
                 </label>
 
-                <label className="sm:col-span-2 text-[12px] font-medium">
-                  Location
+                <label className="sm:col-span-2 text-[12px] font-semibold text-[var(--ink-70)]">
+                  Location / Venue
                   <input
                     {...register("location")}
-                    placeholder="e.g. Convention Centre, Mumbai"
-                    className="mt-1.5 w-full px-3 py-2 rounded-lg border border-[var(--line-soft)]"
+                    placeholder="e.g. Jio World Convention Centre, Mumbai"
+                    className="mt-1.5 w-full px-3.5 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] text-xs outline-none"
                   />
                 </label>
 
-                <label className="sm:col-span-2 text-[12px] font-medium">
+                <label className="sm:col-span-2 text-[12px] font-semibold text-[var(--ink-70)]">
                   Event Cover / Banner Image
                   <input
                     type="file"
                     accept="image/*"
                     onChange={(e) => setBannerFile(e.target.files?.[0] || null)}
-                    className="mt-1.5 w-full px-3 py-2 rounded-lg border border-[var(--line-soft)]"
+                    className="mt-1.5 w-full px-3.5 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] text-xs"
                   />
-                  <span className="block text-[10px] text-[var(--ink-45)] mt-1">
+                  <span className="block text-[10.5px] text-[var(--ink-45)] mt-1 font-mono">
                     {bannerFile
                       ? bannerFile.name
                       : editing?.banner
-                        ? "Current cover banner will be kept unless replaced."
-                        : "Upload cover banner image."}
+                      ? "Existing cover banner will be retained unless replaced."
+                      : "Recommended resolution: 1200x600px."}
                   </span>
                 </label>
 
-                <label className="sm:col-span-2 text-[12px] font-medium">
-                  Description
+                <label className="sm:col-span-2 text-[12px] font-semibold text-[var(--ink-70)]">
+                  Description & Agenda
                   <textarea
                     {...register("description")}
                     rows={3}
-                    placeholder="Provide event details, objectives, agenda..."
-                    className="mt-1.5 w-full px-3 py-2 rounded-lg border border-[var(--line-soft)]"
+                    placeholder="Provide event objectives, guest speakers, schedule..."
+                    className="mt-1.5 w-full px-3.5 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] text-xs outline-none resize-y"
                   />
                 </label>
               </div>
 
-              <div className="flex justify-end gap-2 mt-6">
+              <div className="flex justify-end gap-2.5 pt-4 border-t border-[var(--border)]">
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="px-4 py-2 text-[12px] font-semibold border border-[var(--line-soft)] rounded-lg"
+                  className="px-4 py-2 text-[12px] font-semibold border border-[var(--border)] rounded-xl text-[var(--ink-70)] hover:bg-[var(--surface)] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   disabled={busy}
-                  className="px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold disabled:opacity-50 hover:bg-[var(--primary-hover)]"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-[12px] font-semibold shadow-md shadow-orange-500/20 disabled:opacity-50 cursor-pointer"
                 >
-                  {busy ? "Saving…" : "Save Event"}
+                  {busy ? "Saving…" : "Save & Publish"}
                 </button>
               </div>
             </form>

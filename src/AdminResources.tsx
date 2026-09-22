@@ -478,15 +478,19 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
   })
 
   return (
-    <div className="px-8 py-6 max-w-[1400px] min-h-full">
-      {/* ── Header Area ──────────────────────────────────────────────────────── */}
-      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="px-8 py-8 max-w-[1400px] min-h-full space-y-6 mx-auto">
+      {/* ── 21st.dev Header Area ──────────────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[var(--border)]">
         <div>
-          <h1 className="font-display text-[22px] font-bold text-[var(--ink)]">
-            {canDelete ? 'Related Products & Files' : 'Upload Files'}
+          <div className="badge-pill mb-1">
+            <span className="pulse-dot bg-orange-500" />
+            ASSET MANAGEMENT
+          </div>
+          <h1 className="font-display text-[24px] font-extrabold tracking-tight heading-gradient">
+            {canDelete ? 'Related Products & Digital Assets' : 'Upload Collateral'}
           </h1>
-          <p className="text-[13px] text-[var(--ink-45)] mt-1">
-            {canDelete ? 'Manage shared library, file governance, duplicate detection, and storage analytics.' : 'Upload files to the shared library.'}
+          <p className="text-[13px] text-[var(--ink-45)] mt-0.5">
+            {canDelete ? 'Manage repository assets, file governance, duplicate detection, and cloud storage analytics.' : 'Upload assets to the shared library.'}
           </p>
         </div>
 
@@ -496,7 +500,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
             <button
               type="button"
               onClick={() => setShowTagModal(true)}
-              className="bg-white border border-[var(--line-soft)] hover:border-[var(--primary)] text-[var(--ink)] rounded-2xl px-4 py-3 shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center gap-2 text-[12.5px] font-semibold"
+              className="bg-[var(--surface-card)] hover:bg-[var(--surface-2)] border border-[var(--border)] hover:border-[var(--border-2)] text-[var(--ink)] rounded-2xl px-4 py-3 shadow-xs transition-all cursor-pointer flex items-center gap-2 text-[12.5px] font-semibold backdrop-blur-md"
             >
               <span className="text-[var(--primary)]"><TagIcon /></span>
               Tag Governance ({globalTagList.length})
@@ -508,23 +512,23 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
             <button
               type="button"
               onClick={() => setShowStorageModal(true)}
-              className="group text-left bg-white border border-[var(--line-soft)] hover:border-[var(--primary)] rounded-2xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer min-w-[270px]"
+              className="group text-left bg-[var(--surface-card)] hover:bg-[var(--surface-2)] border border-[var(--border)] hover:border-[var(--border-2)] rounded-2xl p-3.5 shadow-xs transition-all cursor-pointer min-w-[260px] backdrop-blur-md"
             >
-              <div className="flex items-center justify-between gap-3 mb-1.5">
+              <div className="flex items-center justify-between gap-3 mb-1">
                 <div className="flex items-center gap-2 text-[var(--ink)]">
                   <span className="w-6 h-6 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center">
                     <StorageCloudIcon />
                   </span>
-                  <span className="text-[12.5px] font-bold tracking-tight">Storage Usage</span>
+                  <span className="text-[12px] font-bold tracking-tight">Storage Usage</span>
                 </div>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)]">
+                <span className="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)]">
                   Admin
                 </span>
               </div>
 
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[16px] font-black text-[var(--ink)]">
-                  {formatBytes(totalUsedBytes)} <span className="text-[11px] font-normal text-[var(--ink-45)]">consumed</span>
+                <span className="text-[15px] font-extrabold text-[var(--ink)] font-mono">
+                  {formatBytes(totalUsedBytes)} <span className="text-[11px] font-normal text-[var(--ink-45)] font-sans">consumed</span>
                 </span>
                 <span className="text-[11px] font-bold text-[var(--primary)] group-hover:underline">
                   Details →
@@ -536,8 +540,11 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[390px_minmax(0,1fr)] gap-6">
-        <div className="bg-white border border-[var(--line-soft)] rounded-2xl p-5 h-fit">
-          <h2 className="font-semibold text-[14px] mb-4">Add files</h2>
+        <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-5 h-fit backdrop-blur-md">
+          <h2 className="font-bold text-[14.5px] mb-4 text-[var(--ink)] font-display flex items-center gap-2">
+            <span>Add Collateral</span>
+            <span className="badge-pill text-[9.5px]">Upload Engine</span>
+          </h2>
           <div className="space-y-3">
             <label className="block text-[12px] font-medium">Related Product
               <select value={productId} onChange={e => setProductId(e.target.value)} className="mt-1.5 w-full px-3 py-2.5 rounded-lg border">
@@ -689,16 +696,18 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
           </div>
         </div>
 
-        <div className="bg-white border border-[var(--line-soft)] rounded-2xl divide-y">
+        <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl divide-y divide-[var(--border)] backdrop-blur-md">
           <div className="px-5 py-4 flex flex-wrap items-center justify-between gap-4 font-semibold text-[14px]">
             <div className="flex items-center gap-3">
-              <span>Shared Library {showDeleted && <span className="text-[12px] font-normal text-red-600">(Trash Bin)</span>}</span>
+              <span className="font-display font-bold text-[var(--ink)]">
+                Repository Assets {showDeleted && <span className="text-[12px] font-normal text-red-400 font-mono">(Trash Bin)</span>}
+              </span>
               
               {/* Status Filter */}
               <select
                 value={filterStatus}
                 onChange={e => setFilterStatus(e.target.value)}
-                className="px-2.5 py-1 rounded-lg bg-[var(--canvas-deep)] border border-[var(--line-soft)] text-[11px] text-[var(--ink)] outline-none font-medium"
+                className="px-3 py-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-[11.5px] text-[var(--ink)] outline-none font-medium"
               >
                 <option value="ACTIVE_OFFICIAL">Active & Official (Default)</option>
                 <option value="ALL">All Content Statuses</option>
@@ -711,7 +720,7 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
             {isAdmin && (
               <label className="flex items-center gap-2 text-[12px] font-normal text-[var(--ink-45)] cursor-pointer select-none">
                 <input type="checkbox" checked={showDeleted} onChange={e => setShowDeleted(e.target.checked)} className="rounded text-[var(--primary)]" />
-                Show Deleted Files (Trash)
+                Show Deleted Assets (Trash)
               </label>
             )}
           </div>
@@ -786,39 +795,39 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
       {/* ── Phase 2: Duplicate File Warning Modal ────────────────────────────── */}
       {duplicateMatch && pendingUploadFile && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-md flex items-center justify-center p-4"
           onClick={e => { if (e.target === e.currentTarget) { setDuplicateMatch(null); setPendingUploadFile(null); } }}
         >
-          <div className="bg-white border border-[var(--line-soft)] rounded-2xl w-full max-w-lg shadow-2xl p-6 text-[var(--ink)] space-y-4">
-            <div className="flex items-center gap-3 text-amber-500">
-              <span className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+          <div className="bg-[var(--paper)] border border-[var(--border)] rounded-3xl w-full max-w-lg shadow-2xl p-7 text-[var(--ink)] space-y-4">
+            <div className="flex items-center gap-3 text-amber-400">
+              <span className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
                 <AlertTriangleIcon />
               </span>
               <div>
-                <h2 className="text-[16px] font-bold text-[var(--ink)]">Possible Duplicate Detected</h2>
-                <p className="text-[11.5px] text-[var(--ink-45)]">A similar file already exists in the Vault.</p>
+                <h2 className="text-[16px] font-bold text-[var(--ink)] font-display">Potential Duplicate Detected</h2>
+                <p className="text-[11.5px] text-[var(--ink-45)]">A similar file already exists in the Vault index.</p>
               </div>
             </div>
 
-            <div className="bg-[var(--canvas-deep)] border border-[var(--line-soft)] rounded-xl p-4 space-y-2">
-              <div className="text-[11px] uppercase font-bold text-[var(--ink-45)]">Existing Vault File</div>
-              <div className="font-bold text-[14px] text-[var(--ink)]">{duplicateMatch.title}</div>
-              <div className="text-[11.5px] text-[var(--ink-45)] flex items-center gap-2">
+            <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-2xl p-4 space-y-1.5 font-mono">
+              <div className="text-[10px] uppercase font-bold text-[var(--ink-45)]">Existing Indexed Asset</div>
+              <div className="font-bold text-[14px] text-[var(--ink)] font-sans">{duplicateMatch.title}</div>
+              <div className="text-[11px] text-[var(--ink-45)] flex items-center gap-2">
                 <span>Version: <strong className="text-[var(--ink)]">{duplicateMatch.version || 'v1.0'}</strong></span>
                 <span>• Size: <strong className="text-[var(--ink)]">{duplicateMatch.fileSize || '—'}</strong></span>
-                <span>• Uploaded by: <strong className="text-[var(--ink)]">{duplicateMatch.uploadedByName || 'Library'}</strong></span>
+                <span>• Uploader: <strong className="text-[var(--ink)]">{duplicateMatch.uploadedByName || 'Library'}</strong></span>
               </div>
             </div>
 
-            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 rounded-xl p-3 text-[12px]">
-              Would you like to replace the existing file (increments to version <strong>v2.0</strong>) or upload as a new separate file?
+            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded-xl p-3 text-[12px]">
+              Would you like to replace the existing asset (increments version) or upload as a new collateral item?
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+            <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2">
               <button
                 type="button"
                 onClick={() => { setDuplicateMatch(null); setPendingUploadFile(null); }}
-                className="px-4 py-2 rounded-lg border border-[var(--line-soft)] text-[12px] font-semibold text-[var(--ink-45)] hover:text-[var(--ink)] cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-[var(--border)] text-[12px] font-semibold text-[var(--ink-70)] hover:bg-[var(--surface)] cursor-pointer"
               >
                 Cancel
               </button>
@@ -830,16 +839,16 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                   setPendingUploadFile(null)
                   upload(target)
                 }}
-                className="px-4 py-2 rounded-lg border border-[var(--primary)] text-[var(--primary)] text-[12px] font-semibold hover:bg-[var(--primary)]/10 cursor-pointer"
+                className="px-4 py-2 rounded-xl border border-[var(--primary)] text-[var(--primary)] text-[12px] font-semibold hover:bg-[var(--primary)]/10 cursor-pointer"
               >
                 Upload Anyway
               </button>
               <button
                 type="button"
                 onClick={handleReplaceDuplicate}
-                className="px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold hover:opacity-90 cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[var(--primary)] text-white text-[12px] font-semibold hover:opacity-90 cursor-pointer shadow-md shadow-orange-500/20"
               >
-                Replace Existing File
+                Replace Existing
               </button>
             </div>
           </div>
@@ -849,37 +858,37 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
       {/* ── Admin Tag Governance Modal ─────────────────────────────────────── */}
       {showTagModal && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+          className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6"
           onClick={e => { if (e.target === e.currentTarget) setShowTagModal(false) }}
         >
-          <div className="bg-white border border-[var(--line-soft)] rounded-2xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl text-[var(--ink)] overflow-hidden">
-            <div className="px-6 py-4 border-b border-[var(--line-soft)] flex items-center justify-between gap-4 bg-[var(--paper)]">
+          <div className="bg-[var(--paper)] border border-[var(--border)] rounded-3xl w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl text-[var(--ink)] overflow-hidden">
+            <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between gap-4 bg-[var(--surface-card)]">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center border border-[var(--primary)]/20">
                   <TagIcon />
                 </div>
                 <div>
-                  <h2 className="text-[16px] font-bold text-[var(--ink)]">Admin Tag Governance</h2>
-                  <p className="text-[11.5px] text-[var(--ink-45)]">Rename tags, merge duplicates, or remove unused tags globally across the Vault.</p>
+                  <h2 className="text-[16px] font-bold text-[var(--ink)] font-display">Global Tag Governance</h2>
+                  <p className="text-[11.5px] text-[var(--ink-45)]">Rename tags, merge duplicates, or remove unused tags across the Vault.</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setShowTagModal(false)}
-                className="w-8 h-8 rounded-lg bg-[var(--canvas-deep)] text-[var(--ink-70)] hover:text-[var(--ink)] flex items-center justify-center cursor-pointer"
+                className="w-8 h-8 rounded-xl bg-[var(--surface-2)] text-[var(--ink-70)] hover:text-[var(--ink)] flex items-center justify-center cursor-pointer border border-[var(--border)]"
               >
                 <CloseCrossIcon />
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-[var(--canvas)]">
-              <div className="bg-white border border-[var(--line-soft)] rounded-xl p-4 shadow-sm space-y-3">
-                <h3 className="text-[13px] font-bold text-[var(--ink)]">Rename Global Tag</h3>
+            <div className="p-6 overflow-y-auto space-y-5 flex-1 bg-[var(--canvas)]">
+              <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-5 shadow-xs space-y-3">
+                <h3 className="text-[13px] font-bold text-[var(--ink)] font-display">Rename Global Tag</h3>
                 <div className="flex flex-wrap items-center gap-3">
                   <select
                     value={tagRenameOld}
                     onChange={e => setTagRenameOld(e.target.value)}
-                    className="px-3 py-2 rounded-lg border text-[12px] bg-[var(--canvas-deep)] min-w-[160px]"
+                    className="px-3 py-2 rounded-xl border border-[var(--border)] text-[12px] bg-[var(--surface-2)] text-[var(--ink)] min-w-[160px]"
                   >
                     <option value="">Select tag to rename…</option>
                     {globalTagList.map(t => (
@@ -892,30 +901,30 @@ export default function AdminResources({ canDelete = true }: { canDelete?: boole
                     value={tagRenameNew}
                     onChange={e => setTagRenameNew(e.target.value)}
                     placeholder="New Tag Name"
-                    className="px-3 py-2 rounded-lg border text-[12px] bg-[var(--canvas-deep)] flex-1 min-w-[160px]"
+                    className="px-3 py-2 rounded-xl border border-[var(--border)] text-[12px] bg-[var(--surface-2)] text-[var(--ink)] flex-1 min-w-[160px]"
                   />
                   <button
                     type="button"
                     disabled={busy || !tagRenameOld || !tagRenameNew.trim()}
                     onClick={handleRenameTag}
-                    className="px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold disabled:opacity-40 cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-[var(--primary)] text-white text-[12px] font-semibold disabled:opacity-40 cursor-pointer shadow-xs"
                   >
                     Rename Tag
                   </button>
                 </div>
               </div>
 
-              <div className="bg-white border border-[var(--line-soft)] rounded-xl p-4 shadow-sm space-y-3">
-                <h3 className="text-[13px] font-bold text-[var(--ink)]">Active Vault Tags ({globalTagList.length})</h3>
-                <div className="flex flex-wrap gap-2 max-h-[220px] overflow-y-auto p-1 border border-[var(--line-soft)] rounded-lg bg-[var(--canvas-deep)]">
+              <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-5 shadow-xs space-y-3">
+                <h3 className="text-[13px] font-bold text-[var(--ink)] font-display">Active Repository Tags ({globalTagList.length})</h3>
+                <div className="flex flex-wrap gap-2 max-h-[220px] overflow-y-auto p-2 border border-[var(--border)] rounded-xl bg-[var(--surface-2)]">
                   {globalTagList.map(t => (
-                    <div key={t.tag} className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white border border-[var(--line-soft)] text-[11px] font-medium shadow-xs">
-                      <span>{t.tag}</span>
-                      <span className="px-1.5 py-0.2 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] font-bold text-[9.5px]">{t.count}</span>
+                    <div key={t.tag} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--surface)] border border-[var(--border)] text-[11px] font-medium shadow-xs">
+                      <span>#{t.tag}</span>
+                      <span className="px-1.5 py-0.2 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] font-bold text-[9.5px] font-mono">{t.count}</span>
                       <button
                         type="button"
                         onClick={() => handleDeleteTag(t.tag)}
-                        className="text-red-500 hover:text-red-700 text-[12px] font-bold ml-1"
+                        className="text-red-400 hover:text-red-300 text-[12px] font-bold ml-1 cursor-pointer"
                         title="Delete tag globally"
                       >
                         ×

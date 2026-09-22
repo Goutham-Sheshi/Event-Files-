@@ -41,18 +41,16 @@ export default function NotificationToast({ onSelectEvent }: NotificationToastPr
       {toasts.map(({ notification, id }) => (
         <div
           key={id}
-          className="pointer-events-auto bg-[var(--paper)] text-[var(--ink)] border border-[var(--primary)]/30 shadow-2xl rounded-2xl p-4.5 backdrop-blur-xl animate-in slide-in-from-top-4 duration-300 transition-all hover:border-[var(--primary)]/60 relative overflow-hidden"
-          style={{
-            boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(var(--primary-rgb, 99, 102, 241), 0.15)',
-          }}
+          className="pointer-events-auto bg-[var(--paper)] text-[var(--ink)] border border-[var(--border-2)] shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl p-4.5 backdrop-blur-2xl animate-in slide-in-from-top-4 duration-300 transition-all hover:border-[var(--primary)]/50 relative overflow-hidden group"
         >
-          {/* Subtle top accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[var(--primary)] via-indigo-400 to-purple-500 animate-pulse" />
+          {/* Subtle top accent gradient */}
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-orange-500 via-indigo-500 to-teal-400" />
 
           <div className="flex items-start gap-3.5 mt-1">
-            {/* Icon Bubble */}
-            <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/15 border border-[var(--primary)]/30 flex items-center justify-center flex-shrink-0 text-[var(--primary)]">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {/* Radar status icon */}
+            <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/25 flex items-center justify-center flex-shrink-0 text-orange-400 relative">
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-orange-400 animate-ping" />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
                 <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
               </svg>
@@ -61,50 +59,55 @@ export default function NotificationToast({ onSelectEvent }: NotificationToastPr
             {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[11px] font-bold tracking-wider uppercase text-[var(--primary)]">
-                  {notification.title}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] font-semibold tracking-wider uppercase text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">
+                    EVENT TELEMETRY
+                  </span>
+                  <span className="text-[11px] font-semibold text-[var(--ink)] truncate max-w-[170px]">
+                    {notification.title}
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={() => setToasts((prev) => prev.filter((t) => t.id !== id))}
-                  className="text-[var(--ink-45)] hover:text-[var(--ink)] transition-colors p-1 -mr-1 -mt-1 rounded-md"
+                  className="text-[var(--ink-45)] hover:text-[var(--ink)] transition-colors p-1 -mr-1 -mt-1 rounded-lg hover:bg-[var(--canvas)]"
                   aria-label="Dismiss notification"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" />
                     <line x1="6" y1="6" x2="18" y2="18" />
                   </svg>
                 </button>
               </div>
 
-              <p className="text-[13px] font-semibold text-[var(--ink)] leading-snug line-clamp-2">
+              <p className="text-[13px] font-medium text-[var(--ink)] leading-snug line-clamp-2 mt-1">
                 {notification.message}
               </p>
 
-              {/* Metadata tags */}
-              <div className="flex flex-wrap items-center gap-2 mt-2">
+              {/* Monospace Metadata Badges */}
+              <div className="flex flex-wrap items-center gap-2 mt-2.5">
                 {notification.event_date && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--ink-70)] bg-[var(--canvas-deep)] px-2 py-0.5 rounded-md border border-[var(--line-soft)]">
-                    📅 {new Date(notification.event_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  <span className="inline-flex items-center gap-1 font-mono text-[10.5px] font-medium text-[var(--ink-70)] bg-[var(--surface-1)] px-2 py-0.5 rounded-md border border-[var(--border-1)]">
+                    <span className="text-orange-400">📅</span> {new Date(notification.event_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                 )}
                 {notification.location && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--ink-70)] bg-[var(--canvas-deep)] px-2 py-0.5 rounded-md border border-[var(--line-soft)]">
-                    📍 {notification.location}
+                  <span className="inline-flex items-center gap-1 font-mono text-[10.5px] font-medium text-[var(--ink-70)] bg-[var(--surface-1)] px-2 py-0.5 rounded-md border border-[var(--border-1)]">
+                    <span className="text-indigo-400">📍</span> {notification.location}
                   </span>
                 )}
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2 mt-3 pt-2 border-t border-[var(--line-soft)]">
+              <div className="flex items-center gap-2 mt-3.5 pt-2.5 border-t border-[var(--border-1)]">
                 <button
                   type="button"
                   onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectEvent(notification.event_id || 'events');
-                    setToasts((prev) => prev.filter((t) => t.id !== id));
+                    e.stopPropagation()
+                    onSelectEvent(notification.event_id || 'events')
+                    setToasts((prev) => prev.filter((t) => t.id !== id))
                   }}
-                  className="px-3.5 py-1.5 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 hover:brightness-110 text-white text-[11.5px] font-bold tracking-wide transition-all cursor-pointer flex items-center gap-1.5 shadow-[0_4px_12px_rgba(249,115,22,0.3)]"
                 >
                   <span>View Event</span>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -115,10 +118,10 @@ export default function NotificationToast({ onSelectEvent }: NotificationToastPr
                 <button
                   type="button"
                   onClick={(e) => {
-                    e.stopPropagation();
-                    setToasts((prev) => prev.filter((t) => t.id !== id));
+                    e.stopPropagation()
+                    setToasts((prev) => prev.filter((t) => t.id !== id))
                   }}
-                  className="px-3 py-1.5 rounded-lg border border-[var(--line-soft)] hover:bg-[var(--canvas)] text-[var(--ink-70)] text-[12px] font-medium transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg border border-[var(--border-1)] hover:bg-[var(--canvas)] text-[var(--ink-45)] hover:text-[var(--ink)] text-[11.5px] font-medium transition-colors cursor-pointer"
                 >
                   Dismiss
                 </button>

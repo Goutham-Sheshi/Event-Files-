@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import type { ManagedEvent } from '../eventsApi'
 import {
   calculateEventStatus,
@@ -11,7 +11,7 @@ import {
   addEventLink,
   deleteEventResource,
   deleteEventGalleryMedia,
-  deleteEventLink
+  deleteEventLink,
 } from '../eventsApi'
 import type {
   EventResourceItem,
@@ -19,7 +19,7 @@ import type {
   EventGalleryMediaItem,
   EventLinkItem,
   VaultProfile,
-  Product
+  Product,
 } from '../types'
 import { products } from '../data'
 import { triggerDirectDownload } from '../utils'
@@ -47,35 +47,79 @@ const CATEGORIES: { id: EventResourceCategory | 'all'; label: string }[] = [
 ]
 
 function CalendarIcon() {
-  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  )
 }
 
 function LocationIcon() {
-  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  )
 }
 
 function FolderStatIcon() {
-  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </svg>
+  )
 }
 
 function MediaStatIcon() {
-  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </svg>
+  )
 }
 
 function LinkStatIcon() {
-  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  )
 }
 
 function SearchIcon() {
-  return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  )
 }
 
 function TrashIcon() {
-  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18" />
+      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+    </svg>
+  )
 }
 
 function ExternalLinkIcon() {
-  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  )
 }
 
 export default function EventPage({
@@ -84,14 +128,14 @@ export default function EventPage({
   isAdmin,
   onBack,
   onEventUpdated,
-  onOpenEditModal
+  onOpenEditModal,
 }: EventPageProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [resources, setResources] = useState<EventResourceItem[]>([])
   const [gallery, setGallery] = useState<EventGalleryMediaItem[]>([])
   const [links, setLinks] = useState<EventLinkItem[]>([])
 
-  const [loading, setLoading] = useState(true)
+  const [, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<EventResourceCategory | 'all'>('all')
 
@@ -118,10 +162,12 @@ export default function EventPage({
   // Lightbox Modal
   const [selectedPhoto, setSelectedPhoto] = useState<EventGalleryMediaItem | null>(null)
 
-  const isAdvanced = profile ? (profile.role === 'advanced' || profile.role === 'teammate') && profile.status === 'approved' : false
+  const isAdvanced = profile
+    ? (profile.role === 'advanced' || profile.role === 'teammate') && profile.status === 'approved'
+    : false
   const canUpload = isAdmin || isAdvanced
 
-  const product = products.find(p => p.id === event.product_id || p.slug === event.product_id)
+  const product = products.find((p) => p.id === event.product_id || p.slug === event.product_id)
   const status = calculateEventStatus(event)
   const userEmail = profile?.email || ''
 
@@ -131,13 +177,16 @@ export default function EventPage({
       const [resData, galData, linkData] = await Promise.all([
         getEventResources(event.id),
         getEventGallery(event.id),
-        getEventLinks(event.id)
+        getEventLinks(event.id),
       ])
       setResources(resData)
       setGallery(galData)
       setLinks(linkData)
-    } catch { /* ignore */ }
-    finally { setLoading(false) }
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -154,13 +203,18 @@ export default function EventPage({
       onBack()
     } catch (e: any) {
       alert(e?.message || 'Failed to delete event')
-    } finally { setBusy(false) }
+    } finally {
+      setBusy(false)
+    }
   }
 
   // Handle Resource Upload
   const handleResourceUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!resourceFile) { setError('Please select a file to upload'); return }
+    if (!resourceFile) {
+      setError('Please select a file to upload')
+      return
+    }
     setBusy(true)
     setError(null)
     try {
@@ -172,13 +226,18 @@ export default function EventPage({
       loadData()
     } catch (err: any) {
       setError(err?.message || 'Failed to upload resource')
-    } finally { setBusy(false) }
+    } finally {
+      setBusy(false)
+    }
   }
 
   // Handle Gallery Upload
   const handleMediaUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!mediaFile) { setError('Please select an image or video file'); return }
+    if (!mediaFile) {
+      setError('Please select an image or video file')
+      return
+    }
     setBusy(true)
     setError(null)
     try {
@@ -189,13 +248,18 @@ export default function EventPage({
       loadData()
     } catch (err: any) {
       setError(err?.message || 'Failed to upload media')
-    } finally { setBusy(false) }
+    } finally {
+      setBusy(false)
+    }
   }
 
   // Handle Add Link
   const handleAddLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!linkTitle.trim() || !linkUrl.trim()) { setError('Title and URL are required'); return }
+    if (!linkTitle.trim() || !linkUrl.trim()) {
+      setError('Title and URL are required')
+      return
+    }
     setBusy(true)
     setError(null)
     try {
@@ -207,13 +271,18 @@ export default function EventPage({
       loadData()
     } catch (err: any) {
       setError(err?.message || 'Failed to add link')
-    } finally { setBusy(false) }
+    } finally {
+      setBusy(false)
+    }
   }
 
   // Deletion checks
-  const canDeleteResource = (item: EventResourceItem) => isAdmin || (isAdvanced && item.uploadedBy.toLowerCase() === userEmail.toLowerCase())
-  const canDeleteMedia = (item: EventGalleryMediaItem) => isAdmin || (isAdvanced && item.uploadedBy.toLowerCase() === userEmail.toLowerCase())
-  const canDeleteLink = (item: EventLinkItem) => isAdmin || (isAdvanced && item.addedBy.toLowerCase() === userEmail.toLowerCase())
+  const canDeleteResource = (item: EventResourceItem) =>
+    isAdmin || (isAdvanced && item.uploadedBy.toLowerCase() === userEmail.toLowerCase())
+  const canDeleteMedia = (item: EventGalleryMediaItem) =>
+    isAdmin || (isAdvanced && item.uploadedBy.toLowerCase() === userEmail.toLowerCase())
+  const canDeleteLink = (item: EventLinkItem) =>
+    isAdmin || (isAdvanced && item.addedBy.toLowerCase() === userEmail.toLowerCase())
 
   const handleDeleteResource = async (item: EventResourceItem) => {
     if (!window.confirm(`Delete "${item.title}"?`)) return
@@ -234,8 +303,9 @@ export default function EventPage({
   }
 
   // Filtered Resources
-  const filteredResources = resources.filter(item => {
-    const matchesSearch = !searchQuery.trim() ||
+  const filteredResources = resources.filter((item) => {
+    const matchesSearch =
+      !searchQuery.trim() ||
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.fileFormat && item.fileFormat.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesCat = categoryFilter === 'all' || item.category === categoryFilter
@@ -243,49 +313,59 @@ export default function EventPage({
   })
 
   // Date Formatting
-  const startDateText = new Date(event.event_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-  const endDateText = event.end_date ? new Date(event.end_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : null
-  const dateRangeText = endDateText ? `${startDateText} - ${endDateText}` : startDateText
+  const startDateText = new Date(event.event_date).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
+  const endDateText = event.end_date
+    ? new Date(event.end_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+    : null
+  const dateRangeText = endDateText ? `${startDateText} — ${endDateText}` : startDateText
 
   // Photos vs Videos in Gallery
-  const photos = gallery.filter(g => g.mediaType === 'image')
-  const videos = gallery.filter(g => g.mediaType === 'video')
+  const photos = gallery.filter((g) => g.mediaType === 'image')
+  const videos = gallery.filter((g) => g.mediaType === 'video')
 
   return (
     <main className="flex-1 overflow-y-auto bg-[var(--canvas)]">
-      {/* Top Banner & Header */}
-      <div className="relative bg-[#0f121a] text-white overflow-hidden border-b border-white/10">
+      {/* 21st.dev Cinematic Event Hero Banner */}
+      <div className="relative bg-[var(--canvas-deep)] text-white overflow-hidden border-b border-[var(--border)]">
         <div className="absolute inset-0 z-0 opacity-40">
           {event.banner ? (
             <img src={event.banner} alt="" className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full bg-gradient-to-r from-orange-600 via-indigo-900 to-slate-900" />
+            <div className="w-full h-full bg-gradient-to-r from-orange-600/60 via-indigo-900/60 to-slate-900" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0f121a] via-[#0f121a]/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--canvas)] via-[var(--canvas)]/70 to-transparent" />
         </div>
 
         <div className="relative z-10 max-w-[1400px] mx-auto px-8 py-8">
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-white/80 hover:text-white mb-6 bg-white/10 backdrop-blur px-3 py-1.5 rounded-full border border-white/15 transition-all"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-white/80 hover:text-white mb-6 bg-white/10 hover:bg-white/15 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/15 transition-all cursor-pointer"
           >
-            ← Back to Events
+            <span>←</span> Back to Events
           </button>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-3 max-w-3xl">
+            <div className="space-y-3.5 max-w-3xl">
               <div className="flex items-center gap-2 flex-wrap">
                 {product && (
                   <span
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
-                    style={{ background: product.light, color: product.color }}
+                    className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold border"
+                    style={{
+                      background: `${product.color}20`,
+                      borderColor: `${product.color}40`,
+                      color: product.color,
+                    }}
                   >
                     <span className="w-2 h-2 rounded-full" style={{ background: product.color }} />
                     {product.name}
                   </span>
                 )}
                 <span
-                  className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider ${
                     status === 'ongoing'
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                       : status === 'upcoming'
@@ -293,24 +373,30 @@ export default function EventPage({
                       : 'bg-slate-500/20 text-slate-300 border border-slate-500/30'
                   }`}
                 >
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{
+                      background: status === 'ongoing' ? '#10b981' : status === 'upcoming' ? '#3b82f6' : '#94a3b8',
+                    }}
+                  />
                   {status}
                 </span>
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 text-white/90 border border-white/15">
+                <span className="badge-pill bg-white/10 text-white/90 border-white/15 text-xs py-0.5">
                   {event.event_type}
                 </span>
               </div>
 
-              <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-white">
+              <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">
                 {event.title}
               </h1>
 
-              <div className="flex flex-wrap items-center gap-4 text-xs text-white/80">
-                <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-white/80 font-mono">
+                <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
                   <CalendarIcon />
                   <span>{dateRangeText}</span>
                 </div>
                 {event.location && (
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
                     <LocationIcon />
                     <span>{event.location}</span>
                   </div>
@@ -319,11 +405,11 @@ export default function EventPage({
             </div>
 
             {isAdmin && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 {onOpenEditModal && (
                   <button
                     onClick={() => onOpenEditModal(event)}
-                    className="px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold border border-white/20 transition-all"
+                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition-all cursor-pointer"
                   >
                     Edit Event
                   </button>
@@ -331,7 +417,7 @@ export default function EventPage({
                 <button
                   onClick={handleDeleteEvent}
                   disabled={busy}
-                  className="px-4 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs font-semibold border border-red-500/30 transition-all"
+                  className="px-4 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-200 text-xs font-semibold border border-red-500/30 transition-all cursor-pointer"
                 >
                   Delete Event
                 </button>
@@ -341,92 +427,103 @@ export default function EventPage({
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="sticky top-0 z-30 bg-white border-b border-[var(--line-soft)] shadow-sm">
-        <div className="max-w-[1400px] mx-auto px-8 flex gap-8">
-          {(['overview', 'resources', 'gallery', 'links', 'notes'] as TabType[]).map(tab => (
+      {/* 21st.dev Sticky Pill Tab Switcher */}
+      <div className="sticky top-0 z-20 bg-[var(--surface-card)] backdrop-blur-xl border-b border-[var(--border)]">
+        <div className="max-w-[1400px] mx-auto px-8 flex gap-3 py-3 overflow-x-auto">
+          {(['overview', 'resources', 'gallery', 'links', 'notes'] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`py-4 text-sm font-semibold border-b-2 capitalize transition-all ${
+              className={`px-4 py-2 rounded-xl text-xs font-semibold capitalize transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
                 activeTab === tab
-                  ? 'border-[var(--primary)] text-[var(--primary)]'
-                  : 'border-transparent text-[var(--ink-45)] hover:text-[var(--ink)]'
+                  ? 'bg-[var(--primary)] text-white shadow-md shadow-orange-500/20'
+                  : 'bg-[var(--surface)] text-[var(--ink-70)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] border border-[var(--border)]'
               }`}
             >
-              {tab === 'resources' ? `Resources (${resources.length})` :
-               tab === 'gallery' ? `Gallery (${gallery.length})` :
-               tab === 'links' ? `Links (${links.length})` :
-               tab === 'notes' ? 'Notes' : 'Overview'}
+              <span>
+                {tab === 'resources'
+                  ? `Resources (${resources.length})`
+                  : tab === 'gallery'
+                  ? `Gallery (${gallery.length})`
+                  : tab === 'links'
+                  ? `Links (${links.length})`
+                  : tab === 'notes'
+                  ? 'Notes & Intel'
+                  : 'Overview'}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content Body */}
       <div className="max-w-[1400px] mx-auto px-8 py-8">
-
         {/* OVERVIEW TAB */}
         {activeTab === 'overview' && (
           <div className="space-y-8">
             {/* Description Card */}
-            <div className="bg-white border border-[var(--line-soft)] rounded-2xl p-6 shadow-sm">
-              <h2 className="text-base font-bold text-[var(--ink)] mb-3">About this Event</h2>
+            <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-6 backdrop-blur-md">
+              <h2 className="text-base font-bold text-[var(--ink)] mb-3 flex items-center gap-2">
+                <span>About this Event</span>
+                <span className="badge-pill text-[10px]">Official Brief</span>
+              </h2>
               <p className="text-sm text-[var(--ink-70)] leading-relaxed whitespace-pre-line">
                 {event.description || 'No detailed description provided for this event.'}
               </p>
             </div>
 
-            {/* Quick Stats & Information Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white border border-[var(--line-soft)] rounded-2xl p-6 shadow-sm flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-orange-500/10 text-[var(--primary)] border border-orange-500/20 flex items-center justify-center font-bold">
+            {/* 3 Bento Telemetry Metric Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-6 backdrop-blur-md flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-[var(--primary)] border border-orange-500/20 flex items-center justify-center font-bold">
                   <FolderStatIcon />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-[var(--ink)]">{resources.length}</div>
-                  <div className="text-xs text-[var(--ink-45)] font-medium">Event Resources & Files</div>
+                  <div className="text-2xl font-extrabold text-[var(--ink)] font-display">{resources.length}</div>
+                  <div className="text-xs text-[var(--ink-45)] font-mono mt-0.5">Event Resources & Files</div>
                 </div>
               </div>
 
-              <div className="bg-white border border-[var(--line-soft)] rounded-2xl p-6 shadow-sm flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 flex items-center justify-center font-bold">
+              <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-6 backdrop-blur-md flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center font-bold">
                   <MediaStatIcon />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-[var(--ink)]">{gallery.length}</div>
-                  <div className="text-xs text-[var(--ink-45)] font-medium">Photos & Videos</div>
+                  <div className="text-2xl font-extrabold text-[var(--ink)] font-display">{gallery.length}</div>
+                  <div className="text-xs text-[var(--ink-45)] font-mono mt-0.5">Photos & Videos</div>
                 </div>
               </div>
 
-              <div className="bg-white border border-[var(--line-soft)] rounded-2xl p-6 shadow-sm flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center justify-center font-bold">
+              <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-6 backdrop-blur-md flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-bold">
                   <LinkStatIcon />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-[var(--ink)]">{links.length}</div>
-                  <div className="text-xs text-[var(--ink-45)] font-medium">External References</div>
+                  <div className="text-2xl font-extrabold text-[var(--ink)] font-display">{links.length}</div>
+                  <div className="text-xs text-[var(--ink-45)] font-mono mt-0.5">External References</div>
                 </div>
               </div>
             </div>
 
-            {/* Event Summary Details Card */}
-            <div className="bg-white border border-[var(--line-soft)] rounded-2xl p-6 shadow-sm space-y-4">
-              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--ink-45)]">Event Details</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-                <div>
+            {/* Event Summary Details Grid */}
+            <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-6 backdrop-blur-md space-y-4">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--ink-45)]">
+                Event Parameters
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
+                <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
                   <span className="text-[var(--ink-45)] block mb-1">Associated Suite</span>
                   <span className="font-semibold text-[var(--ink)]">{product?.name || 'Sheshi'}</span>
                 </div>
-                <div>
+                <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
                   <span className="text-[var(--ink-45)] block mb-1">Format</span>
                   <span className="font-semibold text-[var(--ink)]">{event.event_type}</span>
                 </div>
-                <div>
+                <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
                   <span className="text-[var(--ink-45)] block mb-1">Start Date</span>
                   <span className="font-semibold text-[var(--ink)]">{startDateText}</span>
                 </div>
-                <div>
+                <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
                   <span className="text-[var(--ink-45)] block mb-1">End Date</span>
                   <span className="font-semibold text-[var(--ink)]">{endDateText || 'Same day'}</span>
                 </div>
@@ -446,17 +543,19 @@ export default function EventPage({
                     type="text"
                     placeholder="Search event resources..."
                     value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--line-soft)] bg-white text-xs outline-none focus:border-[var(--primary)]"
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] text-xs text-[var(--ink)] placeholder-[var(--ink-45)] outline-none focus:border-[var(--primary)]"
                   />
-                  <span className="absolute left-3 top-2.5 text-slate-400"><SearchIcon /></span>
+                  <span className="absolute left-3 top-2.5 text-[var(--ink-45)]">
+                    <SearchIcon />
+                  </span>
                 </div>
               </div>
 
               {canUpload && (
                 <button
                   onClick={() => setShowUploadResourceModal(true)}
-                  className="px-4 py-2.5 rounded-xl bg-[var(--primary)] text-white text-xs font-semibold hover:bg-[var(--primary-hover)] transition-all flex items-center justify-center gap-1.5"
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-semibold shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>+</span> Upload Resource
                 </button>
@@ -465,22 +564,25 @@ export default function EventPage({
 
             {/* Category Filter Chips */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              {CATEGORIES.map(cat => {
-                const count = cat.id === 'all' ? resources.length : resources.filter(r => r.category === cat.id).length
+              {CATEGORIES.map((cat) => {
+                const count =
+                  cat.id === 'all' ? resources.length : resources.filter((r) => r.category === cat.id).length
                 return (
                   <button
                     key={cat.id}
                     onClick={() => setCategoryFilter(cat.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                       categoryFilter === cat.id
-                        ? 'bg-[var(--ink)] text-white'
-                        : 'bg-white border border-[var(--line-soft)] text-[var(--ink-70)] hover:border-slate-300'
+                        ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
+                        : 'bg-[var(--surface-card)] border border-[var(--border)] text-[var(--ink-70)] hover:border-[var(--border-2)]'
                     }`}
                   >
                     {cat.label}
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                      categoryFilter === cat.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                    }`}>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                        categoryFilter === cat.id ? 'bg-white/20 text-white' : 'bg-[var(--surface-2)] text-[var(--ink-45)]'
+                      }`}
+                    >
                       {count}
                     </span>
                   </button>
@@ -490,38 +592,38 @@ export default function EventPage({
 
             {/* Resources List */}
             {filteredResources.length > 0 ? (
-              <div className="bg-white border border-[var(--line-soft)] rounded-2xl overflow-hidden shadow-sm">
-                <div className="divide-y divide-[var(--line-soft)]">
-                  {filteredResources.map(item => (
-                    <div key={item.id} className="p-4 flex items-center gap-4 hover:bg-slate-50/50 transition-colors">
-                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-xs uppercase text-slate-600 border border-slate-200">
+              <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl overflow-hidden backdrop-blur-md">
+                <div className="divide-y divide-[var(--border)]">
+                  {filteredResources.map((item) => (
+                    <div key={item.id} className="p-4 flex items-center gap-4 hover:bg-[var(--surface-2)] transition-colors">
+                      <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] flex items-center justify-center font-bold text-xs uppercase text-[var(--ink)] border border-[var(--border)] font-mono">
                         {item.fileFormat || 'FILE'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-sm text-[var(--ink)] truncate">{item.title}</div>
-                        <div className="flex items-center gap-3 text-xs text-[var(--ink-45)] mt-0.5">
+                        <div className="flex items-center gap-3 text-xs text-[var(--ink-45)] mt-0.5 font-mono">
                           <span className="capitalize">{item.category}</span>
                           {item.fileSize && <span>• {item.fileSize}</span>}
-                          <span>• Uploaded by {item.uploadedBy}</span>
+                          <span>• {item.uploadedBy}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => openViewer(item.fileUrl, item.title, item.id, [], 'document', '')}
-                          className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200"
+                          className="px-3 py-1.5 rounded-lg bg-[var(--surface-2)] text-[var(--ink)] text-xs font-semibold hover:bg-[var(--surface-3)] border border-[var(--border)] cursor-pointer"
                         >
                           View
                         </button>
                         <button
                           onClick={() => triggerDirectDownload(item.fileUrl, item.title)}
-                          className="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-xs font-semibold hover:bg-[var(--primary-hover)]"
+                          className="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-xs font-semibold hover:bg-[var(--primary-hover)] cursor-pointer shadow-xs"
                         >
                           Download
                         </button>
                         {canDeleteResource(item) && (
                           <button
                             onClick={() => handleDeleteResource(item)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg text-xs font-semibold"
+                            className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg text-xs font-semibold cursor-pointer"
                             title="Delete resource"
                           >
                             <TrashIcon />
@@ -533,7 +635,7 @@ export default function EventPage({
                 </div>
               </div>
             ) : (
-              <div className="py-16 text-center text-xs text-[var(--ink-45)] bg-white border border-[var(--line-soft)] rounded-2xl">
+              <div className="py-16 text-center text-xs text-[var(--ink-45)] bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl">
                 No event resources uploaded yet in this category.
               </div>
             )}
@@ -546,13 +648,15 @@ export default function EventPage({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-[var(--ink)]">Event Media Gallery</h2>
-                <p className="text-xs text-[var(--ink-45)] mt-0.5">Photos and videos captured during the event.</p>
+                <p className="text-xs text-[var(--ink-45)] mt-0.5">
+                  High-resolution photo coverage and event video records.
+                </p>
               </div>
 
               {canUpload && (
                 <button
                   onClick={() => setShowUploadMediaModal(true)}
-                  className="px-4 py-2.5 rounded-xl bg-[var(--primary)] text-white text-xs font-semibold hover:bg-[var(--primary-hover)] transition-all flex items-center gap-1.5"
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-semibold shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>+</span> Upload Media
                 </button>
@@ -566,19 +670,26 @@ export default function EventPage({
               </h3>
               {photos.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {photos.map(photo => (
+                  {photos.map((photo) => (
                     <div
                       key={photo.id}
-                      className="group relative bg-slate-900 rounded-xl overflow-hidden aspect-square cursor-pointer border border-black/10 shadow-sm"
+                      className="group relative bg-[var(--surface-card)] rounded-2xl overflow-hidden aspect-square cursor-pointer border border-[var(--border)] hover:border-[var(--border-2)] shadow-sm"
                       onClick={() => setSelectedPhoto(photo)}
                     >
-                      <img src={photo.fileUrl} alt={photo.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
+                      <img
+                        src={photo.fileUrl}
+                        alt={photo.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
                         <div className="text-white text-xs font-semibold truncate">{photo.title}</div>
                         {canDeleteMedia(photo) && (
                           <button
-                            onClick={e => { e.stopPropagation(); handleDeleteMedia(photo) }}
-                            className="mt-2 text-xs text-red-300 hover:text-red-100 bg-red-900/60 px-2 py-1 rounded w-fit flex items-center gap-1 font-semibold"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteMedia(photo)
+                            }}
+                            className="mt-2 text-xs text-red-300 hover:text-red-100 bg-red-900/60 px-2 py-1 rounded-lg w-fit flex items-center gap-1 font-semibold cursor-pointer"
                           >
                             <TrashIcon /> Delete
                           </button>
@@ -588,7 +699,7 @@ export default function EventPage({
                   ))}
                 </div>
               ) : (
-                <div className="py-12 text-center text-xs text-[var(--ink-45)] bg-white border border-[var(--line-soft)] rounded-2xl">
+                <div className="py-12 text-center text-xs text-[var(--ink-45)] bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl">
                   No photos uploaded for this event.
                 </div>
               )}
@@ -601,9 +712,12 @@ export default function EventPage({
               </h3>
               {videos.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {videos.map(video => (
-                    <div key={video.id} className="bg-white border border-[var(--line-soft)] rounded-2xl overflow-hidden shadow-sm flex flex-col">
-                      <div className="h-44 bg-slate-900 relative flex items-center justify-center">
+                  {videos.map((video) => (
+                    <div
+                      key={video.id}
+                      className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm flex flex-col backdrop-blur-md"
+                    >
+                      <div className="h-44 bg-black relative flex items-center justify-center">
                         <video src={video.fileUrl} controls className="w-full h-full object-cover" />
                       </div>
                       <div className="p-3.5 flex items-center justify-between gap-2">
@@ -611,7 +725,7 @@ export default function EventPage({
                         {canDeleteMedia(video) && (
                           <button
                             onClick={() => handleDeleteMedia(video)}
-                            className="text-xs text-red-600 hover:bg-red-50 p-1.5 rounded font-semibold flex items-center gap-1"
+                            className="text-xs text-red-400 hover:bg-red-500/10 p-1.5 rounded-lg font-semibold flex items-center gap-1 cursor-pointer"
                           >
                             <TrashIcon />
                           </button>
@@ -621,7 +735,7 @@ export default function EventPage({
                   ))}
                 </div>
               ) : (
-                <div className="py-12 text-center text-xs text-[var(--ink-45)] bg-white border border-[var(--line-soft)] rounded-2xl">
+                <div className="py-12 text-center text-xs text-[var(--ink-45)] bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl">
                   No videos uploaded for this event.
                 </div>
               )}
@@ -634,14 +748,16 @@ export default function EventPage({
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-[var(--ink)]">External References & Links</h2>
-                <p className="text-xs text-[var(--ink-45)] mt-0.5">Website links, registration portals, drive folders, and social media coverage.</p>
+                <h2 className="text-base font-bold text-[var(--ink)]">External References & Portals</h2>
+                <p className="text-xs text-[var(--ink-45)] mt-0.5">
+                  Registration sites, shared drives, and coverage links.
+                </p>
               </div>
 
               {canUpload && (
                 <button
                   onClick={() => setShowAddLinkModal(true)}
-                  className="px-4 py-2.5 rounded-xl bg-[var(--primary)] text-white text-xs font-semibold hover:bg-[var(--primary-hover)] transition-all flex items-center gap-1.5"
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-semibold shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>+</span> Add Link
                 </button>
@@ -650,12 +766,17 @@ export default function EventPage({
 
             {links.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {links.map(item => (
-                  <div key={item.id} className="bg-white border border-[var(--line-soft)] rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+                {links.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:border-[var(--border-2)] transition-all backdrop-blur-md"
+                  >
                     <div>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <h3 className="font-bold text-sm text-[var(--ink)] leading-snug">{item.title}</h3>
-                        <span className="text-[var(--primary)]"><ExternalLinkIcon /></span>
+                        <span className="text-[var(--primary)]">
+                          <ExternalLinkIcon />
+                        </span>
                       </div>
                       {item.description && (
                         <p className="text-xs text-[var(--ink-70)] line-clamp-3 mb-4">{item.description}</p>
@@ -663,7 +784,7 @@ export default function EventPage({
                       <div className="text-[11px] font-mono text-[var(--ink-45)] truncate mb-4">{item.url}</div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-[var(--line-soft)]">
+                    <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
                       <a
                         href={item.url}
                         target="_blank"
@@ -675,7 +796,7 @@ export default function EventPage({
                       {canDeleteLink(item) && (
                         <button
                           onClick={() => handleDeleteLink(item)}
-                          className="text-xs text-red-600 hover:bg-red-50 p-1.5 rounded font-semibold"
+                          className="text-xs text-red-400 hover:bg-red-500/10 p-1.5 rounded-lg font-semibold cursor-pointer"
                         >
                           <TrashIcon />
                         </button>
@@ -685,7 +806,7 @@ export default function EventPage({
                 ))}
               </div>
             ) : (
-              <div className="py-16 text-center text-xs text-[var(--ink-45)] bg-white border border-[var(--line-soft)] rounded-2xl">
+              <div className="py-16 text-center text-xs text-[var(--ink-45)] bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl">
                 No external links added for this event.
               </div>
             )}
@@ -693,35 +814,60 @@ export default function EventPage({
         )}
 
         {/* NOTES TAB */}
-        {activeTab === 'notes' && (
-          <EventNotesEditor eventId={event.id} canEdit={canUpload} />
-        )}
+        {activeTab === 'notes' && <EventNotesEditor eventId={event.id} canEdit={canUpload} />}
       </div>
 
       {/* UPLOAD RESOURCE MODAL */}
       {showUploadResourceModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <form onSubmit={handleResourceUploadSubmit} className="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <form
+            onSubmit={handleResourceUploadSubmit}
+            className="w-full max-w-lg bg-[var(--paper)] border border-[var(--border)] rounded-3xl shadow-2xl p-6 space-y-4"
+          >
             <div className="flex justify-between items-center">
-              <h3 className="font-bold text-base text-[var(--ink)]">Upload Event Resource</h3>
-              <button type="button" onClick={() => setShowUploadResourceModal(false)} className="text-slate-400 text-lg">×</button>
+              <div>
+                <h3 className="font-bold text-base text-[var(--ink)] font-display">Upload Event Resource</h3>
+                <p className="text-xs text-[var(--ink-45)] mt-0.5">Attach documents, decks or assets to this event.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUploadResourceModal(false)}
+                className="text-[var(--ink-45)] text-xl hover:text-[var(--ink)] cursor-pointer"
+              >
+                ×
+              </button>
             </div>
 
-            {error && <div className="p-3 bg-red-50 text-red-600 text-xs rounded-xl">⚠️ {error}</div>}
+            {error && <div className="p-3 bg-red-500/15 border border-red-500/30 text-red-300 text-xs rounded-xl">⚠️ {error}</div>}
 
-            <label className="block text-xs font-medium">
+            <label className="block text-xs font-semibold text-[var(--ink-70)]">
               File *
-              <input type="file" onChange={e => setResourceFile(e.target.files?.[0] || null)} className="mt-1.5 w-full p-2 border border-[var(--line-soft)] rounded-xl text-xs" required />
+              <input
+                type="file"
+                onChange={(e) => setResourceFile(e.target.files?.[0] || null)}
+                className="mt-1.5 w-full p-2.5 border border-[var(--border)] rounded-xl text-xs bg-[var(--surface)] text-[var(--ink)]"
+                required
+              />
             </label>
 
-            <label className="block text-xs font-medium">
+            <label className="block text-xs font-semibold text-[var(--ink-70)]">
               File Name / Title
-              <input type="text" placeholder="e.g. India FinTech Briefing.pdf" value={resourceTitle} onChange={e => setResourceTitle(e.target.value)} className="mt-1.5 w-full p-2.5 border border-[var(--line-soft)] rounded-xl text-xs" />
+              <input
+                type="text"
+                placeholder="e.g. India FinTech Keynote Deck.pptx"
+                value={resourceTitle}
+                onChange={(e) => setResourceTitle(e.target.value)}
+                className="mt-1.5 w-full p-2.5 border border-[var(--border)] rounded-xl text-xs bg-[var(--surface)] text-[var(--ink)]"
+              />
             </label>
 
-            <label className="block text-xs font-medium">
+            <label className="block text-xs font-semibold text-[var(--ink-70)]">
               Category *
-              <select value={resourceCategory} onChange={e => setResourceCategory(e.target.value as EventResourceCategory)} className="mt-1.5 w-full p-2.5 border border-[var(--line-soft)] rounded-xl text-xs bg-white">
+              <select
+                value={resourceCategory}
+                onChange={(e) => setResourceCategory(e.target.value as EventResourceCategory)}
+                className="mt-1.5 w-full p-2.5 border border-[var(--border)] rounded-xl text-xs bg-[var(--surface)] text-[var(--ink)]"
+              >
                 <option value="documents">Documents</option>
                 <option value="presentations">Presentations</option>
                 <option value="marketing">Marketing Assets</option>
@@ -730,9 +876,20 @@ export default function EventPage({
               </select>
             </label>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <button type="button" onClick={() => setShowUploadResourceModal(false)} className="px-4 py-2 text-xs font-semibold border rounded-xl">Cancel</button>
-              <button disabled={busy} className="px-4 py-2 text-xs font-semibold bg-[var(--primary)] text-white rounded-xl hover:bg-[var(--primary-hover)]">{busy ? 'Uploading...' : 'Upload Resource'}</button>
+            <div className="flex justify-end gap-2.5 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowUploadResourceModal(false)}
+                className="px-4 py-2 text-xs font-semibold border border-[var(--border)] rounded-xl text-[var(--ink-70)] hover:bg-[var(--surface)] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={busy}
+                className="px-4 py-2 text-xs font-semibold bg-[var(--primary)] text-white rounded-xl hover:bg-[var(--primary-hover)] cursor-pointer"
+              >
+                {busy ? 'Uploading...' : 'Upload Resource'}
+              </button>
             </div>
           </form>
         </div>
@@ -740,28 +897,63 @@ export default function EventPage({
 
       {/* UPLOAD MEDIA MODAL */}
       {showUploadMediaModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <form onSubmit={handleMediaUploadSubmit} className="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <form
+            onSubmit={handleMediaUploadSubmit}
+            className="w-full max-w-lg bg-[var(--paper)] border border-[var(--border)] rounded-3xl shadow-2xl p-6 space-y-4"
+          >
             <div className="flex justify-between items-center">
-              <h3 className="font-bold text-base text-[var(--ink)]">Upload Gallery Photo / Video</h3>
-              <button type="button" onClick={() => setShowUploadMediaModal(false)} className="text-slate-400 text-lg">×</button>
+              <div>
+                <h3 className="font-bold text-base text-[var(--ink)] font-display">Upload Gallery Media</h3>
+                <p className="text-xs text-[var(--ink-45)] mt-0.5">Add photos or videos to the event media gallery.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUploadMediaModal(false)}
+                className="text-[var(--ink-45)] text-xl hover:text-[var(--ink)] cursor-pointer"
+              >
+                ×
+              </button>
             </div>
 
-            {error && <div className="p-3 bg-red-50 text-red-600 text-xs rounded-xl">⚠️ {error}</div>}
+            {error && <div className="p-3 bg-red-500/15 border border-red-500/30 text-red-300 text-xs rounded-xl">⚠️ {error}</div>}
 
-            <label className="block text-xs font-medium">
+            <label className="block text-xs font-semibold text-[var(--ink-70)]">
               Select Image or Video *
-              <input type="file" accept="image/*,video/*" onChange={e => setMediaFile(e.target.files?.[0] || null)} className="mt-1.5 w-full p-2 border border-[var(--line-soft)] rounded-xl text-xs" required />
+              <input
+                type="file"
+                accept="image/*,video/*"
+                onChange={(e) => setMediaFile(e.target.files?.[0] || null)}
+                className="mt-1.5 w-full p-2.5 border border-[var(--border)] rounded-xl text-xs bg-[var(--surface)] text-[var(--ink)]"
+                required
+              />
             </label>
 
-            <label className="block text-xs font-medium">
+            <label className="block text-xs font-semibold text-[var(--ink-70)]">
               Title / Caption
-              <input type="text" placeholder="e.g. Keynote Speech Photo" value={mediaTitle} onChange={e => setMediaTitle(e.target.value)} className="mt-1.5 w-full p-2.5 border border-[var(--line-soft)] rounded-xl text-xs" />
+              <input
+                type="text"
+                placeholder="e.g. Keynote Opening Session"
+                value={mediaTitle}
+                onChange={(e) => setMediaTitle(e.target.value)}
+                className="mt-1.5 w-full p-2.5 border border-[var(--border)] rounded-xl text-xs bg-[var(--surface)] text-[var(--ink)]"
+              />
             </label>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <button type="button" onClick={() => setShowUploadMediaModal(false)} className="px-4 py-2 text-xs font-semibold border rounded-xl">Cancel</button>
-              <button disabled={busy} className="px-4 py-2 text-xs font-semibold bg-[var(--primary)] text-white rounded-xl hover:bg-[var(--primary-hover)]">{busy ? 'Uploading...' : 'Upload Media'}</button>
+            <div className="flex justify-end gap-2.5 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowUploadMediaModal(false)}
+                className="px-4 py-2 text-xs font-semibold border border-[var(--border)] rounded-xl text-[var(--ink-70)] hover:bg-[var(--surface)] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={busy}
+                className="px-4 py-2 text-xs font-semibold bg-[var(--primary)] text-white rounded-xl hover:bg-[var(--primary-hover)] cursor-pointer"
+              >
+                {busy ? 'Uploading...' : 'Upload Media'}
+              </button>
             </div>
           </form>
         </div>
@@ -769,33 +961,76 @@ export default function EventPage({
 
       {/* ADD LINK MODAL */}
       {showAddLinkModal && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <form onSubmit={handleAddLinkSubmit} className="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-6 space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <form
+            onSubmit={handleAddLinkSubmit}
+            className="w-full max-w-lg bg-[var(--paper)] border border-[var(--border)] rounded-3xl shadow-2xl p-6 space-y-4"
+          >
             <div className="flex justify-between items-center">
-              <h3 className="font-bold text-base text-[var(--ink)]">Add External Reference Link</h3>
-              <button type="button" onClick={() => setShowAddLinkModal(false)} className="text-slate-400 text-lg">×</button>
+              <div>
+                <h3 className="font-bold text-base text-[var(--ink)] font-display">Add External Reference Link</h3>
+                <p className="text-xs text-[var(--ink-45)] mt-0.5">Attach portal URLs, social posts, or press coverage.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddLinkModal(false)}
+                className="text-[var(--ink-45)] text-xl hover:text-[var(--ink)] cursor-pointer"
+              >
+                ×
+              </button>
             </div>
 
-            {error && <div className="p-3 bg-red-50 text-red-600 text-xs rounded-xl">⚠️ {error}</div>}
+            {error && <div className="p-3 bg-red-500/15 border border-red-500/30 text-red-300 text-xs rounded-xl">⚠️ {error}</div>}
 
-            <label className="block text-xs font-medium">
+            <label className="block text-xs font-semibold text-[var(--ink-70)]">
               Link Title *
-              <input type="text" placeholder="e.g. Official Summit Registration Portal" value={linkTitle} onChange={e => setLinkTitle(e.target.value)} className="mt-1.5 w-full p-2.5 border border-[var(--line-soft)] rounded-xl text-xs" required />
+              <input
+                type="text"
+                placeholder="e.g. Official Summit Registration Portal"
+                value={linkTitle}
+                onChange={(e) => setLinkTitle(e.target.value)}
+                className="mt-1.5 w-full p-2.5 border border-[var(--border)] rounded-xl text-xs bg-[var(--surface)] text-[var(--ink)]"
+                required
+              />
             </label>
 
-            <label className="block text-xs font-medium">
+            <label className="block text-xs font-semibold text-[var(--ink-70)]">
               URL *
-              <input type="url" placeholder="https://..." value={linkUrl} onChange={e => setLinkUrl(e.target.value)} className="mt-1.5 w-full p-2.5 border border-[var(--line-soft)] rounded-xl text-xs" required />
+              <input
+                type="url"
+                placeholder="https://..."
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                className="mt-1.5 w-full p-2.5 border border-[var(--border)] rounded-xl text-xs bg-[var(--surface)] text-[var(--ink)]"
+                required
+              />
             </label>
 
-            <label className="block text-xs font-medium">
+            <label className="block text-xs font-semibold text-[var(--ink-70)]">
               Description (Optional)
-              <textarea placeholder="Brief notes about this link..." value={linkDesc} onChange={e => setLinkDesc(e.target.value)} rows={3} className="mt-1.5 w-full p-2.5 border border-[var(--line-soft)] rounded-xl text-xs" />
+              <textarea
+                placeholder="Brief notes about this link..."
+                value={linkDesc}
+                onChange={(e) => setLinkDesc(e.target.value)}
+                rows={3}
+                className="mt-1.5 w-full p-2.5 border border-[var(--border)] rounded-xl text-xs bg-[var(--surface)] text-[var(--ink)]"
+              />
             </label>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <button type="button" onClick={() => setShowAddLinkModal(false)} className="px-4 py-2 text-xs font-semibold border rounded-xl">Cancel</button>
-              <button disabled={busy} className="px-4 py-2 text-xs font-semibold bg-[var(--primary)] text-white rounded-xl hover:bg-[var(--primary-hover)]">{busy ? 'Saving...' : 'Add Link'}</button>
+            <div className="flex justify-end gap-2.5 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowAddLinkModal(false)}
+                className="px-4 py-2 text-xs font-semibold border border-[var(--border)] rounded-xl text-[var(--ink-70)] hover:bg-[var(--surface)] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={busy}
+                className="px-4 py-2 text-xs font-semibold bg-[var(--primary)] text-white rounded-xl hover:bg-[var(--primary-hover)] cursor-pointer"
+              >
+                {busy ? 'Saving...' : 'Add Link'}
+              </button>
             </div>
           </form>
         </div>
@@ -803,10 +1038,22 @@ export default function EventPage({
 
       {/* PHOTO LIGHTBOX MODAL */}
       {selectedPhoto && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur flex items-center justify-center p-4" onClick={() => setSelectedPhoto(null)}>
-          <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setSelectedPhoto(null)} className="absolute -top-10 right-0 text-white text-2xl font-bold">✕</button>
-            <img src={selectedPhoto.fileUrl} alt={selectedPhoto.title} className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl" />
+        <div
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setSelectedPhoto(null)}
+              className="absolute -top-10 right-0 text-white text-2xl font-bold cursor-pointer"
+            >
+              ✕
+            </button>
+            <img
+              src={selectedPhoto.fileUrl}
+              alt={selectedPhoto.title}
+              className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl border border-white/10"
+            />
             <div className="mt-4 text-white text-center font-semibold text-sm">{selectedPhoto.title}</div>
           </div>
         </div>
