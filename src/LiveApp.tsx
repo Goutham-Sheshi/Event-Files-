@@ -4,7 +4,7 @@ import { getManagedResources, getFreshResourceUrl } from './resourcesApi'
 import { getEvents, calculateEventStatus, type ManagedEvent, type EventStatus } from './eventsApi'
 import type { Product, Resource, ResourceType } from './types'
 import AdminConsole from './AdminConsole'
-import { getMyProfile, signOut, type VaultProfile } from './authApi'
+import { getMyProfile, signOut, hasWeeklyAuthentication, type VaultProfile } from './authApi'
 import AuthScreen, { type AuthMode } from './components/AuthScreen'
 import { supabase } from './lib/supabase'
 import { triggerDirectDownload } from './utils'
@@ -819,13 +819,18 @@ export default function LiveApp() {
   const [showCmdPalette, setShowCmdPalette] = useState(false);
   const [showMultiStepUpload, setShowMultiStepUpload] = useState(false);
 
-  const fetchProfile = async () => {
+  const fetchProfile = async (): Promise<VaultProfile | null> => {
     try {
       const p = await getMyProfile();
       setProfile(p);
       setIsAdmin(p?.role === 'admin' && p?.status === 'approved');
       if (p?.full_name) { localStorage.setItem('sheshi-vault-user-name', p.full_name); }
-    } catch { setProfile(null); setIsAdmin(false); }
+      return p;
+    } catch {
+      setProfile(null);
+      setIsAdmin(false);
+      return null;
+    }
   };
 
   const loadAll = async () => {
@@ -840,24 +845,70 @@ export default function LiveApp() {
   useEffect(() => {
     const init = async () => {
       setAuthLoading(true);
-      await fetchProfile();
-      await loadAll();
+      const p = await fetchProfile();
+      if (p && hasWeeklyAuthentication()) await loadAll();
       setAuthLoading(false);
     };
     init();
 
     const sub = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') { await fetchProfile(); await loadAll(); }
-      else if (event === 'SIGNED_OUT') { setProfile(null); setIsAdmin(false); localStorage.removeItem('sheshi-vault-user-name'); await loadAll(); }
+      if (event === 'SIGNED_IN') {
+        const p = await fetchProfile();
+        if (p && hasWeeklyAuthentication()) await loadAll();
+      } else if (event === 'TOKEN_REFRESHED') {
+        // A token refresh must not turn into a silent Monday re-login.
+        const p = await fetchProfile();
+        if (p && hasWeeklyAuthentication()) await loadAll();
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        setIsAdmin(false);
+        setResources([]);
+        setEvents([]);
+        setView({ kind: 'home' });
+        localStorage.removeItem('sheshi-vault-user-name');
+      }
     });
 
     const handleVaultChange = () => { loadAll(); };
     window.addEventListener('vault-resources-changed', handleVaultChange);
 
-    return () => { sub.data.subscription.unsubscribe(); window.removeEventListener('vault-resources-changed', handleVaultChange); };
+    return () => {
+      sub.data.subscription.unsubscribe();
+      window.removeEventListener('vault-resources-changed', handleVaultChange);
+    };
   }, []);
 
-  const handleSignOut = async () => { await signOut(); setView({ kind: 'home' }); };
+  useEffect(() => {
+    if (!profile || !hasWeeklyAuthentication()) return;
+
+    const now = new Date();
+    const nextMonday = new Date(now);
+    const daysUntilMonday = ((8 - now.getDay()) % 7) || 7;
+    nextMonday.setDate(now.getDate() + daysUntilMonday);
+    nextMonday.setHours(0, 0, 0, 0);
+
+    const weeklyTimer = window.setTimeout(async () => {
+      await signOut();
+      setResources([]);
+      setEvents([]);
+      setProfile(null);
+      setIsAdmin(false);
+      setView({ kind: 'home' });
+    }, Math.max(1000, nextMonday.getTime() - now.getTime()));
+
+    return () => window.clearTimeout(weeklyTimer);
+  }, [profile]);
+
+  const handleSignOut = async () => {
+    setAuthLoading(true);
+    await signOut();
+    setResources([]);
+    setEvents([]);
+    setProfile(null);
+    setIsAdmin(false);
+    setView({ kind: 'home' });
+    setAuthLoading(false);
+  };
   const canUpload = profile && profile.status === 'approved' && (profile.role === 'admin' || profile.role === 'advanced' || profile.role === 'teammate');
 
   if (authLoading) {
@@ -869,6 +920,22 @@ export default function LiveApp() {
         </div>
       </div>
     )
+  }
+
+  if (!profile) {
+    return (
+      <AuthScreen
+        isOpen
+        initialMode="login"
+        onClose={() => {}}
+        onSuccess={async () => {
+          const p = await fetchProfile();
+          if (p && hasWeeklyAuthentication()) {
+            await loadAll();
+          }
+        }}
+      />
+    );
   }
 
   return (
@@ -946,7 +1013,16 @@ export default function LiveApp() {
         }}
       />
 
-      <AuthScreen isOpen={showAuthModal} initialMode={authMode} onClose={() => setShowAuthModal(false)} onSuccess={async () => { setShowAuthModal(false); await fetchProfile(); await loadAll(); }} />
+      <AuthScreen
+        isOpen={showAuthModal}
+        initialMode={authMode}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={async () => {
+          setShowAuthModal(false);
+          const p = await fetchProfile();
+          if (p && hasWeeklyAuthentication()) await loadAll();
+        }}
+      />
     </div>
   );
 }

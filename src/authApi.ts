@@ -14,6 +14,27 @@ export type VaultProfile = {
 
 export const CURRENT_SESSION_KEY = 'sheshi_vault_session'
 export const REGISTERED_ACCOUNTS_KEY = 'sheshi_registered_accounts'
+export const WEEKLY_AUTH_KEY = 'sheshi_vault_weekly_auth'
+
+function getWeekStartKey(date = new Date()): string {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const day = d.getDay()
+  const daysSinceMonday = (day + 6) % 7
+  d.setDate(d.getDate() - daysSinceMonday)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+export function markWeeklyAuthentication() {
+  localStorage.setItem(WEEKLY_AUTH_KEY, getWeekStartKey())
+}
+
+export function hasWeeklyAuthentication(): boolean {
+  return localStorage.getItem(WEEKLY_AUTH_KEY) === getWeekStartKey()
+}
+
+export function clearWeeklyAuthentication() {
+  localStorage.removeItem(WEEKLY_AUTH_KEY)
+}
 
 export interface RegisteredUserAccount {
   id: string
@@ -151,7 +172,6 @@ export async function signIn(email: string, password: string) {
         await supabase.auth.signOut()
         throw new Error('Access Pending: Your account is awaiting approval by an administrator.')
       }
-
       // Sync password to local account cache
       saveRegisteredAccount({
         id: data.session.user.id,
@@ -162,7 +182,12 @@ export async function signIn(email: string, password: string) {
         status: 'approved',
       })
 
-      if (profile) return data
+      if (profile) {
+        markWeeklyAuthentication()
+        return data
+      }
+      // A valid Supabase user without a profile can still use the backend/local
+      // fallback, but cannot receive admin database permissions.
     } else if (error) {
       console.warn('Supabase signInWithPassword note:', error.message)
     }
@@ -199,6 +224,7 @@ export async function signIn(email: string, password: string) {
   })
 
   localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(userProfile))
+  markWeeklyAuthentication()
   return { session: { user: { id: userProfile.id, email: cleanEmail } } }
 }
 
@@ -235,6 +261,7 @@ export async function signUp(email: string, password: string, fullName?: string)
 
   if (isAdmin) {
     localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify(newAccount))
+    markWeeklyAuthentication()
     return { session: { user: { id: newAccount.id, email: cleanEmail } } }
   }
   return { pending: true, message: 'Registration submitted successfully! Your account is pending approval by an administrator.' }
@@ -275,7 +302,8 @@ export async function resetPassword(newPassword: string) {
 
 export async function signOut() {
   localStorage.removeItem(CURRENT_SESSION_KEY)
-  try { await supabase.auth.signOut() } catch { /* ignore */ }
+  clearWeeklyAuthentication()
+  try { await supabase.auth.signOut({ scope: 'local' }) } catch { /* ignore */ }
 }
 
 export async function getMyProfile(): Promise<VaultProfile | null> {
@@ -284,13 +312,21 @@ export async function getMyProfile(): Promise<VaultProfile | null> {
   try {
     let profile: VaultProfile | null = null
     const local = localStorage.getItem(CURRENT_SESSION_KEY)
-    if (local) {
+    if (local && !hasWeeklyAuthentication()) {
+      // The calendar week changed. Re-authentication is required even if
+      // Supabase still has a persisted refresh session.
+      await signOut()
+    } else if (local) {
       try { profile = JSON.parse(local) as VaultProfile } catch { /* ignore */ }
     }
 
     if (!profile) {
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (user && !userError) {
+        if (!hasWeeklyAuthentication()) {
+          await signOut()
+          return null
+        }
         const { data, error: profileError } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
         if (!profileError && data) {
           profile = data as VaultProfile
