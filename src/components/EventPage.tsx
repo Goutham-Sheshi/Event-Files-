@@ -427,17 +427,17 @@ export default function EventPage({
         </div>
       </div>
 
-      {/* 21st.dev Sticky Pill Tab Switcher */}
-      <div className="sticky top-0 z-20 bg-[var(--surface-card)] backdrop-blur-xl border-b border-[var(--border)]">
-        <div className="max-w-[1400px] mx-auto px-8 flex gap-3 py-3 overflow-x-auto">
+      {/* Preline UI Sticky Segmented Tab Switcher */}
+      <div className="sticky top-0 z-20 bg-[#090d16]/90 backdrop-blur-2xl border-b border-white/[0.08] py-3">
+        <div className="max-w-[1400px] mx-auto px-8 flex gap-2 overflow-x-auto">
           {(['overview', 'resources', 'gallery', 'links', 'notes'] as TabType[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold capitalize transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-semibold capitalize transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 border ${
                 activeTab === tab
-                  ? 'bg-[var(--primary)] text-white shadow-md shadow-orange-500/20'
-                  : 'bg-[var(--surface)] text-[var(--ink-70)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)] border border-[var(--border)]'
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-400/50 shadow-[0_0_15px_rgba(249,115,22,0.3)]'
+                  : 'bg-white/[0.04] text-slate-400 hover:text-white hover:bg-white/[0.08] border-white/10'
               }`}
             >
               <span>
@@ -462,70 +462,74 @@ export default function EventPage({
         {activeTab === 'overview' && (
           <div className="space-y-8">
             {/* Description Card */}
-            <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-6 backdrop-blur-md">
-              <h2 className="text-base font-bold text-[var(--ink)] mb-3 flex items-center gap-2">
-                <span>About this Event</span>
-                <span className="badge-pill text-[10px]">Official Brief</span>
-              </h2>
-              <p className="text-sm text-[var(--ink-70)] leading-relaxed whitespace-pre-line">
+            <div className="preline-card card-highlight p-6 sm:p-7 bg-[#0d121f]">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  <span>About this Event</span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-orange-500/15 text-orange-400 border border-orange-500/30">
+                    Official Brief
+                  </span>
+                </h2>
+              </div>
+              <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
                 {event.description || 'No detailed description provided for this event.'}
               </p>
             </div>
 
-            {/* 3 Bento Telemetry Metric Cards */}
+            {/* 3 Preline UI Telemetry Metric Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-6 backdrop-blur-md flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-[var(--primary)] border border-orange-500/20 flex items-center justify-center font-bold">
+              <div className="preline-metric-card p-6 flex items-center gap-5">
+                <div className="w-14 h-14 rounded-2xl bg-orange-500/15 text-orange-400 border border-orange-500/30 flex items-center justify-center font-bold shadow-[0_0_16px_rgba(249,115,22,0.2)]">
                   <FolderStatIcon />
                 </div>
                 <div>
-                  <div className="text-2xl font-extrabold text-[var(--ink)] font-display">{resources.length}</div>
-                  <div className="text-xs text-[var(--ink-45)] font-mono mt-0.5">Event Resources & Files</div>
+                  <div className="text-3xl font-extrabold text-white font-mono tracking-tight">{resources.length}</div>
+                  <div className="text-xs text-slate-400 font-mono mt-0.5">Event Resources & Files</div>
                 </div>
               </div>
 
-              <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-6 backdrop-blur-md flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center font-bold">
+              <div className="preline-metric-card p-6 flex items-center gap-5">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold shadow-[0_0_16px_rgba(99,102,241,0.2)]">
                   <MediaStatIcon />
                 </div>
                 <div>
-                  <div className="text-2xl font-extrabold text-[var(--ink)] font-display">{gallery.length}</div>
-                  <div className="text-xs text-[var(--ink-45)] font-mono mt-0.5">Photos & Videos</div>
+                  <div className="text-3xl font-extrabold text-white font-mono tracking-tight">{gallery.length}</div>
+                  <div className="text-xs text-slate-400 font-mono mt-0.5">Photos & Videos</div>
                 </div>
               </div>
 
-              <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-6 backdrop-blur-md flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-bold">
+              <div className="preline-metric-card p-6 flex items-center gap-5">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold shadow-[0_0_16px_rgba(16,185,129,0.2)]">
                   <LinkStatIcon />
                 </div>
                 <div>
-                  <div className="text-2xl font-extrabold text-[var(--ink)] font-display">{links.length}</div>
-                  <div className="text-xs text-[var(--ink-45)] font-mono mt-0.5">External References</div>
+                  <div className="text-3xl font-extrabold text-white font-mono tracking-tight">{links.length}</div>
+                  <div className="text-xs text-slate-400 font-mono mt-0.5">External References</div>
                 </div>
               </div>
             </div>
 
             {/* Event Summary Details Grid */}
-            <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-6 backdrop-blur-md space-y-4">
-              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--ink-45)]">
-                Event Parameters
+            <div className="preline-card card-highlight p-6 bg-[#0d121f] space-y-4">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+                Event Parameters & Specifications
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
-                <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
-                  <span className="text-[var(--ink-45)] block mb-1">Associated Suite</span>
-                  <span className="font-semibold text-[var(--ink)]">{product?.name || 'Sheshi'}</span>
+                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08]">
+                  <span className="text-slate-400 block mb-1">Associated Suite</span>
+                  <span className="font-bold text-white text-[13px]">{product?.name || 'Sheshi'}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
-                  <span className="text-[var(--ink-45)] block mb-1">Format</span>
-                  <span className="font-semibold text-[var(--ink)]">{event.event_type}</span>
+                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08]">
+                  <span className="text-slate-400 block mb-1">Format</span>
+                  <span className="font-bold text-white text-[13px]">{event.event_type}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
-                  <span className="text-[var(--ink-45)] block mb-1">Start Date</span>
-                  <span className="font-semibold text-[var(--ink)]">{startDateText}</span>
+                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08]">
+                  <span className="text-slate-400 block mb-1">Start Date</span>
+                  <span className="font-bold text-white text-[13px]">{startDateText}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
-                  <span className="text-[var(--ink-45)] block mb-1">End Date</span>
-                  <span className="font-semibold text-[var(--ink)]">{endDateText || 'Same day'}</span>
+                <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08]">
+                  <span className="text-slate-400 block mb-1">End Date</span>
+                  <span className="font-bold text-white text-[13px]">{endDateText || 'Same day'}</span>
                 </div>
               </div>
             </div>
@@ -535,34 +539,32 @@ export default function EventPage({
         {/* RESOURCES TAB */}
         {activeTab === 'resources' && (
           <div className="space-y-6">
-            {/* Action Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3 flex-1 max-w-lg">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    placeholder="Search event resources..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface-card)] text-xs text-[var(--ink)] placeholder-[var(--ink-45)] outline-none focus:border-[var(--primary)]"
-                  />
-                  <span className="absolute left-3 top-2.5 text-[var(--ink-45)]">
-                    <SearchIcon />
-                  </span>
-                </div>
+            {/* Preline Action Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#0a0e19]/90 border border-white/[0.08] p-3 rounded-2xl shadow-xl backdrop-blur-2xl">
+              <div className="relative flex-1 max-w-lg">
+                <input
+                  type="text"
+                  placeholder="Search event resources..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/10 bg-white/[0.03] text-xs text-white placeholder-slate-500 outline-none focus:border-orange-500 focus:bg-white/[0.06] transition-all"
+                />
+                <span className="absolute left-3.5 top-3 text-slate-400">
+                  <SearchIcon />
+                </span>
               </div>
 
               {canUpload && (
                 <button
                   onClick={() => setShowUploadResourceModal(true)}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-semibold shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:brightness-110 text-white text-xs font-bold shadow-[0_0_15px_rgba(249,115,22,0.3)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <span>+</span> Upload Resource
                 </button>
               )}
             </div>
 
-            {/* Category Filter Chips */}
+            {/* Preline Category Filter Chips */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
               {CATEGORIES.map((cat) => {
                 const count =
@@ -571,16 +573,16 @@ export default function EventPage({
                   <button
                     key={cat.id}
                     onClick={() => setCategoryFilter(cat.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer border ${
                       categoryFilter === cat.id
-                        ? 'bg-[var(--primary)] text-white shadow-sm font-semibold'
-                        : 'bg-[var(--surface-card)] border border-[var(--border)] text-[var(--ink-70)] hover:border-[var(--border-2)]'
+                        ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-400/50 shadow-[0_0_15px_rgba(249,115,22,0.3)]'
+                        : 'bg-[#0c101d] border-white/[0.08] text-slate-400 hover:text-white hover:border-white/20 hover:bg-white/[0.04]'
                     }`}
                   >
-                    {cat.label}
+                    <span>{cat.label}</span>
                     <span
                       className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                        categoryFilter === cat.id ? 'bg-white/20 text-white' : 'bg-[var(--surface-2)] text-[var(--ink-45)]'
+                        categoryFilter === cat.id ? 'bg-white/25 text-white' : 'bg-white/[0.06] text-slate-400'
                       }`}
                     >
                       {count}
@@ -592,51 +594,53 @@ export default function EventPage({
 
             {/* Resources List */}
             {filteredResources.length > 0 ? (
-              <div className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl overflow-hidden backdrop-blur-md">
-                <div className="divide-y divide-[var(--border)]">
-                  {filteredResources.map((item) => (
-                    <div key={item.id} className="p-4 flex items-center gap-4 hover:bg-[var(--surface-2)] transition-colors">
-                      <div className="w-10 h-10 rounded-xl bg-[var(--surface-2)] flex items-center justify-center font-bold text-xs uppercase text-[var(--ink)] border border-[var(--border)] font-mono">
-                        {item.fileFormat || 'FILE'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm text-[var(--ink)] truncate">{item.title}</div>
-                        <div className="flex items-center gap-3 text-xs text-[var(--ink-45)] mt-0.5 font-mono">
-                          <span className="capitalize">{item.category}</span>
-                          {item.fileSize && <span>• {item.fileSize}</span>}
-                          <span>• {item.uploadedBy}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => openViewer(item.fileUrl, item.title, item.id, [], 'document', '')}
-                          className="px-3 py-1.5 rounded-lg bg-[var(--surface-2)] text-[var(--ink)] text-xs font-semibold hover:bg-[var(--surface-3)] border border-[var(--border)] cursor-pointer"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={() => triggerDirectDownload(item.fileUrl, item.title)}
-                          className="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-xs font-semibold hover:bg-[var(--primary-hover)] cursor-pointer shadow-xs"
-                        >
-                          Download
-                        </button>
-                        {canDeleteResource(item) && (
-                          <button
-                            onClick={() => handleDeleteResource(item)}
-                            className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg text-xs font-semibold cursor-pointer"
-                            title="Delete resource"
-                          >
-                            <TrashIcon />
-                          </button>
-                        )}
+              <div className="space-y-2">
+                {filteredResources.map((item) => (
+                  <div key={item.id} className="preline-row p-4 flex items-center gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-[#070a12] flex items-center justify-center font-bold text-xs uppercase text-orange-400 border border-white/10 font-mono">
+                      {item.fileFormat || 'FILE'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-sm text-white truncate">{item.title}</div>
+                      <div className="flex items-center gap-3 text-xs text-slate-400 mt-1 font-mono">
+                        <span className="capitalize text-slate-300">{item.category}</span>
+                        {item.fileSize && <span>• {item.fileSize}</span>}
+                        <span>• Uploaded by {item.uploadedBy}</span>
                       </div>
                     </div>
-                  ))}
-                </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openViewer(item.fileUrl, item.title, item.id, [], 'document', '')}
+                        className="px-3.5 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-200 text-xs font-semibold border border-white/10 cursor-pointer transition-colors"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => triggerDirectDownload(item.fileUrl, item.title)}
+                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:brightness-110 text-white text-xs font-bold shadow-[0_0_12px_rgba(249,115,22,0.25)] cursor-pointer transition-all"
+                      >
+                        Download
+                      </button>
+                      {canDeleteResource(item) && (
+                        <button
+                          onClick={() => handleDeleteResource(item)}
+                          className="p-2 text-red-400 hover:bg-red-500/10 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
+                          title="Delete resource"
+                        >
+                          <TrashIcon />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="py-16 text-center text-xs text-[var(--ink-45)] bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl">
-                No event resources uploaded yet in this category.
+              <div className="py-16 text-center text-xs text-slate-400 bg-[#0c101d] border border-white/[0.08] rounded-3xl space-y-2">
+                <div className="text-2xl">📁</div>
+                <div className="font-semibold text-white">No event resources in this category</div>
+                <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                  Files uploaded to this event will appear here for all authorized team members.
+                </p>
               </div>
             )}
           </div>
@@ -647,8 +651,8 @@ export default function EventPage({
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-[var(--ink)]">Event Media Gallery</h2>
-                <p className="text-xs text-[var(--ink-45)] mt-0.5">
+                <h2 className="text-base font-bold text-white">Event Media Gallery</h2>
+                <p className="text-xs text-slate-400 mt-0.5">
                   High-resolution photo coverage and event video records.
                 </p>
               </div>
@@ -656,7 +660,7 @@ export default function EventPage({
               {canUpload && (
                 <button
                   onClick={() => setShowUploadMediaModal(true)}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-semibold shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:brightness-110 text-white text-xs font-bold shadow-[0_0_15px_rgba(249,115,22,0.3)] transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>+</span> Upload Media
                 </button>
@@ -665,7 +669,7 @@ export default function EventPage({
 
             {/* Photos Section */}
             <div>
-              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--ink-45)] mb-4">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 mb-4">
                 Photos ({photos.length})
               </h3>
               {photos.length > 0 ? (
@@ -673,15 +677,15 @@ export default function EventPage({
                   {photos.map((photo) => (
                     <div
                       key={photo.id}
-                      className="group relative bg-[var(--surface-card)] rounded-2xl overflow-hidden aspect-square cursor-pointer border border-[var(--border)] hover:border-[var(--border-2)] shadow-sm"
+                      className="group relative bg-[#0c101d] rounded-2xl overflow-hidden aspect-square cursor-pointer border border-white/[0.08] hover:border-orange-500/40 shadow-sm transition-colors"
                       onClick={() => setSelectedPhoto(photo)}
                     >
                       <img
                         src={photo.fileUrl}
                         alt={photo.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
                         <div className="text-white text-xs font-semibold truncate">{photo.title}</div>
                         {canDeleteMedia(photo) && (
                           <button
@@ -689,7 +693,7 @@ export default function EventPage({
                               e.stopPropagation()
                               handleDeleteMedia(photo)
                             }}
-                            className="mt-2 text-xs text-red-300 hover:text-red-100 bg-red-900/60 px-2 py-1 rounded-lg w-fit flex items-center gap-1 font-semibold cursor-pointer"
+                            className="mt-2 text-xs text-red-300 hover:text-red-100 bg-red-900/60 px-2.5 py-1 rounded-lg w-fit flex items-center gap-1 font-semibold cursor-pointer"
                           >
                             <TrashIcon /> Delete
                           </button>
@@ -699,7 +703,7 @@ export default function EventPage({
                   ))}
                 </div>
               ) : (
-                <div className="py-12 text-center text-xs text-[var(--ink-45)] bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl">
+                <div className="py-14 text-center text-xs text-slate-400 bg-[#0c101d] border border-white/[0.08] rounded-3xl">
                   No photos uploaded for this event.
                 </div>
               )}
@@ -707,25 +711,25 @@ export default function EventPage({
 
             {/* Videos Section */}
             <div>
-              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--ink-45)] mb-4">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400 mb-4">
                 Videos ({videos.length})
               </h3>
               {videos.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {videos.map((video) => (
                     <div
                       key={video.id}
-                      className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm flex flex-col backdrop-blur-md"
+                      className="preline-card card-highlight overflow-hidden shadow-sm flex flex-col bg-[#0c101d]"
                     >
                       <div className="h-44 bg-black relative flex items-center justify-center">
                         <video src={video.fileUrl} controls className="w-full h-full object-cover" />
                       </div>
-                      <div className="p-3.5 flex items-center justify-between gap-2">
-                        <span className="font-semibold text-xs text-[var(--ink)] truncate">{video.title}</span>
+                      <div className="p-3.5 flex items-center justify-between gap-2 border-t border-white/[0.08]">
+                        <span className="font-bold text-xs text-white truncate">{video.title}</span>
                         {canDeleteMedia(video) && (
                           <button
                             onClick={() => handleDeleteMedia(video)}
-                            className="text-xs text-red-400 hover:bg-red-500/10 p-1.5 rounded-lg font-semibold flex items-center gap-1 cursor-pointer"
+                            className="text-xs text-red-400 hover:bg-red-500/10 p-1.5 rounded-lg font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                           >
                             <TrashIcon />
                           </button>
@@ -735,7 +739,7 @@ export default function EventPage({
                   ))}
                 </div>
               ) : (
-                <div className="py-12 text-center text-xs text-[var(--ink-45)] bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl">
+                <div className="py-14 text-center text-xs text-slate-400 bg-[#0c101d] border border-white/[0.08] rounded-3xl">
                   No videos uploaded for this event.
                 </div>
               )}
@@ -748,8 +752,8 @@ export default function EventPage({
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-[var(--ink)]">External References & Portals</h2>
-                <p className="text-xs text-[var(--ink-45)] mt-0.5">
+                <h2 className="text-base font-bold text-white">External References & Portals</h2>
+                <p className="text-xs text-slate-400 mt-0.5">
                   Registration sites, shared drives, and coverage links.
                 </p>
               </div>
@@ -757,7 +761,7 @@ export default function EventPage({
               {canUpload && (
                 <button
                   onClick={() => setShowAddLinkModal(true)}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-semibold shadow-md shadow-orange-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:brightness-110 text-white text-xs font-bold shadow-[0_0_15px_rgba(249,115,22,0.3)] transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>+</span> Add Link
                 </button>
@@ -769,34 +773,34 @@ export default function EventPage({
                 {links.map((item) => (
                   <div
                     key={item.id}
-                    className="bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:border-[var(--border-2)] transition-all backdrop-blur-md"
+                    className="preline-card card-highlight p-5 flex flex-col justify-between hover:border-orange-500/30 transition-all bg-[#0d121f]"
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="font-bold text-sm text-[var(--ink)] leading-snug">{item.title}</h3>
-                        <span className="text-[var(--primary)]">
+                        <h3 className="font-bold text-sm text-white leading-snug">{item.title}</h3>
+                        <span className="text-orange-400">
                           <ExternalLinkIcon />
                         </span>
                       </div>
                       {item.description && (
-                        <p className="text-xs text-[var(--ink-70)] line-clamp-3 mb-4">{item.description}</p>
+                        <p className="text-xs text-slate-300 line-clamp-3 mb-4">{item.description}</p>
                       )}
-                      <div className="text-[11px] font-mono text-[var(--ink-45)] truncate mb-4">{item.url}</div>
+                      <div className="text-[11px] font-mono text-slate-500 truncate mb-4">{item.url}</div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
+                    <div className="flex items-center justify-between pt-3 border-t border-white/[0.08]">
                       <a
                         href={item.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-xs font-semibold text-[var(--primary)] hover:underline flex items-center gap-1.5"
+                        className="text-xs font-bold text-orange-400 hover:text-orange-300 flex items-center gap-1.5"
                       >
                         Open Link <ExternalLinkIcon />
                       </a>
                       {canDeleteLink(item) && (
                         <button
                           onClick={() => handleDeleteLink(item)}
-                          className="text-xs text-red-400 hover:bg-red-500/10 p-1.5 rounded-lg font-semibold cursor-pointer"
+                          className="text-xs text-red-400 hover:bg-red-500/10 p-1.5 rounded-lg font-semibold cursor-pointer transition-colors"
                         >
                           <TrashIcon />
                         </button>
@@ -806,8 +810,12 @@ export default function EventPage({
                 ))}
               </div>
             ) : (
-              <div className="py-16 text-center text-xs text-[var(--ink-45)] bg-[var(--surface-card)] border border-[var(--border)] rounded-2xl">
-                No external links added for this event.
+              <div className="py-16 text-center text-xs text-slate-400 bg-[#0c101d] border border-white/[0.08] rounded-3xl space-y-2">
+                <div className="text-2xl">🔗</div>
+                <div className="font-semibold text-white">No external links added</div>
+                <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                  Add direct links to external conference sites, slide decks, or video recordings.
+                </p>
               </div>
             )}
           </div>

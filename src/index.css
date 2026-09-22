@@ -80,6 +80,16 @@ body {
   font-family: 'JetBrains Mono', ui-monospace, monospace; 
 }
 
+/* 21st.dev & Preline UI Atmospheric Mesh & Backgrounds */
+.bg-grid-mesh {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.bg-radial-ambient {
+  background: radial-gradient(ellipse 70% 50% at 50% -10%, rgba(255, 85, 0, 0.15), rgba(99, 102, 241, 0.08), transparent 70%);
+}
+
 /* 21st.dev Tactile Micro-Classes */
 .glass-panel {
   background: var(--surface-card);
@@ -99,6 +109,38 @@ body {
   box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.55), 0 0 25px -5px rgba(255, 85, 0, 0.08);
 }
 
+/* Preline UI & 21st.dev Card Surface */
+.preline-card {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%), var(--paper);
+  border: 1px solid var(--border-2);
+  border-radius: 1.25rem;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.preline-card:hover {
+  border-color: rgba(255, 85, 0, 0.45);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.18), 0 0 25px -5px rgba(255, 85, 0, 0.2), 0 25px 50px -15px rgba(0, 0, 0, 0.75);
+}
+
+.shimmer-border {
+  position: relative;
+}
+
+.shimmer-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.03) 40%, rgba(255, 85, 0, 0.35));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
 .badge-pill {
   display: inline-flex;
   align-items: center;
@@ -113,6 +155,97 @@ body {
   border: 1px solid var(--line);
   color: var(--ink-70);
   line-height: 1.2;
+}
+
+.glow-pill-orange {
+  background: rgba(255, 85, 0, 0.12);
+  border: 1px solid rgba(255, 85, 0, 0.3);
+  color: #ff8a4c;
+  box-shadow: 0 0 14px rgba(255, 85, 0, 0.2);
+}
+
+.glow-pill-emerald {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.2);
+}
+
+.glow-pill-cyan {
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  color: #22d3ee;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.2);
+}
+
+.glow-pill-purple {
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #c084fc;
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.2);
+}
+
+/* Preline UI Metric & Progress Card */
+.preline-metric-card {
+  position: relative;
+  background: #0d121f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.preline-metric-card:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 14px 30px -5px rgba(0, 0, 0, 0.6);
+}
+
+/* Preline UI Segmented Controls */
+.preline-segmented-container {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  background: rgba(15, 20, 32, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.875rem;
+  backdrop-filter: blur(12px);
+}
+
+.preline-tab-btn {
+  padding: 6px 14px;
+  border-radius: 0.625rem;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.18s ease;
+  cursor: pointer;
+  color: #94a3b8;
+}
+
+.preline-tab-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.preline-tab-btn.active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Preline UI Table / List Row */
+.preline-row {
+  background: #0d121f;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 0.875rem;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
+  transition: all 0.2s ease;
+}
+
+.preline-row:hover {
+  background: #131929;
+  border-color: rgba(255, 85, 0, 0.3);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 8px 20px -4px rgba(0, 0, 0, 0.4);
 }
 
 .pulse-dot {
