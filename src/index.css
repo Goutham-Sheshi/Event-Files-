@@ -96,7 +96,6 @@ body {
 .glass-panel-hover:hover {
   background: var(--surface-card-hover);
   border-color: var(--border-2);
-  transform: translateY(-2px);
   box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.55), 0 0 25px -5px rgba(255, 85, 0, 0.08);
 }
 
@@ -302,54 +301,5 @@ html[data-theme="light"] {
 html[data-theme="light"] .heading-gradient {
   background: linear-gradient(135deg, #0f172a 0%, #334155 60%, #475569 100%);
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
-/* Subtle Fixed Theme Toggle */
-.theme-toggle {
-  position: fixed;
-  top: 16px;
-  right: 20px;
-  z-index: 9999;
-  width: 58px;
-  height: 32px;
-  border: 1px solid var(--border-2);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow: 0 4px 14px rgba(0,0,0,.12);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 3px;
-  transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
-}
-
-.theme-toggle__icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  color: var(--ink-45);
-  font-size: 13px;
-  line-height: 1;
-  transition: background .2s ease, color .2s ease;
-}
-
-html[data-theme="dark"] .theme-toggle__moon,
-html:not([data-theme]) .theme-toggle__moon,
-html[data-theme="light"] .theme-toggle__sun {
-  background: var(--primary);
-  color: #fff;
-}
-
-.theme-toggle:hover {
-  border-color: var(--primary);
-  box-shadow: 0 6px 18px rgba(0,0,0,.16);
-}
-
-@media(max-width: 700px) {
-  .theme-toggle { top: 10px; right: 12px; }
-}

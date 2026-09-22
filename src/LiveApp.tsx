@@ -120,7 +120,7 @@ function ResourceCard({ resource }: { resource: Resource }) {
       data-resource-tags={JSON.stringify(resource.tags || [])}
       data-resource-type={resource.type}
       data-resource-description={resource.description || ''}
-      className="group relative flex flex-col rounded-2xl overflow-hidden border border-[var(--border)] bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] hover:border-[var(--border-2)] transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/50 cursor-pointer backdrop-blur-md"
+      className="group relative flex flex-col rounded-2xl overflow-hidden border border-[var(--border)] bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] hover:border-[var(--border-2)] transition-colors duration-200 hover:shadow-2xl hover:shadow-black/50 cursor-pointer backdrop-blur-md"
       onClick={async () => {
         if (!resource.sourceUrl) return
         const freshUrl = await getFreshResourceUrl(resource.sourceUrl, (resource as any).storagePath)
@@ -142,7 +142,7 @@ function ResourceCard({ resource }: { resource: Resource }) {
           <img
             src={resource.thumbnail}
             alt={resource.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+            className="w-full h-full object-cover"
             style={{ objectPosition: 'left top' }}
             loading="lazy"
             onError={(e) => { e.currentTarget.style.display = 'none' }}
@@ -155,7 +155,7 @@ function ResourceCard({ resource }: { resource: Resource }) {
 
         {isVideo && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
-            <span className="w-11 h-11 rounded-full bg-[var(--primary)] text-white flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
+            <span className="w-11 h-11 rounded-full bg-[var(--primary)] text-white flex items-center justify-center shadow-lg shadow-orange-500/30">
               <PlayIcon />
             </span>
           </div>
@@ -183,10 +183,10 @@ function ResourceCard({ resource }: { resource: Resource }) {
             e.stopPropagation()
             toggleFavoriteId(resource.id)
           }}
-          className={`absolute bottom-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer backdrop-blur-md ${
+          className={`absolute bottom-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer backdrop-blur-md ${
             fav
-              ? 'bg-[var(--primary)] text-white shadow-lg shadow-orange-500/30 scale-105'
-              : 'bg-black/50 text-white/75 hover:text-white hover:bg-black/80 hover:scale-110'
+              ? 'bg-[var(--primary)] text-white shadow-lg shadow-orange-500/30'
+              : 'bg-black/50 text-white/75 hover:text-white hover:bg-black/80'
           }`}
           title={fav ? 'Remove from Favorites' : 'Add to Favorites'}
         >
@@ -308,11 +308,11 @@ function EventCard({ event, hero, onClick }: { event: ManagedEvent; hero?: boole
     return (
       <div
         onClick={onClick}
-        className="relative min-h-[300px] rounded-3xl overflow-hidden text-white shadow-2xl border border-[var(--border)] cursor-pointer group hover:border-[var(--border-highlight)] transition-all duration-300"
+        className="relative min-h-[300px] rounded-3xl overflow-hidden text-white shadow-2xl border border-[var(--border)] cursor-pointer group hover:border-[var(--border-highlight)] transition-colors duration-200"
       >
         <img
           src={src}
-          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+          className="absolute inset-0 w-full h-full object-cover"
           alt=""
           onError={() => setFallback(true)}
         />
@@ -346,12 +346,12 @@ function EventCard({ event, hero, onClick }: { event: ManagedEvent; hero?: boole
   return (
     <div
       onClick={onClick}
-      className="bg-[var(--surface-card)] border border-[var(--border)] hover:border-[var(--border-2)] hover:bg-[var(--surface-card-hover)] rounded-2xl overflow-hidden h-full flex flex-col cursor-pointer group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 backdrop-blur-md"
+      className="bg-[var(--surface-card)] border border-[var(--border)] hover:border-[var(--border-2)] hover:bg-[var(--surface-card-hover)] rounded-2xl overflow-hidden h-full flex flex-col cursor-pointer group hover:shadow-2xl transition-colors duration-200 backdrop-blur-md"
     >
       <div className="relative h-36 overflow-hidden bg-[var(--canvas-deep)] border-b border-[var(--border)]">
         <img
           src={src}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover"
           alt=""
           onError={() => setFallback(true)}
         />
@@ -614,14 +614,14 @@ function Home({
                 <button
                   key={p.id}
                   onClick={() => onProduct(p.slug)}
-                  className="group relative text-left rounded-2xl border border-[var(--border)] p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer overflow-hidden backdrop-blur-md bg-[var(--surface-card)] hover:border-[var(--border-2)]"
+                  className="group relative text-left rounded-2xl border border-[var(--border)] p-5 transition-colors duration-200 hover:shadow-xl cursor-pointer overflow-hidden backdrop-blur-md bg-[var(--surface-card)] hover:border-[var(--border-2)]"
                 >
                   <div
                     className="absolute -top-10 -right-10 w-28 h-28 rounded-full opacity-20 filter blur-2xl transition-opacity group-hover:opacity-40"
                     style={{ background: p.color }}
                   />
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm mb-3 border transition-transform group-hover:scale-110"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm mb-3 border"
                     style={{
                       background: `${p.color}15`,
                       color: p.color,

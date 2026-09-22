@@ -77,7 +77,7 @@ export function VideoCard({ resource }: { resource: Resource }) {
 
   return (
     <div
-      className="group bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border)] hover:border-[var(--border-2)] rounded-2xl overflow-hidden flex flex-col cursor-pointer hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 backdrop-blur-md"
+      className="group bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border)] hover:border-[var(--border-2)] rounded-2xl overflow-hidden flex flex-col cursor-pointer hover:shadow-2xl transition-colors duration-200 backdrop-blur-md"
       onClick={() => {
         if (resource.sourceUrl) {
           openViewer(
@@ -98,7 +98,7 @@ export function VideoCard({ resource }: { resource: Resource }) {
           <img
             src={resource.thumbnail}
             alt={resource.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+            className="w-full h-full object-cover"
             onError={(e) => {
               e.currentTarget.style.display = 'none'
             }}
@@ -110,7 +110,7 @@ export function VideoCard({ resource }: { resource: Resource }) {
         )}
 
         <div className="absolute inset-0 bg-black/35 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-          <span className="w-12 h-12 rounded-full bg-[var(--primary)] text-white flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform pl-0.5">
+          <span className="w-12 h-12 rounded-full bg-[var(--primary)] text-white flex items-center justify-center shadow-lg shadow-orange-500/30 pl-0.5">
             <PlayIcon />
           </span>
         </div>

@@ -223,7 +223,7 @@ export default function MultiStepUploadModal({
             <div className="space-y-4">
               <label className="border-2 border-dashed border-[var(--border)] hover:border-[var(--primary)] bg-[var(--surface)] hover:bg-[var(--surface-2)] transition-all rounded-3xl p-9 text-center cursor-pointer block group">
                 <input type="file" multiple onChange={handlePickFiles} className="hidden" />
-                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-[var(--primary)] flex items-center justify-center mx-auto mb-3.5 border border-orange-500/20 group-hover:scale-110 transition-transform">
+                <div className="w-14 h-14 rounded-2xl bg-orange-500/10 text-[var(--primary)] flex items-center justify-center mx-auto mb-3.5 border border-orange-500/20">
                   <UploadCloudIcon />
                 </div>
                 <div className="text-[15px] font-bold text-[var(--ink)] font-display">
