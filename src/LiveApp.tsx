@@ -31,6 +31,12 @@ const FileIcon = () => <Icon><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a
 const CompanyIcon = () => <Icon><path d="M4 21V7l8-4 8 4v14" /><path d="M8 21v-5h8v5M8 10h.01M12 10h.01M16 10h.01" /></Icon>
 const PanelIcon = ({ collapsed }: { collapsed: boolean }) => <Icon><rect x="3" y="4" width="18" height="16" rx="2" /><path d={collapsed ? 'M14 8l4 4-4 4' : 'M10 8l-4 4 4 4'} /><path d="M9 4v16" /></Icon>
 const PlayIcon = () => <Icon><path d="m8 5 11 7-11 7z" /></Icon>
+const StarIcon = ({ filled }: { filled?: boolean }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+)
+const Chevron = ({ open }: { open: boolean }) => <span style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform .15s', display: 'inline-block' }}>›</span>
 type View = { kind: 'home' } | { kind: 'product'; slug: string } | { kind: 'sheshi' } | { kind: 'all' } | { kind: 'events' } | { kind: 'videos' } | { kind: 'favorites' } | { kind: 'admin' } | { kind: 'event-detail'; id: string }
 const SHESHI_ID = 'sheshi'
 const productOf = (id: string) => products.find(p => p.id === id || p.slug === id)
