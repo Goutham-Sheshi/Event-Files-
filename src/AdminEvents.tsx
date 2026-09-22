@@ -12,6 +12,9 @@ import {
   type EventInput,
   type ManagedEvent,
 } from "./eventsApi";
+import {
+  createEventNotification,
+} from "./notificationsApi";
 import { products } from "./data";
 import { getErrorMessage } from "./resourcesApi";
 import { eventSchema, type EventFormData } from "./schemas/eventSchemas";
@@ -127,8 +130,16 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
         event_type: data.event_type as "In-person" | "Virtual",
         banner: uploadedBanner || null,
       };
-      if (editing) await updateEvent(editing.id, payload);
-      else await createEvent(payload);
+      if (editing) {
+        await updateEvent(editing.id, payload);
+      } else {
+        const created = await createEvent(payload);
+        try {
+          await createEventNotification(created, 'Admin');
+        } catch (notifErr) {
+          console.warn('Failed to dispatch notification for created event:', notifErr);
+        }
+      }
       setOpen(false);
       await load();
       onChanged?.();
@@ -190,12 +201,14 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
               Create and manage corporate events across Sheshi product suites.
             </p>
           </div>
-          <button
-            onClick={startAdd}
-            className="px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold hover:bg-[var(--primary-hover)]"
-          >
-            + Create Event
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={startAdd}
+              className="px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-[12px] font-semibold hover:bg-[var(--primary-hover)] cursor-pointer"
+            >
+              + Create Event
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -269,14 +282,14 @@ export default function AdminEvents({ onChanged }: { onChanged?: () => void }) {
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         <button
                           onClick={() => startEdit(event)}
-                          className="text-[var(--primary)] font-semibold mr-3 hover:underline"
+                          className="text-[var(--primary)] font-semibold mr-3 hover:underline cursor-pointer"
                         >
                           Edit
                         </button>
                         <button
                           disabled={busy}
                           onClick={() => remove(event)}
-                          className="text-red-600 font-semibold disabled:opacity-40 hover:underline"
+                          className="text-red-600 font-semibold disabled:opacity-40 hover:underline cursor-pointer"
                         >
                           Delete
                         </button>
