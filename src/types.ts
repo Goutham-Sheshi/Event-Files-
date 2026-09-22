@@ -60,3 +60,5 @@ export type EventLinkItem = {
 export type UserRole = 'admin' | 'advanced' | 'standard' | 'teammate' | 'user';
 
 export type AppUser = { id: string; name: string; email: string; role: UserRole; status: 'active' | 'invited'; lastActive?: string };
+
+export type { VaultProfile } from './authApi';

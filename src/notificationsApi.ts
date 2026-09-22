@@ -338,8 +338,11 @@ export async function triggerTestNotification(adminName = 'Admin'): Promise<Even
         title: eventTitle,
         description: 'Annual corporate innovation summit with live product reveals, hands-on workshops, and partner keynotes.',
         event_date: eventDate,
+        end_date: null,
         location: location,
+        product_id: null,
         event_type: 'In-person',
+        banner: null,
       })
       targetEventId = sample.id
     }
